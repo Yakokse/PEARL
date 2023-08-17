@@ -33,9 +33,5 @@ main =
      s <- readFile (head ss1)
      prog <- fromEM "parsing" $ parseProg s
      putStrLn $ "From " ++ head ss1 
-     -- g <- fromEM "converting" $ convert eg
-     -- lg <- if dolre opts then fromEM "lre" $ lre g else return  g
-     -- flg <- if dolfactor opts then fromEM "factoring" $ lfactor lg else return lg
-     -- let r = p ++ prelude ++ render flg
      putStrLn $ "Writing to " ++ outputFile 
      writeFile outputFile "Test"
