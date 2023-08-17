@@ -1,0 +1,1 @@
+init: entry x += 1 goto loop

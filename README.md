@@ -1,2 +1,2 @@
 # PERevFlow
-A partial evaluator of reversible unstructured programs
+A partial evaluator for reversible unstructured programs.
