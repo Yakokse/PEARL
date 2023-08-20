@@ -1,11 +1,12 @@
 module AST where
 
-type Program label = [Block label]
-
 type Name = String
+type IntType = Word
 
 type ErrMsg = String 
 type EM = Either ErrMsg 
+
+type Program label = [Block label]
 
 data Block label = Block 
     { name :: label
@@ -40,7 +41,7 @@ data Place =
     deriving (Eq, Show, Read)
 
 data Expr =
-      Const Word
+      Const IntType
     | Place Place
     | Op BinOp Expr Expr
     | Top Name

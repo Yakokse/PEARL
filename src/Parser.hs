@@ -1,4 +1,4 @@
-module Parser (parseProg) where
+module Parser (parseProg, parseVal) where
 
 import AST
 import Text.ParserCombinators.Parsec
@@ -18,6 +18,8 @@ parseProg s =
     case runParser pProg () "" s of
         Left err -> Left $ show err
         Right res -> Right res
+
+parseVal = undefined
 
 pProg :: Parser (Program Label)
 pProg = do res <- many1 pBlock; eof; return res
