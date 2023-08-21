@@ -4,6 +4,9 @@ import AST
 
 type Program' label = [Block' label]
 
+data Level = Res | Elim
+  deriving (Eq, Show, Read)
+
 data Block' label = Block' 
     { name' :: label
     , from' :: IfFrom' label
@@ -13,48 +16,31 @@ data Block' label = Block'
     deriving (Eq, Show, Read)
 
 data IfFrom' label = 
-      From' label
-    | From2 label 
-    | FromCond' Expr' label label 
-    | FromCond2 Expr' label label 
-    | Entry'
-    | Entry2
+      From' Level label
+    | FromCond' Level Expr' label label 
+    | Entry' Level
     deriving (Eq, Show, Read)
 
 data IfGoto' label = 
-      Goto' label 
-    | Goto2 label
-    | GotoCond' Expr' label label 
-    | GotoCond2 Expr' label label 
-    | Exit'
-    | Exit2
+      Goto' Level label 
+    | GotoCond' Level Expr' label label 
+    | Exit' Level
     deriving (Eq, Show, Read)
 
 data Statement' = 
-      UpdateV' Name RevOp Expr'
-    | UpdateV2 Name RevOp Expr'
-    | UpdateA' Name Expr' RevOp Expr'
-    | UpdateA2 Name Expr' RevOp Expr'
-    | Push' Name Name
-    | Push2 Name Name
-    | Pop' Name Name
-    | Pop2 Name Name
-    | Skip'
-    | Skip2
+      UpdateV' Level Name RevOp Expr'
+    | UpdateA' Level Name Expr' RevOp Expr'
+    | Push' Level Name Name
+    | Pop' Level Name Name
+    | Skip' Level
     deriving (Eq, Show, Read)
 
 data Expr' =
-      Const' IntType
-    | Const2 IntType
-    | Var' Name
-    | Var2 Name
-    | Arr' Name Expr'
-    | Arr2 Name Expr'
-    | Op' BinOp Expr' Expr'
-    | Op2 BinOp Expr' Expr'
-    | Top' Name
-    | Top2 Name
-    | Empty' Name
-    | Empty2 Name
+      Const' Level IntType
+    | Var' Level Name
+    | Arr' Level Name Expr'
+    | Op' Level BinOp Expr' Expr'
+    | Top' Level Name
+    | Empty' Level Name
     | Lift Expr'
     deriving (Eq, Show, Read)
