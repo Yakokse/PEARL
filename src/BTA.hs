@@ -14,8 +14,9 @@ passBlock :: Division -> Block a -> Division
 passBlock d b = foldl passStat d (body b)
 
 passStat :: Division -> Statement -> Division
-passStat d (Update (Arr n e) _ _) | dynamic e d = setDyn n d
-passStat d (Update p _ e)         | dynamic e d = setDyn (nameOf p) d
+passStat d (UpdateA n e _ _)      | dynamic e d = setDyn n d
+passStat d (UpdateA n _ _ e)      | dynamic e d = setDyn n d
+passStat d (UpdateV n _ e)        | dynamic e d = setDyn n d
 passStat d (Push n a)             | isDyn n d   = setDyn a d 
 passStat d (Push n a)             | isDyn a d   = setDyn n d
 passStat d (Pop n a)              | isDyn n d   = setDyn a d 
@@ -24,11 +25,8 @@ passStat d _ = d
 
 dynamic :: Expr -> Division -> Bool
 dynamic (Const _) _ = False
-dynamic (Place p) d = nameOf p `isDyn` d
+dynamic (Var n) d = isDyn n d
+dynamic (Arr n e) d = isDyn n d || dynamic e d
 dynamic (Op _ e1 e2) d = dynamic e1 d || dynamic e2 d
-dynamic (Top n) d = n `isDyn` d
-dynamic (Empty n) d = n `isDyn` d
-
-nameOf :: Place -> Name 
-nameOf (Var n) = n
-nameOf (Arr n _) = n
+dynamic (Top n) d = isDyn n d
+dynamic (Empty n) d = isDyn n d

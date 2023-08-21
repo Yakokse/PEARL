@@ -38,18 +38,16 @@ getVarsGoto (GotoCond e _ _) = getVarsExp e
 getVarsGoto _ = []
 
 getVarsStat :: Statement -> [Name]
-getVarsStat (Update p _ e) = getVarsPlace p `union` getVarsExp e
+getVarsStat (UpdateV n _ e) = [n] `union` getVarsExp e
+getVarsStat (UpdateA n e1 _ e2) = [n] `union` getVarsExp e1 `union` getVarsExp e2
 getVarsStat (Push n1 n2) = [n1] `union` [n2]
 getVarsStat (Pop n1 n2) = [n1] `union` [n2]
 getVarsStat Skip = []
 
 getVarsExp :: Expr -> [Name]
 getVarsExp (Const _) = []
-getVarsExp (Place p) = getVarsPlace p
+getVarsExp (Var n) = [n]
+getVarsExp (Arr n e) = [n] `union` getVarsExp e
 getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
 getVarsExp (Top n) = [n]
 getVarsExp (Empty n) = [n]
-
-getVarsPlace :: Place -> [Name]
-getVarsPlace (Var n) = [n]
-getVarsPlace (Arr n e) = [n] `union` getVarsExp e

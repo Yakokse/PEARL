@@ -30,10 +30,11 @@ data IfGoto' label =
     | Exit2
     deriving (Eq, Show, Read)
 
--- TODO: Flatten place here and in AST
 data Statement' = 
-      Update' Place' RevOp Expr'
-    | Update2 Place' RevOp Expr'
+      UpdateV' Name RevOp Expr'
+    | UpdateV2 Name RevOp Expr'
+    | UpdateA' Name Expr' RevOp Expr'
+    | UpdateA2 Name Expr' RevOp Expr'
     | Push' Name Name
     | Push2 Name Name
     | Pop' Name Name
@@ -42,17 +43,13 @@ data Statement' =
     | Skip2
     deriving (Eq, Show, Read)
 
-data Place' =
-      Var' Name
-    | Var2 Name
-    | Arr' Name Expr'
-    | Arr2 Name Expr'
-    deriving (Eq, Show, Read)
-
 data Expr' =
       Const' IntType
     | Const2 IntType
-    | Place' Place'
+    | Var' Name
+    | Var2 Name
+    | Arr' Name Expr'
+    | Arr2 Name Expr'
     | Op' BinOp Expr' Expr'
     | Op2 BinOp Expr' Expr'
     | Top' Name

@@ -16,23 +16,23 @@ annotateBlock d b = Block'
     }
 
 annotateStat :: Division -> Statement -> Statement'
-annotateStat d (Update (Var n) rop e) = 
+annotateStat d (UpdateV n rop e) = 
     case getType n d of
         Static -> 
             case annotateExp d e of
-                (e', Static) -> Update' (Var' n) rop e'
+                (e', Static) -> UpdateV' n rop e'
                 _ -> die
         Dynamic -> 
-            Update2 (Var2 n) rop $ lift (annotateExp d e)
-annotateStat d (Update (Arr n e1) rop e2) = 
+            UpdateV2 n rop $ lift (annotateExp d e)
+annotateStat d (UpdateA n e1 rop e2) = 
     case getType n d of
         Static -> 
             case (annotateExp d e1, annotateExp d e2) of
-                ((e1', Static), (e2', Static)) -> Update' (Arr' n e1') rop e2'
+                ((e1', Static), (e2', Static)) -> UpdateA' n e1' rop e2'
                 _ -> die
         Dynamic -> 
             let (e1', e2') = (lift $ annotateExp d e1, lift $ annotateExp d e2) in
-            Update2 (Arr2 n e1') rop e2'
+            UpdateA2 n e1' rop e2'
 annotateStat d (Push n1 n2) =
     case (getType n1 d, getType n2 d) of
         (Static, Static) -> Push' n1 n2
@@ -64,17 +64,17 @@ annotateGoto d (GotoCond e l1 l2) =
 
 annotateExp :: Division -> Expr -> (Expr', BTtype)
 annotateExp _ (Const i) = (Const' i, Static)
-annotateExp d (Place (Var n)) = 
+annotateExp d (Var n) = 
     case getType n d of
-        Static  -> (Place' (Var' n), Static)
-        Dynamic -> (Place' (Var2 n), Dynamic)   
-annotateExp d (Place (Arr n e)) =
+        Static  -> (Var' n, Static)
+        Dynamic -> (Var2 n, Dynamic)   
+annotateExp d (Arr n e) =
     case getType n d of
         Static -> 
             case annotateExp d e of
-                (e', Static) -> (Place' (Arr' n e'), Static)
+                (e', Static) -> (Arr' n e', Static)
                 _            -> die
-        Dynamic -> (Place' (Arr2 n (lift $ annotateExp d e)), Dynamic)
+        Dynamic -> (Arr2 n (lift $ annotateExp d e), Dynamic)
 annotateExp d (Op bop e1 e2) = 
     let ((e1', t1), (e2',t2)) = (annotateExp d e1, annotateExp d e2) in 
     case (t1, t2) of

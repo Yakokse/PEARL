@@ -19,6 +19,7 @@ parseProg s =
         Left err -> Left $ show err
         Right res -> Right res
 
+-- TODO: Division parsing
 parseVal = undefined
 
 pProg :: Parser (Program Label)
@@ -48,8 +49,14 @@ pStat :: Parser Statement
 pStat = do word "skip"; return Skip
     <|> do word "push"; x <- pName; Push x <$> pName
     <|> do word "pop"; x <- pName; Pop x <$> pName
-    <|> do x <- pPlace; op <- pUpdate; Update x op <$> pExpr
-    where pUpdate = do symbol "+="; return Add
+    <|> pUpdate
+
+pUpdate :: Parser Statement
+pUpdate = do lhs <- pLHS; op <- pOp; lhs op <$> pExpr
+    where 
+        pLHS = do x <- pName; option (UpdateV x) (pIndex x)
+        pIndex n = do symbol "["; e <- pExpr; symbol "]"; return $ UpdateA n e
+        pOp = do symbol "+="; return Add
                 <|> do symbol "-="; return Sub
                 <|> do symbol "^="; return Xor
 
@@ -77,10 +84,7 @@ pFactor = Const <$> pNum
     <|> do word "top"; Top <$> pName
     <|> do word "empty"; Empty <$> pName
     <|> do symbol "("; e <- pExpr; symbol ")"; return e
-    <|> Place <$> pPlace
-
-pPlace :: Parser Place
-pPlace = do x <- pName; option (Var x) (pIndex x)
+    <|> do x <- pName; option (Var x) (pIndex x)
     where
         pIndex x = do symbol "["; e <- pExpr; symbol "]"; return $ Arr x e
 

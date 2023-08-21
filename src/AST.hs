@@ -29,20 +29,17 @@ data IfGoto label =
     deriving (Eq, Show, Read)
 
 data Statement = 
-      Update Place RevOp Expr
+      UpdateV Name RevOp Expr
+    | UpdateA Name Expr RevOp Expr
     | Push Name Name
     | Pop Name Name
     | Skip
     deriving (Eq, Show, Read)
 
-data Place =
-      Var Name
-    | Arr Name Expr
-    deriving (Eq, Show, Read)
-
 data Expr =
       Const IntType
-    | Place Place
+    | Var Name
+    | Arr Name Expr
     | Op BinOp Expr Expr
     | Top Name
     | Empty Name
