@@ -23,6 +23,7 @@ dependencies:
 - text
 - parsec
 - containers
+- array
 
 ghc-options:
 - -Wall

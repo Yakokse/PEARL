@@ -28,17 +28,21 @@ library
       AST
       AST2
       BTA
-      BTtype
       Division
+      Operators
       Parser
+      RWSE
+      Specialize
       Utils
+      Values
   other-modules:
       Paths_PERevFlow
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , containers
     , parsec
     , text
@@ -53,6 +57,7 @@ executable PERevFlow-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       PERevFlow
+    , array
     , base >=4.7 && <5
     , containers
     , parsec
@@ -69,6 +74,7 @@ test-suite PERevFlow-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       PERevFlow
+    , array
     , base >=4.7 && <5
     , containers
     , parsec

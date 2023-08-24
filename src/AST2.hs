@@ -1,6 +1,7 @@
 module AST2 where
 
 import AST
+import Values 
 
 type Program' label = [Block' label]
 

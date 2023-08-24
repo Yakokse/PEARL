@@ -1,6 +1,6 @@
 module Division where
 
-import AST
+import Values
 import qualified Data.Map.Strict as Map
 
 data BTtype = Static | Dynamic 

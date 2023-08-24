@@ -1,10 +1,6 @@
 module AST where
 
-type Name = String
-type IntType = Word
-
-type ErrMsg = String 
-type EM = Either ErrMsg 
+import Values 
 
 type Program label = [Block label]
 

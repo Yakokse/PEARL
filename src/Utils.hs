@@ -1,6 +1,8 @@
 module Utils where
 
 import AST
+import AST2
+import Values
 import Data.List (union)
 
 changeLabel :: (a -> b) -> Program a -> Program b
@@ -51,3 +53,21 @@ getVarsExp (Arr n e) = [n] `union` getVarsExp e
 getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
 getVarsExp (Top n) = [n]
 getVarsExp (Empty n) = [n]
+
+findEntry :: Program a -> EM a
+findEntry p = 
+    case filter f p of
+        [] -> Left "No entry point found"
+        [b] -> Right (name b)
+        _ -> Left "Multiple entry points found"
+    where 
+        f b = case from b of Entry -> True; _ -> False
+
+findEntry' :: Program' a -> EM a
+findEntry' p = 
+    case filter f p of
+        [] -> Left "No entry point found"
+        [b] -> Right (name' b)
+        _ -> Left "Multiple entry points found"
+    where 
+        f b = case from' b of Entry' _ -> True; _ -> False

@@ -1,6 +1,7 @@
 module Parser (parseProg, parseVal) where
 
 import AST
+import Values
 import Text.ParserCombinators.Parsec
 
 type Label = String
@@ -20,6 +21,7 @@ parseProg s =
         Right res -> Right res
 
 -- TODO: Division parsing
+-- TODO: Restrict label names (Entry/exit)
 parseVal = undefined
 
 pProg :: Parser (Program Label)

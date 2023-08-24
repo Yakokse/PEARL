@@ -1,6 +1,6 @@
 module Main (main) where
 
-import AST
+import Values
 import Parser ( parseProg )
 import System.Exit (die)
 import System.Environment (getArgs)
