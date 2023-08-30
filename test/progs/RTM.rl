@@ -2,7 +2,7 @@ init: entry
       S += BLANK // BLANK and SLASH should be defined in input
       if pc_max = 0 goto stop else loop
 
-loop: fi Q1[pc] = Start from init else cont3
+loop: fi Q1[pc] = Start from init else act4
       if Q1[pc] = End goto stop else act1
 
 stop: fi pc_max = 0 from init else loop

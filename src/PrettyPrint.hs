@@ -118,9 +118,9 @@ prettyExpr' (Var' Elim n)    = n
 prettyExpr' (Arr' Res n e)   = "%" ++ n ++ "[" ++ prettyExpr' e ++ "]"
 prettyExpr' (Arr' Elim n e)  = n ++ "[" ++ prettyExpr' e ++ "]"
 prettyExpr' (Op' Res op e1 e2) = 
-    "%(" ++ prettyExpr' e1 ++ "%" ++ prettyOp op ++ prettyExpr' e2 ++ ")"
+    "%(" ++ prettyExpr' e1 ++ " %" ++ prettyOp op ++ " " ++ prettyExpr' e2 ++ ")"
 prettyExpr' (Op' Elim op e1 e2) = 
-    "(" ++ prettyExpr' e1 ++ prettyOp op ++ prettyExpr' e2 ++ ")"
+    "(" ++ prettyExpr' e1 ++ " " ++ prettyOp op ++ " " ++ prettyExpr' e2 ++ ")"
 prettyExpr' (Top' Res n)     = "%top " ++ n
 prettyExpr' (Top' Elim n)    = "top " ++ n
 prettyExpr' (Empty' Res n)   = "%empty " ++ n

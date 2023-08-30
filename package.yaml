@@ -24,6 +24,7 @@ dependencies:
 - parsec
 - containers
 - array
+- mtl
 
 ghc-options:
 - -Wall

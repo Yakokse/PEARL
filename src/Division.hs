@@ -8,20 +8,21 @@ data BTtype = Static | Dynamic
 
 type Division = Map.Map Name BTtype
 
-isDyn :: Name -> Division -> Bool
-isDyn n d =
+isType :: Name -> BTtype -> Division -> Bool
+isType n t d =
      case d Map.! n of 
-      Dynamic -> True
+      r | t == r -> True
       _ -> False
 
 getType :: Name -> Division -> BTtype
 getType n d = d Map.! n
 
-setDyn :: Name -> Division -> Division
-setDyn n = Map.insert n Dynamic
+setType :: Name -> BTtype -> Division -> Division
+setType = Map.insert
 
-makeDyn :: [Name] -> Division -> Division
-makeDyn ns d = foldl (flip setDyn) d ns
+setTypes :: [Name] -> [BTtype] -> Division -> Division
+setTypes ns ts bDiv = foldl (\d (n, t) -> setType n t d) bDiv pairs
+  where pairs = zip ns ts
 
 allDyn :: Division -> [Name]
 allDyn = map fst . filter ((== Dynamic) . snd) . Map.toList
