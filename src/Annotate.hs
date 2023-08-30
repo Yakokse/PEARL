@@ -11,12 +11,12 @@ annotateBlock :: Division -> Block a -> Block' a
 annotateBlock d b = Block' 
     { name' = name b
     , from' = annotateFrom d $ from b
-    , body' = map (annotateStat d) $ body b
+    , body' = map (annotateStep d) $ body b
     , goto' = annotateGoto d $ goto b
     }
 
-annotateStat :: Division -> Step -> Step'
-annotateStat d (UpdateV n rop e) = 
+annotateStep :: Division -> Step -> Step'
+annotateStep d (UpdateV n rop e) = 
     case getType n d of
         Static -> 
             case annotateExp d e of
@@ -24,7 +24,7 @@ annotateStat d (UpdateV n rop e) =
                 _ -> die
         Dynamic -> 
             UpdateV' Res n rop $ lift (annotateExp d e)
-annotateStat d (UpdateA n e1 rop e2) = 
+annotateStep d (UpdateA n e1 rop e2) = 
     case getType n d of
         Static -> 
             case (annotateExp d e1, annotateExp d e2) of
@@ -33,17 +33,17 @@ annotateStat d (UpdateA n e1 rop e2) =
         Dynamic -> 
             let (e1', e2') = (lift $ annotateExp d e1, lift $ annotateExp d e2) in
             UpdateA' Res n e1' rop e2'
-annotateStat d (Push n1 n2) =
+annotateStep d (Push n1 n2) =
     case (getType n1 d, getType n2 d) of
         (Static, Static) -> Push' Elim n1 n2
         (Dynamic, Dynamic) -> Push' Res n1 n2
         _ -> die
-annotateStat d (Pop n1 n2) =
+annotateStep d (Pop n1 n2) =
     case (getType n1 d, getType n2 d) of
         (Static, Static) -> Pop' Elim n1 n2
         (Dynamic, Dynamic) -> Pop' Res n1 n2
         _ -> die
-annotateStat _ Skip = Skip' Elim
+annotateStep _ Skip = Skip' Elim
                     
 
 annotateFrom :: Division -> IfFrom a -> IfFrom' a
