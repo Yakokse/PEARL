@@ -48,6 +48,9 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - PERevFlow
+    when:
+    - condition: false
+      other-modules: Paths_PERevFlow 
 
 tests:
   PERevFlow-test:
