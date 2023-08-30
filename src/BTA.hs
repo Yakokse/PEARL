@@ -14,13 +14,17 @@ passBlock :: Division -> Block a -> Division
 passBlock d b = foldl passStep d (body b)
 
 passStep :: Division -> Step -> Division
-passStep d (UpdateA n e _ _) | dynamic e d = setDyn n d
-passStep d (UpdateA n _ _ e) | dynamic e d = setDyn n d
-passStep d (UpdateV n _ e)   | dynamic e d = setDyn n d
-passStep d (Push n a)        | isDyn n d   = setDyn a d 
-passStep d (Push n a)        | isDyn a d   = setDyn n d
-passStep d (Pop n a)         | isDyn n d   = setDyn a d 
-passStep d (Pop n a)         | isDyn a d   = setDyn n d
+passStep d (UpdateA n e1 _ e2) 
+    | dynamic e1 d || dynamic e2 d = setDyn n d
+    | otherwise = d
+passStep d (UpdateV n _ e) | dynamic e d = setDyn n d
+                           | otherwise   = d
+passStep d (Push n a) 
+    | isDyn n d || isDyn a d = makeDyn [a,n] d 
+    | otherwise   = d
+passStep d (Pop n a) 
+    | isDyn n d || isDyn a d = makeDyn [a,n] d 
+    | otherwise   = d
 passStep d Skip = d
 
 dynamic :: Expr -> Division -> Bool

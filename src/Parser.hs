@@ -1,4 +1,4 @@
-module Parser (parseProg, parseVal) where
+module Parser (parseProg, parseSpec) where
 
 import AST
 import Values
@@ -9,20 +9,13 @@ type Label = String
 -- NOTE: Added Paren to expr, assoc, precedence
 -- Consider white space handling, currently lenient
 
---test p s = 
---    case runParser p () "" s of
---        Left err -> Left $ show err
---        Right res -> Right res
-
-parseProg :: String -> EM (Program Label)
-parseProg s = 
-    case runParser pProg () "" s of
+parseStr :: Parser a -> String -> EM a
+parseStr p s = case runParser p () "" s of
         Left err -> Left $ show err
         Right res -> Right res
 
--- TODO: Division parsing
--- TODO: Restrict label names (Entry/exit)
-parseVal = undefined
+parseProg :: String -> EM (Program Label)
+parseProg = parseStr pProg
 
 pProg :: Parser (Program Label)
 pProg = do res <- many1 pBlock; eof; return res
@@ -63,10 +56,17 @@ pUpdate = do lhs <- pLHS; op <- pOp; lhs op <$> pExpr
                 <|> do symbol "^="; return Xor
 
 pExpr :: Parser Expr
-pExpr = chainl1 pEquation pRelOp
+pExpr = chainl1 pComparison pRelOp
     where 
         pRelOp = do symbol "&&"; return . Op $ And
                 <|> do symbol "||"; return . Op $ Or  
+
+pComparison :: Parser Expr
+pComparison = chainl1 pEquation pComp
+    where 
+        pComp = do symbol "<"; return . Op $ Less
+                <|> do symbol ">"; return . Op $ Greater
+                <|> do symbol "="; return . Op $ Equal  
 
 pEquation :: Parser Expr
 pEquation = chainl1 pTerm pAddOp
@@ -90,12 +90,25 @@ pFactor = Const <$> pNum
     where
         pIndex x = do symbol "["; e <- pExpr; symbol "]"; return $ Arr x e
 
+parseSpec :: String -> EM Store
+parseSpec = parseStr pFile
+    where pFile = do res <- many pDeclaration; eof; return $ makeStore res
+
+pDeclaration :: Parser (Name, Value)
+pDeclaration = do n <- pName; symbol "="; v <- pValue; return (n,v)
+
+pValue :: Parser Value
+pValue = ScalarVal <$> pNum
+    <|> do symbol "["; l <- commaSep pNum; symbol "]"; return $ listToArr l 
+    <|> do symbol "("; l <- commaSep pNum; symbol ")"; return $ listToStack l 
+    where commaSep p  = p `sepBy` symbol ","
+
 pName :: Parser String
 pName = lexeme . try $ 
     do c <- letter; cs <- many pChar; 
        if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
     where 
-        pChar = alphaNum <|> char '_'
+        pChar = alphaNum <|> char '_' <|> char '\''
         restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
                       "push", "pop", "skip", "top", "empty"]
 
@@ -122,3 +135,4 @@ comment = do
     _ <- manyTill anyChar eol
     return ()
         where eol = do _ <- newline; return () <|> eof
+

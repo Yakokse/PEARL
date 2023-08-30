@@ -8,7 +8,6 @@ import Utils
 import Operators
 import Control.Applicative ((<|>))
 
-type Annotated l = (l, Maybe Store)
 type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a

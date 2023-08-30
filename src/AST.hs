@@ -49,6 +49,9 @@ data BinOp =
     | Div
     | And
     | Or
+    | Less
+    | Greater
+    | Equal
     deriving (Eq, Show, Read)
 
 data RevOp =

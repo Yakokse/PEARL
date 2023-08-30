@@ -30,6 +30,7 @@ library
       Division
       Operators
       Parser
+      PrettyPrint
       Specialize
       Utils
       Values

@@ -20,6 +20,15 @@ getType n d = d Map.! n
 setDyn :: Name -> Division -> Division
 setDyn n = Map.insert n Dynamic
 
+makeDyn :: [Name] -> Division -> Division
+makeDyn ns d = foldl (flip setDyn) d ns
+
+allDyn :: Division -> [Name]
+allDyn = map fst . filter ((== Dynamic) . snd) . Map.toList
+
+allStatic :: Division -> [Name]
+allStatic = map fst . filter ((== Static) . snd) . Map.toList
+
 defaultDivision :: Division
 defaultDivision = Map.empty
 
