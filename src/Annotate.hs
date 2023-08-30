@@ -20,7 +20,7 @@ annotateStep d (UpdateV n rop e) =
         Static -> 
             case annotateExp d e of
                 (e', Static) -> UpdateV' Elim n rop e'
-                _ -> die
+                _ -> undefined
         Dynamic -> 
             UpdateV' Res n rop $ lift (annotateExp d e)
 annotateStep d (UpdateA n e1 rop e2) = 
@@ -28,7 +28,7 @@ annotateStep d (UpdateA n e1 rop e2) =
         Static -> 
             case (annotateExp d e1, annotateExp d e2) of
                 ((e1', Static), (e2', Static)) -> UpdateA' Elim n e1' rop e2'
-                _ -> die
+                _ -> undefined
         Dynamic -> 
             let (e1', e2') = (lift $ annotateExp d e1, lift $ annotateExp d e2) in
             UpdateA' Res n e1' rop e2'
@@ -36,12 +36,12 @@ annotateStep d (Push n1 n2) =
     case (getType n1 d, getType n2 d) of
         (Static, Static) -> Push' Elim n1 n2
         (Dynamic, Dynamic) -> Push' Res n1 n2
-        _ -> die
+        _ -> undefined
 annotateStep d (Pop n1 n2) =
     case (getType n1 d, getType n2 d) of
         (Static, Static) -> Pop' Elim n1 n2
         (Dynamic, Dynamic) -> Pop' Res n1 n2
-        _ -> die
+        _ -> undefined
 annotateStep _ Skip = Skip' Elim
                     
 
@@ -72,7 +72,7 @@ annotateExp d (Arr n e) =
         Static -> 
             case annotateExp d e of
                 (e', Static) -> (Arr' Elim n e', Static)
-                _            -> die
+                _            -> undefined
         Dynamic -> (Arr' Res n (lift $ annotateExp d e), Dynamic)
 annotateExp d (Op bop e1 e2) = 
     let ((e1', t1), (e2',t2)) = (annotateExp d e1, annotateExp d e2) in 
@@ -91,6 +91,3 @@ annotateExp d (Empty n) =
 lift :: (Expr', BTtype) -> Expr'
 lift (e, Static) = Lift e
 lift (e, Dynamic) = e
-
-die :: a
-die = undefined -- BTA has failed somehow, should never happen

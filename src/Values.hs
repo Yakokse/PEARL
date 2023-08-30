@@ -43,6 +43,11 @@ makeStore = Map.fromList
 storeToList :: Store -> [(Name, Value)]
 storeToList = Map.toAscList
 
+valueToList :: Value -> [IntType]
+valueToList (ScalarVal i) = [i]
+valueToList (ArrVal a) = Array.elems a
+valueToList (StackVal s) = s
+
 update :: Name -> Value -> Store -> Store
 update = Map.insert
 

@@ -16,7 +16,8 @@ specialize :: (Eq a, Show a) => Program' a -> Store -> a -> EM (Program (Annotat
 specialize prog s entry = do 
         b <- getEntry' prog
         let pending = [((b,s), (entry, emptyStore))]
-        (_, _, res) <- specProg entry prog pending [] []; return res
+        (_, _, res) <- specProg entry prog pending [] [] 
+        return $ reverse res -- Reverse for nicer ordering of blocks
 
 specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
                             -> EM (Pending a, Seen a, Program (Annotated a))

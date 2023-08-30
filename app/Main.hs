@@ -17,13 +17,13 @@ defaultOpts :: Opts
 defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False}
 
 usage :: String
-usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-verbove] PROGRAM.rl PROGRAM.spec"
+usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-verbose] PROGRAM.rl PROGRAM.spec"
 -- Pipeline: Parse all input -> BTA -> Annotate -> Spec -> Print
 -- Todo: Add values
 processInput :: [String] -> Opts -> (Opts, [String])
 processInput ("-o" : file : ss) opts = processInput ss $ opts { outputFile = file }
 processInput ("-skipSpec" : ss) opts = processInput ss $ opts { skipSpec = True }
-processInput ("-silent" : ss) opts = processInput ss $ opts { verbose = True}
+processInput ("-verbose" : ss) opts = processInput ss $ opts { verbose = True}
 processInput ss opts = (opts, ss)
 
 trace :: Bool -> String -> IO ()

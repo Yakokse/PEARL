@@ -7,7 +7,9 @@ import Values
 prettyAnn :: (a -> String) -> Annotated a -> String
 prettyAnn f (l, Nothing) = f l ++ "_NULL"
 prettyAnn f (l, Just s) = f l ++ prettyStore s 
-    where prettyStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ show i) . storeToList
+    where 
+        prettyStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ prettyValue i) . storeToList
+        prettyValue = intercalate "_" . map show . valueToList 
 
 prettyProg :: (a -> String) -> Program a -> String
 prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)

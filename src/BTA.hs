@@ -2,6 +2,7 @@ module BTA where
 import AST
 import Division
 
+-- TODO: Expr: static a[dynamic e] needs detection, time for a state monad prob
 congruentDiv :: Program a -> Division -> Division
 congruentDiv p = fixed $ passProg p
     where fixed f d' | d' == f d' = d'
