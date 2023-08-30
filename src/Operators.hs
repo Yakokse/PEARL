@@ -4,14 +4,6 @@ import AST
 import Values
 import GHC.Bits
 
-truthy :: IntType -> Bool
-truthy = (/= 0)
-
-trueV :: IntType
-trueV = 1
-
-falseV :: IntType
-falseV = 0
 
 calc :: BinOp -> IntType -> IntType -> IntType
 calc (ROp r) n m = calcR r n m

@@ -30,7 +30,6 @@ library
       Division
       Operators
       Parser
-      RWSE
       Specialize
       Utils
       Values

@@ -1,26 +1,23 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use tuple-section" #-}
 module Specialize where
 
 import AST
-import RWSE
 import Values
 import Utils
 import Operators
 import Control.Applicative ((<|>))
 
--- type ReadData a = Program' a
 type Annotated l = (l, Maybe Store)
 type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
--- type WriteData a = (StateSet a, Program a)  -- must be an instance of Monoid
 
-
-specialize :: Program' a -> Store -> EM (Program (Annotated a))
-specialize p s = do undefined
---    entry <- getEntry' p
---    (_, x, _) <- runRWSE specProg  p [(entry, s)]; return x
-
-
+specialize :: (Eq a, Show a) => Program' a -> Store -> a -> EM (Program (Annotated a))
+specialize prog s entry = do 
+        b <- getEntry' prog
+        let pending = [((b,s), (entry, emptyStore))]
+        (_, _, res) <- specProg entry prog pending [] []; return res
 
 specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
                             -> EM (Pending a, Seen a, Program (Annotated a))
@@ -36,7 +33,8 @@ specProg entry prog (p:ps) seen res
         res' <- merge b' res
         specProg entry prog (pnew ++ ps) seen' res'
 
-merge :: (Eq a, Show a) => Block (Annotated a) -> Program (Annotated a) -> EM (Program (Annotated a))
+merge :: (Eq a, Show a) => Block (Annotated a) -> Program (Annotated a) 
+                            -> EM (Program (Annotated a))
 merge block prog 
     | name block `notElem` map name prog = return $ block : prog
     | otherwise = do
@@ -62,7 +60,8 @@ specBlock entry s b origin = do
     return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
-specFrom :: (Eq a, Show a) => a -> Store -> IfFrom' a -> (a, Store) -> EM (IfFrom (Annotated a))
+specFrom :: (Eq a, Show a) => a -> Store -> IfFrom' a -> (a, Store) 
+                            -> EM (IfFrom (Annotated a))
 specFrom _ _ (From' _ l) origin 
     | l `isFrom` origin = return . From $ annotate l origin
     | otherwise         = Left $ "Invalid jump from " ++ show (fst origin)
@@ -138,7 +137,7 @@ specStep s (UpdateV' Elim n op e) = do
 specStep s (UpdateA' Res n e1 op e2) = do
     e1' <- getExpr e1 s; e2' <- getExpr e2 s
     return (s, [UpdateA n e1' op e2'])
-specStep s (UpdateA' Elim n e1 op e2) = do -- NOTE: Strengthened restriction
+specStep s (UpdateA' Elim n e1 op e2) = do
     i1 <- getInt e1 $ s `without` n
     i2 <- getInt e2 $ s `without` n
     arr <- getVarArr n s
