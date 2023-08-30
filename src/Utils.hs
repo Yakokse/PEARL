@@ -27,7 +27,7 @@ getVarsProg = foldl helper []
 getVarsBlock :: Block a -> [Name]
 getVarsBlock b = bodyVars `union` fromVars `union` gotoVars
     where 
-        bodyVars = foldl (\acc e -> acc `union` getVarsStat e) [] $ body b
+        bodyVars = foldl (\acc e -> acc `union` getVarsStep  e) [] $ body b
         fromVars = getVarsFrom . from $ b
         gotoVars = getVarsGoto . goto $ b
 
@@ -39,12 +39,12 @@ getVarsGoto :: IfGoto a -> [Name]
 getVarsGoto (GotoCond e _ _) = getVarsExp e
 getVarsGoto _ = []
 
-getVarsStat :: Statement -> [Name]
-getVarsStat (UpdateV n _ e) = [n] `union` getVarsExp e
-getVarsStat (UpdateA n e1 _ e2) = [n] `union` getVarsExp e1 `union` getVarsExp e2
-getVarsStat (Push n1 n2) = [n1] `union` [n2]
-getVarsStat (Pop n1 n2) = [n1] `union` [n2]
-getVarsStat Skip = []
+getVarsStep  :: Step -> [Name]
+getVarsStep  (UpdateV n _ e) = [n] `union` getVarsExp e
+getVarsStep  (UpdateA n e1 _ e2) = [n] `union` getVarsExp e1 `union` getVarsExp e2
+getVarsStep  (Push n1 n2) = [n1] `union` [n2]
+getVarsStep  (Pop n1 n2) = [n1] `union` [n2]
+getVarsStep  Skip = []
 
 getVarsExp :: Expr -> [Name]
 getVarsExp (Const _) = []

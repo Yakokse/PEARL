@@ -15,7 +15,7 @@ annotateBlock d b = Block'
     , goto' = annotateGoto d $ goto b
     }
 
-annotateStat :: Division -> Statement -> Statement'
+annotateStat :: Division -> Step -> Step'
 annotateStat d (UpdateV n rop e) = 
     case getType n d of
         Static -> 

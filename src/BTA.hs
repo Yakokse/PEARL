@@ -13,7 +13,7 @@ passProg p d = foldl passBlock d p
 passBlock :: Division -> Block a -> Division
 passBlock d b = foldl passStat d (body b)
 
-passStat :: Division -> Statement -> Division
+passStat :: Division -> Step -> Division
 passStat d (UpdateA n e _ _)      | dynamic e d = setDyn n d
 passStat d (UpdateA n _ _ e)      | dynamic e d = setDyn n d
 passStat d (UpdateV n _ e)        | dynamic e d = setDyn n d

@@ -29,7 +29,7 @@ pProg = do res <- many1 pBlock; eof; return res
 
 pBlock :: Parser (Block Label)
 pBlock = 
-    do n <- pLabel; f <- pFrom; b <- many pStat; g <- pGoto;
+    do n <- pLabel; f <- pFrom; b <- many pStep; g <- pGoto;
        return Block {name = n, from = f, body = b, goto = g}
 
 pLabel :: Parser String
@@ -47,13 +47,13 @@ pGoto = do word "exit"; return Exit
            GotoCond e l1 <$> pName
     <|> do word "goto"; Goto <$> pName
 
-pStat :: Parser Statement
-pStat = do word "skip"; return Skip
+pStep :: Parser Step
+pStep = do word "skip"; return Skip
     <|> do word "push"; x <- pName; Push x <$> pName
     <|> do word "pop"; x <- pName; Pop x <$> pName
     <|> pUpdate
 
-pUpdate :: Parser Statement
+pUpdate :: Parser Step
 pUpdate = do lhs <- pLHS; op <- pOp; lhs op <$> pExpr
     where 
         pLHS = do x <- pName; option (UpdateV x) (pIndex x)

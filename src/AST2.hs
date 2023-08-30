@@ -11,7 +11,7 @@ data Level = Res | Elim
 data Block' label = Block' 
     { name' :: label
     , from' :: IfFrom' label
-    , body' :: [Statement']
+    , body' :: [Step']
     , goto' :: IfGoto' label
     }
     deriving (Eq, Show, Read)
@@ -28,7 +28,7 @@ data IfGoto' label =
     | Exit' Level
     deriving (Eq, Show, Read)
 
-data Statement' = 
+data Step' = 
       UpdateV' Level Name RevOp Expr'
     | UpdateA' Level Name Expr' RevOp Expr'
     | Push' Level Name Name

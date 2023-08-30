@@ -5,7 +5,7 @@ import Values
 import GHC.Bits
 
 truthy :: IntType -> Bool
-truthy = (/=0)
+truthy = (/= 0)
 
 trueV :: IntType
 trueV = 1

@@ -7,7 +7,7 @@ type Program label = [Block label]
 data Block label = Block 
     { name :: label
     , from :: IfFrom label
-    , body :: [Statement]
+    , body :: [Step]
     , goto :: IfGoto label
     }
     deriving (Eq, Show, Read)
@@ -24,7 +24,7 @@ data IfGoto label =
     | Exit
     deriving (Eq, Show, Read)
 
-data Statement = 
+data Step = 
       UpdateV Name RevOp Expr
     | UpdateA Name Expr RevOp Expr
     | Push Name Name

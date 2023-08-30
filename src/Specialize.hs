@@ -27,7 +27,7 @@ specProg :: ProgSpec a ()
 specProg = undefined
 
 specFrom :: Store -> IfFrom' a -> (a, Store) -> IfFrom (a, Store)
-specFrom = undefined
+specFrom s _ _ = undefined 
 
 specGoto :: Store -> IfGoto' a -> EM (IfGoto (a, Store), [a])
 specGoto _ (Exit' _) = return (Exit, [])
@@ -41,18 +41,18 @@ specGoto s (GotoCond' Elim e l1 l2) = do
         then (Goto (l1, s), [l1]) 
         else (Goto (l2, s), [l2])
 
-specStat :: Store -> Statement' -> EM (Store, [Statement])
-specStat s (Skip' Res) = return (s, [Skip])
-specStat s (Skip' Elim) = return (s, [])
-specStat s (Push' Res n1 n2) = return (s, [Push n1 n2])
-specStat s (Push' Elim n1 n2) = do
+specStep :: Store -> Step' -> EM (Store, [Step])
+specStep s (Skip' Res) = return (s, [Skip])
+specStep s (Skip' Elim) = return (s, [])
+specStep s (Push' Res n1 n2) = return (s, [Push n1 n2])
+specStep s (Push' Elim n1 n2) = do
     i <- getVarScalar n1 s
     stack <- getVarStack n2 s
     let s' = update n1 (ScalarVal 0) s 
         s'' = update n2 (StackVal (i:stack)) s' in 
         return (s'', [])
-specStat s (Pop' Res n1 n2) = return (s, [Pop n1 n2])
-specStat s (Pop' Elim n1 n2) = do
+specStep s (Pop' Res n1 n2) = return (s, [Pop n1 n2])
+specStep s (Pop' Elim n1 n2) = do
     i <- getVarScalar n1 s
     stack <- getVarStack n2 s
     case (i, stack) of
@@ -61,18 +61,18 @@ specStat s (Pop' Elim n1 n2) = do
                          return (s'', [])
         (0, _) -> Left $ n2 ++ " is empty when trying to pop."
         _ -> Left $ n1 ++ " is expected to be 0 but is actually " ++ show i ++ "."
-specStat s (UpdateV' Res n op e) = do
+specStep s (UpdateV' Res n op e) = do
     e' <- getExpr e s
     return (s, [UpdateV n op e'])
-specStat s (UpdateV' Elim n op e) = do
+specStep s (UpdateV' Elim n op e) = do
     i <- getInt e $ s `without` n
     v <- getVarScalar n s
     let s' = update n (ScalarVal $ calcR op v i) s in
         return (s', [])
-specStat s (UpdateA' Res n e1 op e2) = do
+specStep s (UpdateA' Res n e1 op e2) = do
     e1' <- getExpr e1 s; e2' <- getExpr e2 s
     return (s, [UpdateA n e1' op e2'])
-specStat s (UpdateA' Elim n e1 op e2) = do -- NOTE: Strengthened restriction
+specStep s (UpdateA' Elim n e1 op e2) = do -- NOTE: Strengthened restriction
     i1 <- getInt e1 $ s `without` n
     i2 <- getInt e2 $ s `without` n
     arr <- getVarArr n s
