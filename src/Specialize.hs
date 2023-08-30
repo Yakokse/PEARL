@@ -1,46 +1,112 @@
 module Specialize where
 
 import AST
-import AST2
 import RWSE
 import Values
 import Utils
 import Operators
+import Control.Applicative ((<|>))
 
-type ReadData a = Program' a
-type StateSet a = [(a, Store)]
+-- type ReadData a = Program' a
+type Annotated l = (l, Maybe Store)
+type Point a = (a, Store)
+type Pending a = [(Point a, Point a)]
+type Seen a = Pending a
 -- type WriteData a = (StateSet a, Program a)  -- must be an instance of Monoid
 
 
--- RWSE READ STATE WRITE VAL
-type ProgSpec a = RWSE (ReadData a) (StateSet a) (Program (a, Store))
--- type BlockSpec a = RWSE (ReadData a) Store (WriteData (a, Store))
-
-specialize :: Program' a -> Store -> EM (Program (a, Store))
-specialize p s = do 
-    entry <- findEntry' p
-    (_, x, _) <- runRWSE specProg  p [(entry, s)]; return x
+specialize :: Program' a -> Store -> EM (Program (Annotated a))
+specialize p s = do undefined
+--    entry <- getEntry' p
+--    (_, x, _) <- runRWSE specProg  p [(entry, s)]; return x
 
 
 
-specProg :: ProgSpec a ()
-specProg = undefined
+specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
+                            -> EM (Pending a, Seen a, Program (Annotated a))
+specProg _ _ [] seen res = return ([], seen, res)
+specProg entry prog (p:ps) seen res 
+    | p `elem` seen = specProg entry prog ps seen res
+    | otherwise = do
+        let (current@(l, s), origin) = p
+        b <- getBlock' prog l
+        (b', p') <- specBlock entry s b origin
+        let pnew = map (\x -> (x, current)) p'
+        let seen' = p : seen
+        res' <- merge b' res
+        specProg entry prog (pnew ++ ps) seen' res'
 
-specFrom :: Store -> IfFrom' a -> (a, Store) -> IfFrom (a, Store)
-specFrom s _ _ = undefined 
+merge :: (Eq a, Show a) => Block (Annotated a) -> Program (Annotated a) -> EM (Program (Annotated a))
+merge block prog 
+    | name block `notElem` map name prog = return $ block : prog
+    | otherwise = do
+        b <- getBlock prog $ name block
+        b' <- mergeBlocks b block
+        let rest = filter (\x -> name block /= name x) prog
+        return $ b' : rest
+    where 
+        mergeBlocks x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
+        mergeFi (FromCond e (l1, s1) (l2, s2)) (FromCond e' (l1', s1') (l2', s2')) 
+            | e == e' && l1 == l1' && l2 == l2' = 
+                return $ FromCond e (l1, s1 <|> s1') (l2, s2 <|> s2') 
+            | otherwise = Left "Failed to merge blocks due to the Fi's being different"
+        mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specGoto :: Store -> IfGoto' a -> EM (IfGoto (a, Store), [a])
-specGoto _ (Exit' _) = return (Exit, [])
-specGoto s (Goto' _ l) = return (Goto (l, s), [l])
-specGoto s (GotoCond' Res e l1 l2) = do
+specBlock :: (Eq a, Show a) => a -> Store -> Block' a -> (a, Store) 
+                                 -> EM (Block (Annotated a), [Point a])
+specBlock entry s b origin = do
+    let l = (name' b, Just s)
+    f <- specFrom entry s (from' b) origin
+    (s', as) <- specSteps s $ body' b
+    (j, pending) <- specJump s' $ jump' b
+    return (Block { name = l, from = f, body = as, jump = j}, pending)
+
+-- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
+specFrom :: (Eq a, Show a) => a -> Store -> IfFrom' a -> (a, Store) -> EM (IfFrom (Annotated a))
+specFrom _ _ (From' _ l) origin 
+    | l `isFrom` origin = return . From $ annotate l origin
+    | otherwise         = Left $ "Invalid jump from " ++ show (fst origin)
+specFrom x _ (Entry' _) (l, _) 
+    | l == x    = return Entry 
+    | otherwise = Left "Invalid jump to entry"
+specFrom _ s (FromCond' Elim e l1 l2) origin = do
+    v <- getInt e s
+    let l = if truthy v then l1 else l2
+    if l `isFrom` origin 
+        then return . From $ annotate l origin
+        else Left $ "Invalid jump during elimination from " ++ show (fst origin)
+specFrom _ s (FromCond' Res e l1 l2) origin  
+    | l1 `isFrom` origin || l2 `isFrom` origin = do
+        e' <- getExpr e s
+        return $ FromCond e' (annotate l1 origin) (annotate l2 origin)
+    | otherwise = Left $ "Invalid jump from " ++ show (fst origin)
+
+isFrom :: Eq a => a -> (a, Store) -> Bool
+isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
+
+annotate :: Eq a => a -> (a, Store) -> Annotated a
+annotate l (l', s) | l == l'   = (l, Just s)
+                   | otherwise = (l, Nothing)
+
+specJump :: Store -> Jump' a -> EM (Jump (Annotated a), [Point a])
+specJump _ (Exit' _) = return (Exit, [])
+specJump s (Goto' _ l) = return (Goto (l, Just s), [(l, s)])
+specJump s (If' Res e l1 l2) = do
     e' <- getExpr e s; 
-    return (GotoCond e' (l1, s) (l2, s), [l1, l2]) 
-specGoto s (GotoCond' Elim e l1 l2) = do
+    return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)]) 
+specJump s (If' Elim e l1 l2) = do
     v <- getInt e s
     return $ if truthy v 
-        then (Goto (l1, s), [l1]) 
-        else (Goto (l2, s), [l2])
+        then (Goto (l1, Just s), [(l1, s)]) 
+        else (Goto (l2, Just s), [(l2, s)])
 
+specSteps :: Store -> [Step'] -> EM (Store, [Step])
+specSteps s [] = return (s, [])
+specSteps s (a:as) = do
+    (s'', a') <- specStep s a
+    (s', as') <- specSteps s'' as
+    return (s', a' ++ as')
+    
 specStep :: Store -> Step' -> EM (Store, [Step])
 specStep s (Skip' Res) = return (s, [Skip])
 specStep s (Skip' Elim) = return (s, [])
@@ -150,4 +216,4 @@ getVarStack n s = do
     v <- getVarVal n s
     case v of
         StackVal x -> return x
-        _ -> Left $ n ++ " is wrong type (STack expected)"
+        _ -> Left $ n ++ " is wrong type (Stack expected)"

@@ -11,6 +11,7 @@ type ErrMsg = String
 type EM = Either ErrMsg 
 
 data Value = ScalarVal IntType | ArrVal ArrayType | StackVal StackType
+    deriving (Eq, Show, Read) 
 type Store = Map.Map Name Value
 
 find ::  Name -> Store -> Maybe Value

@@ -1,7 +1,6 @@
 module Annotate (annotateProg) where
 
 import AST
-import AST2
 import Division
 
 annotateProg :: Division -> Program a -> Program' a
@@ -12,7 +11,7 @@ annotateBlock d b = Block'
     { name' = name b
     , from' = annotateFrom d $ from b
     , body' = map (annotateStep d) $ body b
-    , goto' = annotateGoto d $ goto b
+    , jump' = annotateGoto d $ jump b
     }
 
 annotateStep :: Division -> Step -> Step'
@@ -54,13 +53,13 @@ annotateFrom d (FromCond e l1 l2) =
         (e', Static)  -> FromCond' Elim e' l1 l2
         (e', Dynamic) -> FromCond' Res e' l1 l2
 
-annotateGoto :: Division -> IfGoto a -> IfGoto' a
+annotateGoto :: Division -> Jump a -> Jump' a
 annotateGoto _ Exit = Exit' Res
 annotateGoto _ (Goto l) = Goto' Res l
-annotateGoto d (GotoCond e l1 l2) =
+annotateGoto d (If e l1 l2) =
     case annotateExp d e of
-        (e', Static)  -> GotoCond' Elim e' l1 l2
-        (e', Dynamic) -> GotoCond' Res e' l1 l2
+        (e', Static)  -> If' Elim e' l1 l2
+        (e', Dynamic) -> If' Res e' l1 l2
 
 annotateExp :: Division -> Expr -> (Expr', BTtype)
 annotateExp _ (Const i) = (Const' Elim i, Static)

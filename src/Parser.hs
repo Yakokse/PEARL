@@ -30,7 +30,7 @@ pProg = do res <- many1 pBlock; eof; return res
 pBlock :: Parser (Block Label)
 pBlock = 
     do n <- pLabel; f <- pFrom; b <- many pStep; g <- pGoto;
-       return Block {name = n, from = f, body = b, goto = g}
+       return Block {name = n, from = f, body = b, jump = g}
 
 pLabel :: Parser String
 pLabel = do s <- pName; symbol ":"; return s
@@ -41,10 +41,10 @@ pFrom = do word "entry"; return Entry
            FromCond e l1 <$> pName
     <|> do word "from"; From <$> pName
 
-pGoto :: Parser (IfGoto Label)
+pGoto :: Parser (Jump Label)
 pGoto = do word "exit"; return Exit
     <|> do word "if"; e <- pExpr; word "goto"; l1 <- pName; word "else"
-           GotoCond e l1 <$> pName
+           If e l1 <$> pName
     <|> do word "goto"; Goto <$> pName
 
 pStep :: Parser Step
