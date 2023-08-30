@@ -11,19 +11,19 @@ import Annotate
 import Specialize
 import PrettyPrint
 
-data Opts = Opts { outputFile :: String, skipSpec :: Bool, showtrace :: Bool }
+data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool }
 
 defaultOpts :: Opts
-defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, showtrace = True}
+defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False}
 
 usage :: String
-usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-silent] PROGRAM.rl PROGRAM.spec"
+usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-verbove] PROGRAM.rl PROGRAM.spec"
 -- Pipeline: Parse all input -> BTA -> Annotate -> Spec -> Print
 -- Todo: Add values
 processInput :: [String] -> Opts -> (Opts, [String])
-processInput ("-o" : file : ss) opts = processInput ss $ opts {outputFile = file}
-processInput ("-skipSpec" : ss) opts = processInput ss $ opts {skipSpec = True}
-processInput ("-silent" : ss) opts = processInput ss $ opts { showtrace = False}
+processInput ("-o" : file : ss) opts = processInput ss $ opts { outputFile = file }
+processInput ("-skipSpec" : ss) opts = processInput ss $ opts { skipSpec = True }
+processInput ("-silent" : ss) opts = processInput ss $ opts { verbose = True}
 processInput ss opts = (opts, ss)
 
 trace :: Bool -> String -> IO ()
@@ -40,7 +40,7 @@ main =
      let (opts, ss1) = processInput ss defaultOpts
      if length ss1 == 2 then return () else die usage
      let (progPath, specPath) = (head ss1, ss1 !! 1)
-     let logProgress = trace $ showtrace opts
+     let logProgress = trace $ verbose opts
      logProgress $ "Reading program from " ++ head ss1 ++ "."
      progStr <- readFile progPath
      logProgress "Parsing program."
