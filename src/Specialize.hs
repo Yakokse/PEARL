@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use tuple-section" #-}
 module Specialize where
 
 import AST
@@ -7,6 +5,8 @@ import Values
 import Utils
 import Operators
 import Control.Applicative ((<|>))
+import System.IO.Unsafe 
+import PrettyPrint
 
 type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
@@ -52,12 +52,14 @@ merge block prog
 
 specBlock :: (Eq a, Show a) => a -> Store -> Block' a -> (a, Store) 
                                  -> EM (Block (Annotated a), [Point a])
-specBlock entry s b origin = do
-    let l = (name' b, Just s)
-    f <- specFrom entry s (from' b) origin
-    (s', as) <- specSteps s $ body' b
-    (j, pending) <- specJump s' $ jump' b
-    return (Block { name = l, from = f, body = as, jump = j}, pending)
+specBlock entry s b origin = unsafePerformIO $ do 
+    putStrLn $ show (name' b) ++ ":: " ++ prettyStore s
+    return (do
+        let l = (name' b, Just s)
+        f <- specFrom entry s (from' b) origin
+        (s', as) <- specSteps s $ body' b
+        (j, pending) <- specJump s' $ jump' b
+        return (Block { name = l, from = f, body = as, jump = j}, pending))
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
 specFrom :: (Eq a, Show a) => a -> Store -> IfFrom' a -> (a, Store) 

@@ -3,13 +3,23 @@ module PrettyPrint where
 import AST
 import Data.List (intercalate)
 import Values
+import Division
+
+prettyDiv :: Division -> String
+prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ show t ++ "\n") . divisionToList
 
 prettyAnn :: (a -> String) -> Annotated a -> String
 prettyAnn f (l, Nothing) = f l ++ "_NULL"
-prettyAnn f (l, Just s) = f l ++ prettyStore s 
+prettyAnn f (l, Just s) = f l ++ serializeStore s 
     where 
-        prettyStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ prettyValue i) . storeToList
-        prettyValue = intercalate "_" . map show . valueToList 
+        serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList
+        serialize = intercalate "_" . map show . valueToList 
+
+
+prettyStore :: Store -> String       
+prettyStore = concatMap (\(n, i) -> n ++ ":" ++ serialize i) . storeToList
+    where  
+        serialize v = "(" ++ (intercalate "," . map show $ valueToList v) ++ ")"
 
 prettyProg :: (a -> String) -> Program a -> String
 prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)

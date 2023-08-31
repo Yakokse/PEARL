@@ -18,7 +18,7 @@ parseProg :: String -> EM (Program Label)
 parseProg = parseStr pProg
 
 pProg :: Parser (Program Label)
-pProg = do res <- many1 pBlock; eof; return res
+pProg = do whitespace; res <- many1 pBlock; eof; return res
 
 pBlock :: Parser (Block Label)
 pBlock = 
@@ -92,7 +92,7 @@ pFactor = Const <$> pNum
 
 parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
-    where pFile = do res <- many pDeclaration; eof; return $ makeStore res
+    where pFile = do whitespace; res <- many pDeclaration; eof; return $ makeStore res
 
 pDeclaration :: Parser (Name, Value)
 pDeclaration = do n <- pName; symbol "="; v <- pValue; return (n,v)

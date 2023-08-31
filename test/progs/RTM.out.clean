@@ -1,0 +1,173 @@
+init:
+	entry
+	S += 32
+	goto loop
+
+
+stop:
+	from loop
+	exit
+
+
+act1:
+	from loop
+	if ((Q=Q1[pc])&&(S=S1[pc]))
+		goto write
+		else act2
+
+
+write:
+	from act1
+	Q += (Q2[pc]-Q1[pc])
+	S += (S2[pc]-S1[pc])
+	goto act2
+
+
+move:
+	from act2
+	Q += (Q2[pc]-Q1[pc])
+	if (S2[pc]=60)
+		goto left
+		else right
+
+
+left:
+	from move
+	if (empty S_right&&(S=32))
+		goto left_1b
+		else left_1p
+
+
+left_1b:
+	from left
+	S -= 32
+	goto left1
+
+
+left_2b:
+	from left1
+	S += 32
+	goto left2
+
+
+clear:
+	from act3
+	pc -= 8
+	goto act4
+
+
+loop:
+	fi (Q1[pc]=1)
+		from init
+		else act4
+	if (Q1[pc]=6)
+		goto stop
+		else act1
+
+
+act4:
+	fi (pc=0)
+		from clear
+		else act3
+	goto loop
+
+
+left_2p:
+	from left1
+	pop S S_left
+	goto left2
+
+
+left2:
+	fi (empty S_left&&(S=32))
+		from left_2b
+		else left_2p
+	goto move1
+
+
+left_1p:
+	from left
+	push S S_right
+	goto left1
+
+
+left1:
+	fi empty S_right
+		from left_1b
+		else left_1p
+	if empty S_left
+		goto left_2b
+		else left_2p
+
+
+right:
+	from move
+	if (empty S_left&&(S=32))
+		goto right_1b
+		else right_1p
+
+
+right_1b:
+	from right
+	S -= 32
+	goto right1
+
+
+right_2b:
+	from right1
+	S += 32
+	goto right2
+
+
+move1:
+	fi (S2[pc]=60)
+		from left2
+		else right2
+	goto act3
+
+
+right_2p:
+	from right1
+	pop S S_right
+	goto right2
+
+
+right2:
+	fi (empty S_right&&(S=32))
+		from right_2b
+		else right_2p
+	goto move1
+
+
+right_1p:
+	from right
+	push S S_left
+	goto right1
+
+
+right1:
+	fi empty S_left
+		from right_1b
+		else right_1p
+	if empty S_right
+		goto right_2b
+		else right_2p
+
+
+act3:
+	fi ((Q=Q2[pc])&&(S1[pc]=47))
+		from move1
+		else act2
+	pc += 1
+	if (pc=8)
+		goto clear
+		else act4
+
+
+act2:
+	fi ((Q=Q2[pc])&&(S=S2[pc]))
+		from write
+		else act1
+	if ((Q=Q1[pc])&&(S1[pc]=47))
+		goto move
+		else act3

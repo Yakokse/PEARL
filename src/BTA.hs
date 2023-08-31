@@ -7,8 +7,8 @@ import Control.Monad.State
 type ST a = State Division a
 
 -- TODO: Expr: static a[dydnamic e] needs detection, time for a state monad prob
-congruentDiv :: Program a -> Division -> Division
-congruentDiv p = fixed (execState $ checkProg p)
+makeCongruent :: Program a -> Division -> Division
+makeCongruent p = fixed (execState $ checkProg p)
     where 
         fixed f d' | d' == f d' = d'
                    | otherwise = fixed f $ f d'

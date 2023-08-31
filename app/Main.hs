@@ -43,16 +43,23 @@ main =
      let logProgress = trace $ verbose opts
      logProgress $ "Reading program from " ++ head ss1 ++ "."
      progStr <- readFile progPath
-     logProgress "Parsing program."
+     logProgress "- Parsing program."
      prog <- fromEM "parsing" $ parseProg progStr
      logProgress $ "Reading division (and specilization data) from " ++ specPath ++ "."
      specStr <- readFile specPath
-     logProgress "Parsing division."
+     logProgress "- Parsing division."
      initStore <- fromEM "parsing" $ parseSpec specStr
-     let initDiv = makeDiv (vars initStore) (getVarsProg prog) -- initstore
-     let cdiv = congruentDiv prog initDiv
-     let store = remove (allDyn cdiv) initStore -- initstore
-     let prog2 = annotateProg cdiv prog
+     let initDiv = makeDiv (vars initStore) (getVarsProg prog)
+     logProgress $ "Initial bindings:\n================\n" ++ prettyDiv initDiv
+     logProgress "- Performing BTA"
+     let congruentDiv = makeCongruent prog initDiv
+     logProgress $ "After BTA:\n================\n" ++ prettyDiv congruentDiv
+     let store = remove (allDyn congruentDiv) initStore
+     logProgress "- Annotating program"
+     let prog2 = annotateProg congruentDiv prog
+     if skipSpec opts 
+      then logProgress "- Skip specialization" 
+      else logProgress "- Specializing"
      str <- if skipSpec opts 
               then return $ prettyProg' id prog2 
               else fromEM "specializing" $ do

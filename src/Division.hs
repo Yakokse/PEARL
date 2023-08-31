@@ -33,6 +33,9 @@ allStatic = map fst . filter ((== Static) . snd) . Map.toList
 defaultDivision :: Division
 defaultDivision = Map.empty
 
+divisionToList :: Division -> [(Name, BTtype)]
+divisionToList = Map.toAscList
+
 makeDiv :: [Name] -> [Name] -> Division
 makeDiv spec total = Map.fromList pairs
     where 

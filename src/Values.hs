@@ -62,7 +62,7 @@ remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)
 
 listToArr :: [IntType] -> Value
 listToArr l = ArrVal $ Array.array (0, toEnum $ length l - 1) pairs
-    where pairs = zip l [0..]
+    where pairs = zip [0..] l 
 
 listToStack :: [IntType] -> Value
 listToStack = StackVal
