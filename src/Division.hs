@@ -10,9 +10,9 @@ type Division = Map.Map Name BTtype
 
 isType :: Name -> BTtype -> Division -> Bool
 isType n t d =
-     case d Map.! n of 
-      r | t == r -> True
-      _ -> False
+  case d Map.! n of 
+    r | t == r -> True
+    _ -> False
 
 getType :: Name -> Division -> BTtype
 getType n d = d Map.! n
@@ -38,6 +38,6 @@ divisionToList = Map.toAscList
 
 makeDiv :: [Name] -> [Name] -> Division
 makeDiv spec total = Map.fromList pairs
-    where 
-        pairs = zip total bttype
-        bttype = map (\n -> if n `elem` spec then Static else Dynamic) total
+  where 
+    pairs = zip total bttype
+    bttype = map (\n -> if n `elem` spec then Static else Dynamic) total

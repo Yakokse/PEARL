@@ -6,29 +6,31 @@ import System.Exit (die)
 import System.Environment (getArgs)
 import BTA
 import Division
+import AST
 import Utils
 import Annotate
 import Specialize
+import PostProcessing
 import PrettyPrint
 
-data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool }
+data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool, skipPost :: Bool }
 
 defaultOpts :: Opts
-defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False}
+defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False, skipPost = False}
 
 usage :: String
-usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-verbose] PROGRAM.rl PROGRAM.spec"
--- Pipeline: Parse all input -> BTA -> Annotate -> Spec -> Print
--- Todo: Add values
+usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-skipPost] [-verbose] PROGRAM.rl PROGRAM.spec"
+
 processInput :: [String] -> Opts -> (Opts, [String])
 processInput ("-o" : file : ss) opts = processInput ss $ opts { outputFile = file }
 processInput ("-skipSpec" : ss) opts = processInput ss $ opts { skipSpec = True }
+processInput ("-skipPost" : ss) opts = processInput ss $ opts { skipPost = True }
 processInput ("-verbose" : ss) opts = processInput ss $ opts { verbose = True}
 processInput ss opts = (opts, ss)
 
-trace :: Bool -> String -> IO ()
-trace False _ = return ()
-trace True s = putStrLn s
+trace :: Opts -> String -> IO ()
+trace opts s | verbose opts = putStrLn s
+             | otherwise = return ()
 
 fromEM :: String -> EM a -> IO a
 fromEM _ (Right a) = return a
@@ -40,33 +42,44 @@ main =
      let (opts, ss1) = processInput ss defaultOpts
      if length ss1 == 2 then return () else die usage
      let (progPath, specPath) = (head ss1, ss1 !! 1)
-     let logProgress = trace $ verbose opts
-     logProgress $ "Reading program from " ++ head ss1 ++ "."
+     trace opts $ "Reading program from " ++ head ss1 ++ "."
      progStr <- readFile progPath
-     logProgress "- Parsing program."
+     trace opts "- Parsing program."
      prog <- fromEM "parsing" $ parseProg progStr
-     logProgress $ "Reading division (and specilization data) from " ++ specPath ++ "."
+     trace opts $ "Reading division (and specilization data) from " ++ specPath ++ "."
      specStr <- readFile specPath
-     logProgress "- Parsing division."
+     trace opts "- Parsing division."
      initStore <- fromEM "parsing" $ parseSpec specStr
      let initDiv = makeDiv (vars initStore) (getVarsProg prog)
-     logProgress $ "Initial bindings:\n================\n" ++ prettyDiv initDiv
-     logProgress "- Performing BTA"
+     trace opts $ "Initial bindings:\n================\n" ++ prettyDiv initDiv
+     trace opts "- Performing BTA"
      let congruentDiv = makeCongruent prog initDiv
-     logProgress $ "After BTA:\n================\n" ++ prettyDiv congruentDiv
+     trace opts $ "After BTA:\n================\n" ++ prettyDiv congruentDiv
      let store = remove (allDyn congruentDiv) initStore
-     logProgress "- Annotating program"
+     trace opts "- Annotating program"
      let prog2 = annotateProg congruentDiv prog
-     if skipSpec opts 
-      then logProgress "- Skip specialization" 
-      else logProgress "- Specializing"
      str <- if skipSpec opts 
-              then return $ prettyProg' id prog2 
-              else fromEM "specializing" $ do
-                res <- specialize prog2 store "entry"
-                let pp = prettyAnn id 
-                return $ prettyProg pp res 
-     -- todo: verify prog2/entry prog     
-     logProgress $ "Writing to " ++ outputFile opts 
+              then do trace opts "- Skip specialization";
+                      return $ prettyProg' id prog2 
+              else main2 opts prog2 store
+     -- TODO: verify prog2/entry prog     
+     trace opts $ "Writing to " ++ outputFile opts 
      writeFile (outputFile opts) str 
-     logProgress "Program ran successfully"
+     trace opts "Program ran successfully"
+
+main2 :: Opts -> Program' String -> Store -> IO String
+main2 opts prog2 store = 
+  do trace opts "- Specializing"
+     res <- fromEM "specializing" $ specialize prog2 store "entry"
+     let lifted = liftStore res
+     let clean = changeLabel (prettyAnn id) lifted
+     if skipPost opts
+      then do trace opts "- Skip post processing"
+              return $ prettyProg id clean
+      else main3 opts clean
+
+main3 :: Opts -> Program String -> IO String
+main3 opts clean = 
+  do trace opts "- Post processing"
+     let singleExit = mergeExits clean
+     return $ prettyProg id singleExit 

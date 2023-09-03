@@ -19,3 +19,18 @@ S2 = [32, 62, 1, 0, 32, 60, 0, 32]
 Q2 = [ 2,  3, 4, 2,  4,  5, 4,  6]
 
 // Q = 2, pc = 1
+//- Specializing
+//"loop" :: Q:(2) pc:(1)
+//"act1" :: Q:(2) pc:(1)
+//"write":: Q:(2) pc:(1) <- This should never happen
+//"act2" :: Q:(3) pc:(1)
+//"act3" :: Q:(3) pc:(1)
+//Error while specializing: Invalid jump during elimination from "act2"
+
+// Problem: Dynamic if-gotos lead to blocks being
+// specialized that were never supposed to
+// Solution: somehow strengthen the program
+// or make it so the specializer does not crash and burn
+
+// If specializer fails to generate some blocks then post process
+// can remove the newly jumpless blocks

@@ -11,35 +11,41 @@ prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ show t ++ "\n") . divisionToList
 prettyAnn :: (a -> String) -> Annotated a -> String
 prettyAnn f (l, Nothing) = f l ++ "_NULL"
 prettyAnn f (l, Just s) = f l ++ serializeStore s 
-    where 
-        serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList
-        serialize = intercalate "_" . map show . valueToList 
+  where 
+    serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList
+    serialize = intercalate "_" . map show . valueToList 
 
 
 prettyStore :: Store -> String       
 prettyStore = concatMap (\(n, i) -> n ++ ":" ++ serialize i) . storeToList
-    where  
-        serialize v = "(" ++ (intercalate "," . map show $ valueToList v) ++ ")"
+  where  
+    serialize v = "(" ++ (intercalate "," . map show $ valueToList v) ++ ")"
 
 prettyProg :: (a -> String) -> Program a -> String
 prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)
 
 prettyBlock :: (a -> String) -> Block a -> [String]
-prettyBlock f b = (f (name b) ++ ":") : map ('\t' :) 
-    (prettyFrom f (from b) ++ map prettyStep (body b) ++ prettyJump f (jump b))
+prettyBlock f b = 
+  (f (name b) ++ ":") : 
+  map ('\t' :) 
+    (prettyFrom f (from b) 
+    ++ map prettyStep (body b) 
+    ++ prettyJump f (jump b))
 
 prettyFrom :: (a -> String) -> IfFrom a -> [String]
 prettyFrom f (From l) = ["from " ++ f l]
-prettyFrom f (FromCond e l1 l2) = [ "fi " ++ prettyExpr e
-                            , "\tfrom " ++ f l1
-                            , "\telse " ++ f l2]
+prettyFrom f (FromCond e l1 l2) = 
+  [ "fi " ++ prettyExpr e
+  , "\tfrom " ++ f l1
+  , "\telse " ++ f l2]
 prettyFrom _ Entry = ["entry"]
 
 prettyJump :: (a -> String) -> Jump a -> [String]
 prettyJump f (Goto l) = ["goto " ++ f l]
-prettyJump f (If e l1 l2) = [ "if " ++ prettyExpr e
-                            , "\tgoto " ++ f l1
-                            , "\telse " ++ f l2]
+prettyJump f (If e l1 l2) = 
+  [ "if " ++ prettyExpr e
+  , "\tgoto " ++ f l1
+  , "\telse " ++ f l2]
 prettyJump _ Exit = ["exit"]
 
 prettyStep :: Step -> String
@@ -54,7 +60,10 @@ prettyExpr :: Expr -> String
 prettyExpr (Const i)     = show i
 prettyExpr (Var n)       = n
 prettyExpr (Arr n e)     = n ++ "[" ++ prettyExpr e ++ "]"
-prettyExpr (Op op e1 e2) = "(" ++ prettyExpr e1 ++ prettyOp op ++ prettyExpr e2 ++ ")"
+prettyExpr (Op op e1 e2) = 
+  "(" ++ prettyExpr e1 
+    ++ " " ++ prettyOp op 
+    ++ " " ++ prettyExpr e2 ++ ")"
 prettyExpr (Top n)       = "top " ++ n
 prettyExpr (Empty n)     = "empty " ++ n
     
@@ -77,30 +86,38 @@ prettyProg' :: (a -> String) -> Program' a -> String
 prettyProg' f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock' f)
 
 prettyBlock' :: (a -> String) -> Block' a -> [String]
-prettyBlock' f b = (f (name' b) ++ ":") : map ('\t' :) 
-    (prettyFrom' f (from' b) ++ map prettyStep' (body' b) ++ prettyJump' f (jump' b))
+prettyBlock' f b = 
+  (f (name' b) ++ ":") : 
+  map ('\t' :) 
+    (prettyFrom' f (from' b) 
+    ++ map prettyStep' (body' b) 
+    ++ prettyJump' f (jump' b))
 
 prettyFrom' :: (a -> String) -> IfFrom' a -> [String]
 prettyFrom' f (From' Res l)  = ["%from " ++ f l]
 prettyFrom' f (From' Elim l) = ["from " ++ f l]
-prettyFrom' f (FromCond' Res e l1 l2) = [ "%fi " ++ prettyExpr' e
-                                        , "\t%from " ++ f l1
-                                        , "\t%else " ++ f l2]
-prettyFrom' f (FromCond' Elim e l1 l2) = [ "fi " ++ prettyExpr' e
-                                         , "\tfrom " ++ f l1
-                                         , "\telse " ++ f l2]
+prettyFrom' f (FromCond' Res e l1 l2) = 
+  [ "%fi " ++ prettyExpr' e
+  , "\t%from " ++ f l1
+  , "\t%else " ++ f l2]
+prettyFrom' f (FromCond' Elim e l1 l2) = 
+  [ "fi " ++ prettyExpr' e
+  , "\tfrom " ++ f l1
+  , "\telse " ++ f l2]
 prettyFrom' _ (Entry' Res)  = ["%entry"]
 prettyFrom' _ (Entry' Elim) = ["entry"]
 
 prettyJump' :: (a -> String) -> Jump' a -> [String]
 prettyJump' f (Goto' Res l)  = ["%goto " ++ f l]
 prettyJump' f (Goto' Elim l) = ["goto " ++ f l]
-prettyJump' f (If' Res e l1 l2) = [ "%if " ++ prettyExpr' e
-                                  , "\t%goto " ++ f l1
-                                  , "\t%else " ++ f l2]
-prettyJump' f (If' Elim e l1 l2) = [ "if " ++ prettyExpr' e
-                                   , "\tgoto " ++ f l1
-                                   , "\telse " ++ f l2]
+prettyJump' f (If' Res e l1 l2) = 
+  [ "%if " ++ prettyExpr' e
+  , "\t%goto " ++ f l1
+  , "\t%else " ++ f l2]
+prettyJump' f (If' Elim e l1 l2) = 
+  [ "if " ++ prettyExpr' e
+  , "\tgoto " ++ f l1
+  , "\telse " ++ f l2]
 prettyJump' _ (Exit' Res)  = ["%exit"]
 prettyJump' _ (Exit' Elim) = ["exit"]
 

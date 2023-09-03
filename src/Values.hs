@@ -2,6 +2,7 @@ module Values where
 
 import qualified Data.Array as Array
 import qualified Data.Map.Strict as Map
+import Data.Maybe (fromJust)
 
 type IntType = Word
 type ArrayType = Array.Array IntType IntType
@@ -15,6 +16,9 @@ data Value = ScalarVal IntType | ArrVal ArrayType | StackVal StackType
 type Store = Map.Map Name Value
 
 type Annotated l = (l, Maybe Store)
+
+getStore :: Annotated l -> Store
+getStore = fromJust . snd
 
 truthy :: IntType -> Bool
 truthy = (/= 0)
@@ -62,10 +66,16 @@ remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)
 
 listToArr :: [IntType] -> Value
 listToArr l = ArrVal $ Array.array (0, toEnum $ length l - 1) pairs
-    where pairs = zip [0..] l 
+  where pairs = zip [0..] l 
 
 listToStack :: [IntType] -> Value
 listToStack = StackVal
+
+stackToList :: StackType -> [IntType]
+stackToList = id
+
+arrToList :: ArrayType -> [(IntType, IntType)]
+arrToList = Array.assocs
 
 updateIdx :: ArrayType -> IntType -> IntType -> ArrayType
 updateIdx a idx val = a Array.// [(idx, val)]
