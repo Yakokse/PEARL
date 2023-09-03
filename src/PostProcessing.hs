@@ -51,7 +51,8 @@ mergeExits p =
           newJump = Goto newName
           b1' = b1 { jump = newJump}
           b2' = b2 { jump = newJump}
-          expr = Op Less (Var exitVar) (Const lb2)
+          divider = if ub1 < lb2 then lb2 else lb1
+          expr = Op Less (Var exitVar) (Const divider)
           newBlock = Block 
             { name = newName
             , from = FromCond expr (name b1) (name b2)
