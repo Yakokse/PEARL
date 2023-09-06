@@ -59,8 +59,6 @@ mergeExits p =
             , body = []
             , jump = Exit
             }
-      in (newBlock, lb, ub, b1':b2':bs1++bs2)
-
-    
+      in (newBlock, lb, ub, b1':b2':bs1++bs2)    
 
     
