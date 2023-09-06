@@ -36,6 +36,14 @@ fromEM :: String -> EM a -> IO a
 fromEM _ (Right a) = return a
 fromEM s (Left e) = die $ "Error while " ++ s ++ ": " ++ e
 
+fromLEM :: String -> LEM a -> IO (a, String)
+fromLEM _ (LEM (Right a, l)) = return (a, unlines l)
+fromLEM s (LEM (Left e, l)) = 
+  do putStrLn "LOG:" 
+     mapM_ putStrLn l
+     die $ "Error while " ++ s ++ ": " ++ e  
+  
+
 main :: IO ()
 main =
   do ss <- getArgs
@@ -70,9 +78,10 @@ main =
 main2 :: Opts -> Program' String -> Store -> IO String
 main2 opts prog2 store = 
   do trace opts "- Specializing"
-     res <- fromEM "specializing" $ specialize prog2 store "entry"
+     (res, l) <- fromLEM "specializing" $ specialize id prog2 store "entry"
+     trace opts $ "Trace: (label: State)\n" ++ l
      let lifted = liftStore res
-     let clean = changeLabel (prettyAnn id) lifted
+     let clean = changeLabel (serializeAnn id) lifted
      if skipPost opts
       then do trace opts "- Skip post processing"
               return $ prettyProg id clean

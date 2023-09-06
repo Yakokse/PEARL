@@ -5,26 +5,34 @@ import Data.List (intercalate)
 import Values
 import Division
 
+type Print a = a -> String
+
 prettyDiv :: Division -> String
 prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ show t ++ "\n") . divisionToList
 
-prettyAnn :: (a -> String) -> Annotated a -> String
-prettyAnn f (l, Nothing) = f l ++ "_NULL"
-prettyAnn f (l, Just s) = f l ++ serializeStore s 
+serializeAnn :: Print a -> Annotated a -> String
+serializeAnn f (l, Nothing) = f l ++ "_NULL"
+serializeAnn f (l, Just s) = f l ++ serializeStore s 
   where 
     serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList
     serialize = intercalate "_" . map show . valueToList 
 
+prettyAnn :: Print a -> (a, Store) -> String
+prettyAnn f (l, s) = f l ++ ": " ++ prettyStore s
 
 prettyStore :: Store -> String       
-prettyStore = concatMap (\(n, i) -> n ++ ":" ++ serialize i) . storeToList
+prettyStore = concatMap (\(n, i) -> n ++ "=" ++ serialize i ++ " ") . storeToList
   where  
-    serialize v = "(" ++ (intercalate "," . map show $ valueToList v) ++ ")"
+    serialize v = 
+      case v of
+        ScalarVal i -> show i
+        ArrVal a -> "[" ++ (intercalate "," . map (show . snd) $ arrToList a) ++ "]"
+        StackVal s -> "(" ++ (intercalate "," . map show $ stackToList s) ++ ")"
 
-prettyProg :: (a -> String) -> Program a -> String
+prettyProg :: Print a -> Program a -> String
 prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)
 
-prettyBlock :: (a -> String) -> Block a -> [String]
+prettyBlock :: Print a -> Block a -> [String]
 prettyBlock f b = 
   (f (name b) ++ ":") : 
   map ('\t' :) 
@@ -32,7 +40,7 @@ prettyBlock f b =
     ++ map prettyStep (body b) 
     ++ prettyJump f (jump b))
 
-prettyFrom :: (a -> String) -> IfFrom a -> [String]
+prettyFrom :: Print a -> IfFrom a -> [String]
 prettyFrom f (From l) = ["from " ++ f l]
 prettyFrom f (FromCond e l1 l2) = 
   [ "fi " ++ prettyExpr e
@@ -40,7 +48,7 @@ prettyFrom f (FromCond e l1 l2) =
   , "\telse " ++ f l2]
 prettyFrom _ Entry = ["entry"]
 
-prettyJump :: (a -> String) -> Jump a -> [String]
+prettyJump :: Print a -> Jump a -> [String]
 prettyJump f (Goto l) = ["goto " ++ f l]
 prettyJump f (If e l1 l2) = 
   [ "if " ++ prettyExpr e
@@ -82,10 +90,10 @@ prettyROp Add = "+"
 prettyROp Sub = "-"
 prettyROp Xor = "^"
 
-prettyProg' :: (a -> String) -> Program' a -> String
+prettyProg' :: Print a -> Program' a -> String
 prettyProg' f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock' f)
 
-prettyBlock' :: (a -> String) -> Block' a -> [String]
+prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b = 
   (f (name' b) ++ ":") : 
   map ('\t' :) 
@@ -93,7 +101,7 @@ prettyBlock' f b =
     ++ map prettyStep' (body' b) 
     ++ prettyJump' f (jump' b))
 
-prettyFrom' :: (a -> String) -> IfFrom' a -> [String]
+prettyFrom' :: Print a -> IfFrom' a -> [String]
 prettyFrom' f (From' Res l)  = ["%from " ++ f l]
 prettyFrom' f (From' Elim l) = ["from " ++ f l]
 prettyFrom' f (FromCond' Res e l1 l2) = 
@@ -107,7 +115,7 @@ prettyFrom' f (FromCond' Elim e l1 l2) =
 prettyFrom' _ (Entry' Res)  = ["%entry"]
 prettyFrom' _ (Entry' Elim) = ["entry"]
 
-prettyJump' :: (a -> String) -> Jump' a -> [String]
+prettyJump' :: Print a -> Jump' a -> [String]
 prettyJump' f (Goto' Res l)  = ["%goto " ++ f l]
 prettyJump' f (Goto' Elim l) = ["goto " ++ f l]
 prettyJump' f (If' Res e l1 l2) = 

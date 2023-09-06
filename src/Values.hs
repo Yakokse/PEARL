@@ -3,6 +3,7 @@ module Values where
 import qualified Data.Array as Array
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
+import Control.Monad
 
 type IntType = Word
 type ArrayType = Array.Array IntType IntType
@@ -80,3 +81,22 @@ arrToList = Array.assocs
 updateIdx :: ArrayType -> IntType -> IntType -> ArrayType
 updateIdx a idx val = a Array.// [(idx, val)]
 
+newtype LEM a = LEM {runLEM :: (EM a, [String])}
+
+-- Hint: here you may want to exploit that "Either ErrorData" is itself a monad
+instance Monad LEM where
+  return = pure 
+  LEM (v, l) >>= f = 
+    LEM $ case v of
+      Left e -> (Left e, l)
+      Right res -> let LEM (v', l') = f res in (v', l ++ l')
+instance Functor LEM where
+  fmap = liftM
+instance Applicative LEM where
+  pure a = LEM (Right a, []); (<*>) = ap
+
+raise :: EM a -> LEM a 
+raise em = LEM (em, [])
+
+logM :: String -> LEM ()
+logM s = LEM (Right (), [s])

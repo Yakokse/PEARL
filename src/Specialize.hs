@@ -1,50 +1,56 @@
 module Specialize where
 
+import Control.Applicative ((<|>))
+
 import AST
 import Values
 import Utils
 import Operators
-import Control.Applicative ((<|>))
-import System.IO.Unsafe 
 import PrettyPrint
 
 type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
--- TODO: Make failed specs not fail program (EM -> Maybe on block)
 -- TODO: Extend program with log
+-- TODO: Check program before all of this
 
-specialize :: (Eq a, Show a) => Program' a -> Store -> a -> EM (Program (Annotated a))
-specialize prog s entry = 
-  do b <- getEntry' prog
+
+specialize :: (Eq a, Show a) => Print a -> Program' a -> Store -> a -> LEM (Program (Annotated a))
+specialize format prog s entry = 
+  do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
-     (_, _, res) <- specProg entry prog pending [] [] 
+     (_, _, res) <- specProg format entry prog pending [] [] 
      return $ reverse res -- Reverse for nicer ordering of blocks
 
-specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
-                            -> EM (Pending a, Seen a, Program (Annotated a))
-specProg _ _ [] seen res = return ([], seen, res)
-specProg entry prog (p:ps) seen res 
-  | p `elem` seen = specProg entry prog ps seen res
+specProg :: (Eq a, Show a) => Print a -> a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
+                            -> LEM (Pending a, Seen a, Program (Annotated a))
+specProg _ _ _ [] seen res = 
+  do logM "Specialization done."; return ([], seen, res)
+specProg format entry prog (p:ps) seen res 
+  | p `elem` seen = 
+    do logM $ "REPEAT: " ++ prettyAnn format (fst p)
+       specProg format entry prog ps seen res
   | otherwise = 
-    do let (current@(l, s), origin) = p
-       b <- getBlock' prog l
+    do logM $ prettyAnn format (fst p)
+       let (current@(l, s), origin) = p
+       b <- raise $ getBlock' format prog l
        case specBlock entry s b origin of
-        Nothing -> specProg entry prog ps seen res
+        Nothing -> specProg format entry prog ps seen res
         Just (b', p') -> do
           let pnew = map (\x -> (x, current)) p'
           let seen' = p : seen
-          res' <- merge b' res
-          specProg entry prog (pnew ++ ps) seen' res'
+          res' <- merge format b' res
+          specProg format entry prog (pnew ++ ps) seen' res'
 
-merge :: (Eq a, Show a) => Block (Annotated a) -> Program (Annotated a) 
-                            -> EM (Program (Annotated a))
-merge block prog 
+merge :: Eq a => Print a -> Block (Annotated a) -> Program (Annotated a) 
+                            -> LEM (Program (Annotated a))
+merge format block prog 
   | name block `notElem` map name prog = return $ block : prog
   | otherwise = 
-    do b <- getBlock prog $ name block
-       b' <- mergeBlocks b block
+    do logM "MERGE"
+       b <- raise $ getBlock (serializeAnn format) prog $ name block
+       b' <- raise $ mergeBlocks b block
        let rest = filter (\x -> name block /= name x) prog
        return $ b' : rest
   where 
@@ -55,16 +61,14 @@ merge block prog
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specBlock :: (Eq a, Show a) => a -> Store -> Block' a -> (a, Store) 
+specBlock :: Eq a => a -> Store -> Block' a -> (a, Store) 
                                  -> Maybe (Block (Annotated a), [Point a])
-specBlock entry s b origin = unsafePerformIO $ do 
-  putStrLn $ show (name' b) ++ ":: " ++ prettyStore s
-  return 
-    (do let l = (name' b, Just s)
-        f <- specFrom entry s (from' b) origin
-        (s', as) <- specSteps s $ body' b
-        (j, pending) <- specJump s' $ jump' b
-        return (Block { name = l, from = f, body = as, jump = j}, pending))
+specBlock entry s b origin = 
+  do let l = (name' b, Just s)
+     f <- specFrom entry s (from' b) origin
+     (s', as) <- specSteps s $ body' b
+     (j, pending) <- specJump s' $ jump' b
+     return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
 specFrom :: Eq a => a -> Store -> IfFrom' a -> (a, Store) 

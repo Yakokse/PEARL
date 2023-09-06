@@ -72,19 +72,19 @@ getEntry' p =
   where 
     f b = case from' b of Entry' _ -> True; _ -> False
     
-getBlock :: (Eq a, Show a) => Program a -> a -> EM (Block a)
-getBlock p l = 
+getBlock :: Eq a => (a -> String) -> Program a -> a -> EM (Block a)
+getBlock format p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
-    []  -> Left $ "Block not found: " ++ show l
-    _   -> Left $ "Multiple blocks found named: " ++ show l 
+    []  -> Left $ "Block not found: " ++ format l
+    _   -> Left $ "Multiple blocks found named: " ++ format l 
 
-getBlock' :: (Eq a, Show a) => Program' a -> a -> EM (Block' a)
-getBlock' p l = 
+getBlock' :: Eq a => (a -> String) -> Program' a -> a -> EM (Block' a)
+getBlock' format p l = 
   case filter (\b -> name' b == l) p of
     [b] -> return b
-    []  -> Left $ "Block not found: " ++ show l
-    _   -> Left $ "Multiple blocks found named: " ++ show l 
+    []  -> Left $ "Block not found: " ++ format l
+    _   -> Left $ "Multiple blocks found named: " ++ format l 
 
 isExit :: Block a -> Bool
 isExit b = case jump b of Exit -> True; _ -> False
