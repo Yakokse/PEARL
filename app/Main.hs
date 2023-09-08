@@ -89,6 +89,9 @@ main2 opts prog2 store =
 
 main3 :: Opts -> Program String -> IO String
 main3 opts clean = 
-  do trace opts "- Post processing"
-     let singleExit = mergeExits clean
-     return $ prettyProg id singleExit 
+  do trace opts "- Merging exits"
+     let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
+     let singleExit = mergeExits newName clean
+     trace opts "- Compressing paths"
+     merged <- fromEM "Path compression" $ compressPaths singleExit
+     return $ prettyProg id merged 

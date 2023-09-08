@@ -34,7 +34,7 @@ specProg format entry prog (p:ps) seen res
   | otherwise = 
     do logM $ prettyAnn format (fst p)
        let (current@(l, s), origin) = p
-       b <- raise $ getBlock' format prog l
+       b <- raise $ getBlockErr' format prog l
        case specBlock entry s b origin of
         Nothing -> specProg format entry prog ps seen res
         Just (b', p') -> do
@@ -49,7 +49,7 @@ merge format block prog
   | name block `notElem` map name prog = return $ block : prog
   | otherwise = 
     do logM "MERGE"
-       b <- raise $ getBlock (serializeAnn format) prog $ name block
+       b <- raise $ getBlockErr (serializeAnn format) prog $ name block
        b' <- raise $ mergeBlocks b block
        let rest = filter (\x -> name block /= name x) prog
        return $ b' : rest

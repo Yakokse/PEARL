@@ -63,6 +63,15 @@ getEntry p =
   where 
     f b = case from b of Entry -> True; _ -> False
 
+getEntryBlock :: Program a -> EM (Block a)
+getEntryBlock p = 
+  case filter f p of
+    [] -> Left "No entry point found"
+    [b] -> Right b
+    _ -> Left "Multiple entry points found"
+  where 
+    f b = case from b of Entry -> True; _ -> False
+
 getEntry' :: Program' a -> EM a
 getEntry' p = 
   case filter f p of
@@ -71,16 +80,28 @@ getEntry' p =
     _ -> Left "Multiple entry points found"
   where 
     f b = case from' b of Entry' _ -> True; _ -> False
-    
-getBlock :: Eq a => (a -> String) -> Program a -> a -> EM (Block a)
-getBlock format p l = 
+
+getBlock :: Eq a => Program a -> a -> Maybe (Block a)
+getBlock p l = 
+  case filter (\b -> name b == l) p of
+    [b] -> return b
+    _   -> Nothing
+
+getBlock' :: Eq a => Program' a -> a -> Maybe (Block' a)
+getBlock' p l = 
+  case filter (\b -> name' b == l) p of
+    [b] -> return b
+    _   -> Nothing
+
+getBlockErr :: Eq a => (a -> String) -> Program a -> a -> EM (Block a)
+getBlockErr format p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ format l
     _   -> Left $ "Multiple blocks found named: " ++ format l 
 
-getBlock' :: Eq a => (a -> String) -> Program' a -> a -> EM (Block' a)
-getBlock' format p l = 
+getBlockErr' :: Eq a => (a -> String) -> Program' a -> a -> EM (Block' a)
+getBlockErr' format p l = 
   case filter (\b -> name' b == l) p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ format l
@@ -91,3 +112,13 @@ isExit b = case jump b of Exit -> True; _ -> False
 
 isExit' :: Block' a -> Bool
 isExit' b = case jump' b of Exit' _ -> True; _ -> False
+
+fromLabels :: Block a -> [a]
+fromLabels Block{from = Entry} = []
+fromLabels Block{from = From l} = [l]
+fromLabels Block{from = FromCond _ l1 l2} = [l1, l2]
+
+jumpLabels :: Block a -> [a]
+jumpLabels Block{jump = Exit} = []
+jumpLabels Block{jump = Goto l} = [l]
+jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
