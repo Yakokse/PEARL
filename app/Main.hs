@@ -80,8 +80,8 @@ main2 opts prog2 store =
   do trace opts "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize id prog2 store "entry"
      trace opts $ "Trace: (label: State)\n" ++ l
-     let lifted = liftStore res
-     let clean = changeLabel (serializeAnn id) lifted
+     -- let lifted = liftStore res
+     let clean = changeLabel (serializeAnn id) res
      if skipPost opts
       then do trace opts "- Skip post processing"
               return $ prettyProg id clean
