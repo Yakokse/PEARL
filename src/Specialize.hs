@@ -121,6 +121,14 @@ specSteps s (a:as) =
 specStep :: Store -> Step' -> Maybe (Store, [Step])
 specStep s (Skip' Res) = return (s, [Skip])
 specStep s (Skip' Elim) = return (s, [])
+specStep s (Assert' Res e) = 
+  do e' <- getExpr e s
+     return (s, [Assert e'])
+specStep s (Assert' Elim e) = 
+  do v <- getInt e s
+     if truthy v
+      then return (s, [])
+      else Nothing
 specStep s (Push' Res n1 n2) = return (s, [Push n1 n2])
 specStep s (Push' Elim n1 n2) = 
   do i <- getVarScalar n1 s

@@ -5,6 +5,15 @@ import Data.List (partition)
 import qualified Data.Map.Strict as Map
 
 import Values
+    ( Annotated,
+      Value(StackVal, ScalarVal, ArrVal),
+      EM,
+      IntType,
+      getStore,
+      storeToList,
+      stackToList,
+      arrToList )
+import Data.Maybe (maybeToList)
 
 -- TODO: Arbitrary push expressions will remove magic variable
 -- Pushnz only?
@@ -26,6 +35,39 @@ liftStore = map appendStore
       concatMap 
         (\i -> [UpdateV freeVar Add (Const i), Push freeVar n]) 
         . reverse $ stackToList a
+
+removeDeadBlocks :: Eq a => Program a -> Program a
+removeDeadBlocks p = 
+  let bs = filter isExit p
+      liveBlocks = traceProg bs []
+  in filter (`elem` liveBlocks) p
+  where 
+    traceProg [] res = res
+    traceProg (b:bs) res 
+      | b `elem` res = traceProg bs res
+      | otherwise = 
+        let new = concatMap (maybeToList . getBlock p) $ fromLabels b
+        in traceProg (new ++ bs) (b:res)
+
+changeConditionals :: Eq a => Program a -> Program a
+changeConditionals p = map changeCond p
+  where
+    changeCond b = 
+      let (f, assFrom) = checkFrom $ from b
+          (j, assJump) = checkJump $ jump b
+      in b {from = f, jump = j, body = assFrom ++ body b ++ assJump}
+    checkFrom f = case f of
+      FromCond e l1 l2 | not $ l2 `nameIn` p -> 
+        (From l1, [Assert e])
+      FromCond e l1 l2 | not $ l1 `nameIn` p -> 
+        (From l2, [Assert (Op Equal (Const 0) e)])
+      _ -> (f , [])
+    checkJump j = case j of
+      If e l1 l2 | not $ l2 `nameIn` p -> 
+        (Goto l1, [Assert e])
+      If e l1 l2 | not $ l1 `nameIn` p -> 
+        (Goto l2, [Assert (Op Equal (Const 0) e)])
+      _ -> (j , [])
 
 mergeExits :: (IntType -> IntType -> a) -> Program a -> Program a
 mergeExits showBounds p = 

@@ -4,6 +4,8 @@ SLASH = 47
 LEFT = 60
 RIGHT = 62
 S = 0
+//S_left = ()
+//S_right = (1, 1, 0)
 
 // Starting state, both numbers must be equal
 Q = 1

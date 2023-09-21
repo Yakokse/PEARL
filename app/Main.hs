@@ -13,19 +13,20 @@ import Specialize
 import PostProcessing
 import PrettyPrint
 
-data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool, skipPost :: Bool }
+data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool, skipPost :: Bool, liftstate :: Bool }
 
 defaultOpts :: Opts
-defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False, skipPost = False}
+defaultOpts = Opts { outputFile = "output.rl", skipSpec = False, verbose = False, skipPost = False, liftstate = False}
 
 usage :: String
-usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-skipPost] [-verbose] PROGRAM.rl PROGRAM.spec"
+usage = "Usage: PERevFlow [-o FILE.rl] [-skipSpec] [-skipPost] [-verbose] [-liftstate] PROGRAM.rl PROGRAM.spec"
 
 processInput :: [String] -> Opts -> (Opts, [String])
 processInput ("-o" : file : ss) opts = processInput ss $ opts { outputFile = file }
 processInput ("-skipSpec" : ss) opts = processInput ss $ opts { skipSpec = True }
 processInput ("-skipPost" : ss) opts = processInput ss $ opts { skipPost = True }
 processInput ("-verbose" : ss) opts = processInput ss $ opts { verbose = True}
+processInput ("-liftstate" : ss) opts = processInput ss $ opts { liftstate = True}
 processInput ss opts = (opts, ss)
 
 trace :: Opts -> String -> IO ()
@@ -80,8 +81,8 @@ main2 opts prog2 store =
   do trace opts "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize id prog2 store "entry"
      trace opts $ "Trace: (label: State)\n" ++ l
-     -- let lifted = liftStore res
-     let clean = changeLabel (serializeAnn id) res
+     let lifted = if liftstate opts then liftStore res else res
+     let clean = changeLabel (serializeAnn id) lifted
      if skipPost opts
       then do trace opts "- Skip post processing"
               return $ prettyProg id clean
@@ -89,9 +90,19 @@ main2 opts prog2 store =
 
 main3 :: Opts -> Program String -> IO String
 main3 opts clean = 
-  do trace opts "- Merging exits"
+  do trace opts "- POST PROCESSING"
+     let showLength p = trace opts $ "Nr. of blocks: " ++ show (length p)
+     showLength clean
+     trace opts "- Merging exits"
      let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
      let singleExit = mergeExits newName clean
+     showLength singleExit
+     trace opts "- Removing dead blocks"
+     let liveProg = removeDeadBlocks singleExit
+     showLength liveProg
+     trace opts "- Adding assertions"
+     let withAssertions = changeConditionals liveProg
      trace opts "- Compressing paths"
-     merged <- fromEM "Path compression" $ compressPaths singleExit
+     merged <- fromEM "Path compression" $ compressPaths withAssertions
+     showLength merged
      return $ prettyProg id merged 

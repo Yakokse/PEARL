@@ -31,6 +31,7 @@ data Step =
   | UpdateA Name Expr RevOp Expr
   | Push Name Name
   | Pop Name Name
+  | Assert Expr
   | Skip
   deriving (Eq, Show, Read)
 
@@ -90,6 +91,7 @@ data Step' =
   | UpdateA' Level Name Expr' RevOp Expr'
   | Push' Level Name Name
   | Pop' Level Name Name
+  | Assert' Level Expr'
   | Skip' Level
   deriving (Eq, Show, Read)
 

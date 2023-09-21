@@ -63,6 +63,7 @@ prettyStep (UpdateA n e1 rop e2) =
 prettyStep (Push n1 n2) = "push " ++ n1 ++ " " ++ n2
 prettyStep (Pop n1 n2) = "pop " ++ n1 ++ " " ++ n2
 prettyStep Skip = "skip"
+prettyStep (Assert e) = "assert(" ++ prettyExpr e ++ ")"
 
 prettyExpr :: Expr -> String
 prettyExpr (Const i)     = show i
@@ -144,6 +145,8 @@ prettyStep' (Pop' Res n1 n2)   = "%pop "  ++ n1 ++ " " ++ n2
 prettyStep' (Pop' Elim n1 n2)  = "pop "   ++ n1 ++ " " ++ n2
 prettyStep' (Skip' Res) = "%skip"
 prettyStep' (Skip' Elim) = "skip"
+prettyStep' (Assert' Res e) = "%assert(" ++ prettyExpr' e ++ ")"
+prettyStep' (Assert' Elim e) = "assert(" ++ prettyExpr' e ++ ")"
 
 prettyExpr' :: Expr' -> String
 prettyExpr' (Const' Res i)   = "%" ++ show i

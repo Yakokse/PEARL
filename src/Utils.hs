@@ -44,6 +44,7 @@ getVarsStep (UpdateV n _ e) = [n] `union` getVarsExp e
 getVarsStep (UpdateA n e1 _ e2) = [n] `union` getVarsExp e1 `union` getVarsExp e2
 getVarsStep (Push n1 n2) = [n1] `union` [n2]
 getVarsStep (Pop n1 n2) = [n1] `union` [n2]
+getVarsStep (Assert e) = getVarsExp e
 getVarsStep Skip = []
 
 getVarsExp :: Expr -> [Name]
@@ -62,6 +63,15 @@ getEntry p =
     _ -> Left "Multiple entry points found"
   where 
     f b = case from b of Entry -> True; _ -> False
+
+getExitBlock :: Program a -> EM (Block a)
+getExitBlock p = 
+  case filter f p of
+    [] -> Left "No entry point found"
+    [b] -> Right b
+    _ -> Left "Multiple entry points found"
+  where 
+    f b = case jump b of Exit -> True; _ -> False
 
 getEntryBlock :: Program a -> EM (Block a)
 getEntryBlock p = 
@@ -122,3 +132,6 @@ jumpLabels :: Block a -> [a]
 jumpLabels Block{jump = Exit} = []
 jumpLabels Block{jump = Goto l} = [l]
 jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
+
+nameIn :: Eq a => a -> Program a -> Bool
+nameIn l = any (\b -> name b == l)
