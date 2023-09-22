@@ -94,7 +94,7 @@ pFactor =
   <|> do symbol "("; e <- pExpr; symbol ")"; return e
   <|> do x <- pName; option (Var x) (pIndex x)
   where
-      pIndex x = do symbol "["; e <- pExpr; symbol "]"; return $ Arr x e
+    pIndex x = do symbol "["; e <- pExpr; symbol "]"; return $ Arr x e
 
 parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
@@ -116,9 +116,9 @@ pName =
     do c <- letter; cs <- many pChar; 
        if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
   where 
-      pChar = alphaNum <|> char '_' <|> char '\''
-      restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
-                    "push", "pop", "skip", "top", "empty"]
+    pChar = alphaNum <|> char '_' <|> char '\''
+    restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
+                  "push", "pop", "skip", "top", "empty"]
 
 pNum :: Parser Word
 pNum = lexeme . try $ read <$> many1 digit
