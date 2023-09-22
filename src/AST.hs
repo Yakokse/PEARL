@@ -28,20 +28,30 @@ data Jump label =
 
 data Step = 
     UpdateV Name RevOp Expr
-  | UpdateA Name Expr RevOp Expr
-  | Push Name Name
-  | Pop Name Name
+  | Match Pattern Pattern
   | Assert Expr
   | Skip
   deriving (Eq, Show, Read)
 
 data Expr =
-    Const IntType
-  | Var Name
-  | Arr Name Expr
-  | Op BinOp Expr Expr
-  | Top Name
-  | Empty Name
+    EConst Constant
+  | EVar Name
+  | EOp BinOp Expr Expr
+  | EHd Expr
+  | ETl Expr
+  | EPair Expr Expr
+  deriving (Eq, Show, Read)
+
+data Pattern =
+    PConst Constant
+  | PVar Name
+  | PPair Pattern Pattern
+  deriving (Eq, Show, Read)
+
+data Constant =
+    Atom String
+  | Num  IntType
+  | Pair Constant Constant
   deriving (Eq, Show, Read)
 
 data BinOp =
