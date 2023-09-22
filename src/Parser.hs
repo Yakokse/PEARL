@@ -47,6 +47,7 @@ pStep =
   do word "skip"; return Skip
   <|> do word "push"; x <- pName; Push x <$> pName
   <|> do word "pop"; x <- pName; Pop x <$> pName
+  <|> do word "assert"; symbol "("; e <- pExpr; symbol ")"; return (Assert e)
   <|> pUpdate
 
 pUpdate :: Parser Step
