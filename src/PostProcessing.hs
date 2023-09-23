@@ -5,14 +5,6 @@ import Data.List (partition)
 import qualified Data.Map.Strict as Map
 
 import Values
-    ( Annotated,
-      Value(StackVal, ScalarVal, ArrVal),
-      EM,
-      IntType,
-      getStore,
-      storeToList,
-      stackToList,
-      arrToList )
 import Data.Maybe (maybeToList)
 
 -- TODO: Arbitrary push expressions will remove magic variable
@@ -25,16 +17,7 @@ liftStore = map appendStore
       | otherwise = b {
           body = body b ++ inline (getStore $ name b)
       }
-    inline = foldr (\(n,v) acc -> encode n v ++ acc) [] . storeToList
-    encode n (ScalarVal i) = [UpdateV n Add (Const i)]
-    encode n (ArrVal a) = 
-      map (\(idx, val) -> UpdateA n (Const idx) Add (Const val)) 
-        $ arrToList a
-    encode n (StackVal a) = 
-      let freeVar = "temp_stack_var_" ++ n in 
-      concatMap 
-        (\i -> [UpdateV freeVar Add (Const i), Push freeVar n]) 
-        . reverse $ stackToList a
+    inline = foldr (\(n,v) acc -> Update n Xor (Const v)   : acc) [] . storeToList
 
 removeDeadBlocks :: Eq a => Program a -> Program a
 removeDeadBlocks p = 
@@ -60,13 +43,13 @@ changeConditionals p = map changeCond p
       FromCond e l1 l2 | not $ l2 `nameIn` p -> 
         (From l1, [Assert e])
       FromCond e l1 l2 | not $ l1 `nameIn` p -> 
-        (From l2, [Assert (Op Equal (Const 0) e)])
+        (From l2, [Assert (UOp Not e)])
       _ -> (f , [])
     checkJump j = case j of
       If e l1 l2 | not $ l2 `nameIn` p -> 
         (Goto l1, [Assert e])
       If e l1 l2 | not $ l1 `nameIn` p -> 
-        (Goto l2, [Assert (Op Equal (Const 0) e)])
+        (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
 
 mergeExits :: (IntType -> IntType -> a) -> Program a -> Program a
@@ -81,7 +64,7 @@ mergeExits showBounds p =
   where
     exitVar = "exit_control_var"
     addControl block val = block {
-      body = body block ++ [UpdateV exitVar Add (Const val)]
+      body = body block ++ [Update exitVar Xor (Const . Num $ val)]
     }
     merge [] = undefined
     merge [(b, lb, ub)] = (b, lb, ub, [])
@@ -90,13 +73,12 @@ mergeExits showBounds p =
           (b1, lb1, ub1, bs1) = merge $ take n tpls
           (b2, lb2, ub2, bs2) = merge $ drop n tpls
           (lb, ub) = (min lb1 lb2, max ub1 ub2)
-          -- newName = "exit_merge_" ++ show lb ++ "_" ++ show ub
           newName = showBounds lb ub
           newJump = Goto newName
           b1' = b1 { jump = newJump}
           b2' = b2 { jump = newJump}
           divider = if ub1 < lb2 then lb2 else lb1
-          expr = Op Less (Var exitVar) (Const divider)
+          expr = Op Less (Var exitVar) (Const . Num $ divider)
           newBlock = Block 
             { name = newName
             , from = FromCond expr (name b1) (name b2)
@@ -113,8 +95,6 @@ compressPaths p =
      let relabels = Map.fromList $ map relabelPair bss
      let p' = changeLabel (updateL relabels) bs
      return p'
-     --let (p', labelMap) = compress [(entry, name entry)] [] Map.empty
-     --return $ changeLabel (labelMap Map.!) p'
   where 
     combineBlocks bs = Block {
       name = name $ head bs

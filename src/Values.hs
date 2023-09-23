@@ -1,40 +1,48 @@
 module Values where
 
-import qualified Data.Array as Array
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust)
 import Control.Monad
 
 type IntType = Word
-type ArrayType = Array.Array IntType IntType
-type StackType = [IntType]
 type Name = String
 type ErrMsg = String 
 type EM = Either ErrMsg 
 
-data Value = ScalarVal IntType | ArrVal ArrayType | StackVal StackType
-    deriving (Eq, Show, Read) 
+data Value = 
+    Atom String
+  | Num  IntType
+  | Pair Value Value
+  | Nil
+  deriving (Eq, Show, Read) 
+
 type Store = Map.Map Name Value
 
 type Annotated l = (l, Maybe Store)
 
+data Level = Static | Dynamic
+  deriving (Eq, Show, Read)
+
 getStore :: Annotated l -> Store
 getStore = fromJust . snd
 
-truthy :: IntType -> Bool
-truthy = (/= 0)
+trueV :: Value
+trueV = Atom "true"
 
-trueV :: IntType
-trueV = 1
+falseV :: Value
+falseV = Nil
 
-falseV :: IntType
-falseV = 0
+truthy :: Value -> Bool
+truthy = (/= falseV)
 
-boolify :: Bool -> IntType
+boolify :: Bool -> Value
 boolify b = if b then trueV else falseV
 
-find ::  Name -> Store -> Maybe Value
-find = Map.lookup
+find ::  Name -> Store -> EM Value
+find n s = 
+  case Map.lookup n s of 
+    Just v -> return v
+    Nothing -> Left "Variable not found"
 
 vars :: Store -> [Name]
 vars = Map.keys
@@ -49,9 +57,7 @@ storeToList :: Store -> [(Name, Value)]
 storeToList = Map.toAscList
 
 valueToList :: Value -> [IntType]
-valueToList (ScalarVal i) = [i]
-valueToList (ArrVal a) = Array.elems a
-valueToList (StackVal s) = s
+valueToList = undefined
 
 update :: Name -> Value -> Store -> Store
 update = Map.insert
@@ -62,28 +68,8 @@ without s n = Map.delete n s
 remove :: [Name] -> Store -> Store
 remove ns = Map.filterWithKey (\n _ -> n `notElem` ns) 
 
-(!) :: ArrayType -> IntType -> IntType 
-(!) = (Array.!)
-
-listToArr :: [IntType] -> Value
-listToArr l = ArrVal $ Array.array (0, toEnum $ length l - 1) pairs
-  where pairs = zip [0..] l 
-
-listToStack :: [IntType] -> Value
-listToStack = StackVal
-
-stackToList :: StackType -> [IntType]
-stackToList = id
-
-arrToList :: ArrayType -> [(IntType, IntType)]
-arrToList = Array.assocs
-
-updateIdx :: ArrayType -> IntType -> IntType -> ArrayType
-updateIdx a idx val = a Array.// [(idx, val)]
-
 newtype LEM a = LEM {runLEM :: (EM a, [String])}
 
--- Hint: here you may want to exploit that "Either ErrorData" is itself a monad
 instance Monad LEM where
   return = pure 
   LEM (v, l) >>= f = 

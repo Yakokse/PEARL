@@ -2,6 +2,7 @@ module BTA where
 import AST
 import Values
 import Division
+import Utils
 import Control.Monad.State
 
 type ST a = State Division a
@@ -31,32 +32,28 @@ checkJump (If e _ _) = do _ <- checkExpr e; return ()
 checkJump _ = return ()
 
 checkStep :: Step -> ST ()
-checkStep (UpdateA n e1 _ e2) = 
-  do b1 <- checkExpr e1; b2 <- checkExpr e2
-     when (b1 || b2) $ setDyn n
-checkStep (UpdateV n _ e) = 
-  do b <- checkExpr e
-     when b $ setDyn n
-checkStep (Push n a) = 
-  do b1 <- isDyn n; b2 <- isDyn a
-     when (b1 || b2) $ setDyns [a,n]
-checkStep (Pop n a) = 
-  do b1 <- isDyn n; b2 <- isDyn a; 
-     when (b1 || b2) $ setDyns [a,n]
+checkStep (Update n _ e) = 
+  do b <- checkExpr e; when b $ setDyn n
+checkStep (Replacement q1 q2) = 
+  do b1 <- checkPat q1; b2 <- checkPat q2 
+     when (b1 || b2) $ setDyns (getVarsPat (QPair q1 q2))
+checkStep (Assert _) = return ()
 checkStep Skip = return ()
+
+checkPat :: Pattern -> ST Bool
+checkPat (QConst _) = return False
+checkPat (QVar n) = isDyn n
+checkPat (QPair q1 q2) = 
+  do b1 <- checkPat q1; b2 <- checkPat q2 
+     return (b1 || b2)
 
 checkExpr :: Expr -> ST Bool
 checkExpr (Const _)    = return False
 checkExpr (Var n)      = isDyn n
-checkExpr (Arr n e)    = 
-  do b1 <- checkExpr e; b2 <- isDyn n
-     when b1 $ setDyn n
-     return (b1 || b2)
 checkExpr (Op _ e1 e2) = 
   do b1 <- checkExpr e1; b2 <- checkExpr e2 
      return (b1 || b2)
-checkExpr (Top n)      = isDyn n
-checkExpr (Empty n)    = isDyn n
+checkExpr (UOp _ e)    = checkExpr e
 
 setDyn :: Name -> ST ()
 setDyn n = do d <- get; put $ setType n Dynamic d

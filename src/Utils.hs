@@ -40,20 +40,22 @@ getVarsJump (If e _ _) = getVarsExp e
 getVarsJump _ = []
 
 getVarsStep :: Step -> [Name]
-getVarsStep (UpdateV n _ e) = [n] `union` getVarsExp e
-getVarsStep (UpdateA n e1 _ e2) = [n] `union` getVarsExp e1 `union` getVarsExp e2
-getVarsStep (Push n1 n2) = [n1] `union` [n2]
-getVarsStep (Pop n1 n2) = [n1] `union` [n2]
+getVarsStep (Update n _ e) = [n] `union` getVarsExp e
+getVarsStep (Replacement q1 q2) = getVarsPat q1 `union` getVarsPat q2
 getVarsStep (Assert e) = getVarsExp e
 getVarsStep Skip = []
+
+getVarsPat :: Pattern -> [Name]
+getVarsPat (QConst _) = []
+getVarsPat (QVar n) = [n]
+getVarsPat (QPair q1 q2) = getVarsPat q1 `union` getVarsPat q2
 
 getVarsExp :: Expr -> [Name]
 getVarsExp (Const _) = []
 getVarsExp (Var n) = [n]
-getVarsExp (Arr n e) = [n] `union` getVarsExp e
 getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
-getVarsExp (Top n) = [n]
-getVarsExp (Empty n) = [n]
+getVarsExp (UOp _ e) = getVarsExp e
+
 
 getEntry :: Program a -> EM a
 getEntry p = 
@@ -89,7 +91,7 @@ getEntry' p =
     [b] -> Right (name' b)
     _ -> Left "Multiple entry points found"
   where 
-    f b = case from' b of Entry' _ -> True; _ -> False
+    f b = case from' b of Entry' -> True; _ -> False
 
 getBlock :: Eq a => Program a -> a -> Maybe (Block a)
 getBlock p l = 
@@ -121,7 +123,7 @@ isExit :: Block a -> Bool
 isExit b = case jump b of Exit -> True; _ -> False
 
 isExit' :: Block' a -> Bool
-isExit' b = case jump' b of Exit' _ -> True; _ -> False
+isExit' b = case jump' b of Exit' -> True; _ -> False
 
 fromLabels :: Block a -> [a]
 fromLabels Block{from = Entry} = []

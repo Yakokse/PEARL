@@ -8,7 +8,9 @@ import Division
 type Print a = a -> String
 
 prettyDiv :: Division -> String
-prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ show t ++ "\n") . divisionToList
+prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . divisionToList
+  where prettyLvl Static = "Static"
+        prettyLvl Dynamic = "Dynamic"
 
 serializeAnn :: Print a -> Annotated a -> String
 serializeAnn f (l, Nothing) = f l ++ "_NULL"
@@ -21,13 +23,7 @@ prettyAnn :: Print a -> (a, Store) -> String
 prettyAnn f (l, s) = f l ++ ": " ++ prettyStore s
 
 prettyStore :: Store -> String       
-prettyStore = concatMap (\(n, i) -> n ++ "=" ++ serialize i ++ " ") . storeToList
-  where  
-    serialize v = 
-      case v of
-        ScalarVal i -> show i
-        ArrVal a -> "[" ++ (intercalate "," . map (show . snd) $ arrToList a) ++ "]"
-        StackVal s -> "(" ++ (intercalate "," . map show $ stackToList s) ++ ")"
+prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . storeToList
 
 prettyProg :: Print a -> Program a -> String
 prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)
@@ -57,24 +53,25 @@ prettyJump f (If e l1 l2) =
 prettyJump _ Exit = ["exit"]
 
 prettyStep :: Step -> String
-prettyStep (UpdateV n rop e) = n ++ " " ++ prettyROp rop ++ "= " ++ prettyExpr e
-prettyStep (UpdateA n e1 rop e2) = 
-    n ++ "[" ++ prettyExpr e1 ++ "] " ++ prettyROp rop ++ "= " ++ prettyExpr e2
-prettyStep (Push n1 n2) = "push " ++ n1 ++ " " ++ n2
-prettyStep (Pop n1 n2) = "pop " ++ n1 ++ " " ++ n2
+prettyStep (Update n rop e) = n ++ " " ++ prettyROp rop ++ "= " ++ prettyExpr e
 prettyStep Skip = "skip"
 prettyStep (Assert e) = "assert(" ++ prettyExpr e ++ ")"
+prettyStep (Replacement q1 q2) = prettyPat q1 ++ " <- " ++ prettyPat q2
+
+prettyPat :: Pattern -> String
+prettyPat (QConst v) = prettyVal v
+prettyPat (QVar n) = n
+prettyPat (QPair q1 q2) = "(" ++ prettyPat q1 ++ "." ++ prettyPat q2 ++ ")"
 
 prettyExpr :: Expr -> String
-prettyExpr (Const i)     = show i
+prettyExpr (Const v)     = "'" ++ prettyVal v
 prettyExpr (Var n)       = n
-prettyExpr (Arr n e)     = n ++ "[" ++ prettyExpr e ++ "]"
 prettyExpr (Op op e1 e2) = 
   "(" ++ prettyExpr e1 
     ++ " " ++ prettyOp op 
     ++ " " ++ prettyExpr e2 ++ ")"
-prettyExpr (Top n)       = "top " ++ n
-prettyExpr (Empty n)     = "empty " ++ n
+prettyExpr (UOp op e)    =
+  prettyUOp op ++ "(" ++ prettyExpr e ++ ")"
     
 prettyOp :: BinOp -> String
 prettyOp (ROp op) = prettyROp op
@@ -85,11 +82,24 @@ prettyOp Or       = "||"
 prettyOp Less     = "<"
 prettyOp Greater  = ">"
 prettyOp Equal    = "="
+prettyOp Cons     = "."
+prettyOp Index    = "#"
 
 prettyROp :: RevOp -> String
 prettyROp Add = "+"
 prettyROp Sub = "-"
 prettyROp Xor = "^"
+
+prettyUOp :: UnOp -> String
+prettyUOp Hd = "hd"
+prettyUOp Tl = "tl"
+prettyUOp Not = "!"
+
+prettyVal :: Value -> String
+prettyVal (Atom a) = a
+prettyVal (Num i) = show i
+prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ " )"
+prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String
 prettyProg' f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock' f)
@@ -103,68 +113,56 @@ prettyBlock' f b =
     ++ prettyJump' f (jump' b))
 
 prettyFrom' :: Print a -> IfFrom' a -> [String]
-prettyFrom' f (From' Res l)  = ["%from " ++ f l]
-prettyFrom' f (From' Elim l) = ["from " ++ f l]
-prettyFrom' f (FromCond' Res e l1 l2) = 
+prettyFrom' f (From' l)  = ["from " ++ f l]
+prettyFrom' f (FromCond' Dynamic e l1 l2) = 
   [ "%fi " ++ prettyExpr' e
   , "\t%from " ++ f l1
   , "\t%else " ++ f l2]
-prettyFrom' f (FromCond' Elim e l1 l2) = 
+prettyFrom' f (FromCond' Static e l1 l2) = 
   [ "fi " ++ prettyExpr' e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]
-prettyFrom' _ (Entry' Res)  = ["%entry"]
-prettyFrom' _ (Entry' Elim) = ["entry"]
+prettyFrom' _ Entry' = ["entry"]
 
 prettyJump' :: Print a -> Jump' a -> [String]
-prettyJump' f (Goto' Res l)  = ["%goto " ++ f l]
-prettyJump' f (Goto' Elim l) = ["goto " ++ f l]
-prettyJump' f (If' Res e l1 l2) = 
+prettyJump' f (Goto' l) = ["goto " ++ f l]
+prettyJump' f (If' Dynamic e l1 l2) = 
   [ "%if " ++ prettyExpr' e
   , "\t%goto " ++ f l1
   , "\t%else " ++ f l2]
-prettyJump' f (If' Elim e l1 l2) = 
+prettyJump' f (If' Static e l1 l2) = 
   [ "if " ++ prettyExpr' e
   , "\tgoto " ++ f l1
   , "\telse " ++ f l2]
-prettyJump' _ (Exit' Res)  = ["%exit"]
-prettyJump' _ (Exit' Elim) = ["exit"]
+prettyJump' _ Exit' = ["exit"]
 
 prettyStep' :: Step' -> String
-prettyStep' (UpdateV' Res n rop e)  = 
+prettyStep' (Update' Dynamic n rop e)  = 
     n ++ " %" ++ prettyROp rop ++ "= " ++ prettyExpr' e
-prettyStep' (UpdateV' Elim n rop e) = 
+prettyStep' (Update' Static n rop e) = 
     n ++ " " ++ prettyROp rop ++ "= " ++ prettyExpr' e
-prettyStep' (UpdateA' Res n e1 rop e2) = 
-    n ++ "[" ++ prettyExpr' e1 ++ "] %" ++ prettyROp rop ++ "= " ++ prettyExpr' e2
-prettyStep' (UpdateA' Elim n e1 rop e2) = 
-    n ++ "[" ++ prettyExpr' e1 ++ "] " ++ prettyROp rop ++ "= " ++ prettyExpr' e2
-prettyStep' (Push' Res n1 n2)  = "%push " ++ n1 ++ " " ++ n2
-prettyStep' (Push' Elim n1 n2) = "push "  ++ n1 ++ " " ++ n2
-prettyStep' (Pop' Res n1 n2)   = "%pop "  ++ n1 ++ " " ++ n2
-prettyStep' (Pop' Elim n1 n2)  = "pop "   ++ n1 ++ " " ++ n2
-prettyStep' (Skip' Res) = "%skip"
-prettyStep' (Skip' Elim) = "skip"
-prettyStep' (Assert' Res e) = "%assert(" ++ prettyExpr' e ++ ")"
-prettyStep' (Assert' Elim e) = "assert(" ++ prettyExpr' e ++ ")"
+prettyStep' (Skip' Dynamic) = "%skip"
+prettyStep' (Skip' Static) = "skip"
+prettyStep' (Assert' Dynamic e) = "%assert(" ++ prettyExpr' e ++ ")"
+prettyStep' (Assert' Static e) = "assert(" ++ prettyExpr' e ++ ")"
+prettyStep' (Replacement' Dynamic q1 q2) = prettyPat q1 ++ " %<- " ++ prettyPat q2
+prettyStep' (Replacement' Static q1 q2) = prettyPat q1 ++ " <- " ++ prettyPat q2
+
 
 prettyExpr' :: Expr' -> String
-prettyExpr' (Const' Res i)   = "%" ++ show i
-prettyExpr' (Const' Elim i)  = show i
-prettyExpr' (Var' Res n)     = "%" ++ n
-prettyExpr' (Var' Elim n)    = n
-prettyExpr' (Arr' Res n e)   = "%" ++ n ++ "[" ++ prettyExpr' e ++ "]"
-prettyExpr' (Arr' Elim n e)  = n ++ "[" ++ prettyExpr' e ++ "]"
-prettyExpr' (Op' Res op e1 e2) = 
+prettyExpr' (Const' Dynamic i)   = "%'" ++ prettyVal i
+prettyExpr' (Const' Static i)  = "'" ++ prettyVal i
+prettyExpr' (Var' Dynamic n)     = "%" ++ n
+prettyExpr' (Var' Static n)    = n
+prettyExpr' (Op' Dynamic op e1 e2) = 
     "%(" ++ prettyExpr' e1 ++ " %" ++ prettyOp op ++ " " ++ prettyExpr' e2 ++ ")"
-prettyExpr' (Op' Elim op e1 e2) = 
+prettyExpr' (Op' Static op e1 e2) = 
     "(" ++ prettyExpr' e1 ++ " " ++ prettyOp op ++ " " ++ prettyExpr' e2 ++ ")"
-prettyExpr' (Top' Res n)     = "%top " ++ n
-prettyExpr' (Top' Elim n)    = "top " ++ n
-prettyExpr' (Empty' Res n)   = "%empty " ++ n
-prettyExpr' (Empty' Elim n)  = "empty " ++ n
 prettyExpr' (Lift e)         = "$(" ++ prettyExpr' e ++ ")"
-
+prettyExpr' (UOp' Dynamic op e)    =
+  "%" ++ prettyUOp op ++ "(" ++ prettyExpr' e ++ ")"
+prettyExpr' (UOp' Static op e)    =
+  prettyUOp op ++ "(" ++ prettyExpr' e ++ ")"
 prepend :: a -> [a] -> [a]
 prepend _ [] = []
 prepend x (y:ys) = x : y : prepend x ys

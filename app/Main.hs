@@ -44,7 +44,7 @@ fromLEM s (LEM (Left e, l)) =
      mapM_ putStrLn l
      die $ "Error while " ++ s ++ ": " ++ e  
   
-
+-- TODO: Verify correctness of initial program, redo spec input maybe? Logging improvements
 main :: IO ()
 main =
   do ss <- getArgs

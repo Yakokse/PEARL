@@ -18,7 +18,7 @@ parseProg :: String -> EM (Program Label)
 parseProg = parseStr pProg
 
 pProg :: Parser (Program Label)
-pProg = do whitespace; res <- many1 pBlock; eof; return res
+pProg = whitespace >> many1 pBlock <* eof
 
 pBlock :: Parser (Block Label)
 pBlock = 
@@ -26,7 +26,7 @@ pBlock =
      return Block {name = n, from = f, body = b, jump = g}
 
 pLabel :: Parser String
-pLabel = do s <- pName; symbol ":"; return s
+pLabel = pName <* symbol ":"
 
 pFrom :: Parser (IfFrom Label)
 pFrom = 
@@ -47,68 +47,68 @@ pStep =
   do word "skip"; return Skip
   <|> do word "assert"; symbol "("; e <- pExpr; symbol ")"; return (Assert e)
   <|> try pUpdate
-  <|> do p1 <- pPattern; symbol "<-"; Match p1 <$> pPattern
-
-pPattern :: Parser Pattern
-pPattern = 
-  do PVar <$> pName
-  <|> try(PConst <$> pConst)
-  <|> do symbol "("; q1 <- pPattern; 
-         symbol "."; q2 <- pPattern; 
-         symbol ")"; return $ PPair q1 q2
+  <|> do p1 <- pPattern; symbol "<-"; Replacement p1 <$> pPattern
 
 pUpdate :: Parser Step
 pUpdate = 
-  do lhs <- pLHS; op <- pOp; lhs op <$> pExpr
+  do n <- pName; op <- pOp; Update n op <$> pExpr
   where 
-    pLHS = do x <- pName; option (UpdateV x) (pIndex x)
-    pIndex n = do symbol "["; e <- pExpr; symbol "]"; return $ UpdateA n e
     pOp = do symbol "+="; return Add
         <|> do symbol "-="; return Sub
         <|> do symbol "^="; return Xor
 
+pPattern :: Parser Pattern
+pPattern = 
+  do QVar <$> pName
+  <|> QConst <$> pConstant
+  <|> do symbol "("; q1 <- pPattern; 
+         symbol "."; q2 <- pPattern; 
+         symbol ")"; return $ QPair q1 q2
+
 pExpr :: Parser Expr
 pExpr = chainl1 pComparison pRelOp
   where 
-    pRelOp = do symbol "&&"; return . EOp $ And
-          <|> do symbol "||"; return . EOp $ Or  
+    pRelOp = do symbol "&&"; return . Op $ And
+          <|> do symbol "||"; return . Op $ Or  
 
 pComparison :: Parser Expr
 pComparison = chainl1 pEquation pComp
   where 
-    pComp = do symbol "<"; return . EOp $ Less
-            <|> do symbol ">"; return . EOp $ Greater
-            <|> do symbol "="; return . EOp $ Equal  
+    pComp = do symbol "<"; return . Op $ Less
+            <|> do symbol ">"; return . Op $ Greater
+            <|> do symbol "="; return . Op $ Equal  
 
 pEquation :: Parser Expr
 pEquation = chainl1 pTerm pAddOp
   where
-    pAddOp = do symbol "+"; return . EOp $ ROp Add
-            <|> do symbol "-"; return . EOp $ ROp Sub  
-            <|> do symbol "^"; return . EOp $ ROp Xor  
+    pAddOp = do symbol "+"; return . Op $ ROp Add
+            <|> do symbol "-"; return . Op $ ROp Sub  
+            <|> do symbol "^"; return . Op $ ROp Xor  
 
 pTerm :: Parser Expr
 pTerm = chainl1 pFactor pMulOp
   where
-    pMulOp = do symbol "*"; return . EOp $ Mul
-            <|> do symbol "/"; return . EOp $ Div
+    pMulOp = do symbol "*"; return . Op $ Mul
+            <|> do symbol "/"; return . Op $ Div
+            <|> do symbol "#"; return . Op $ Index
 
 pFactor :: Parser Expr
 pFactor = 
-  try $ EConst <$> pConst
-  <|> do word "hd"; EHd <$> pExpr
-  <|> do word "tl"; ETl <$> pExpr
+  Const <$> pConstant
+  <|> do word "hd"; UOp Hd <$> pExpr
+  <|> do word "tl"; UOp Tl <$> pExpr
+  <|> do symbol "!"; UOp Not <$> pExpr
   <|> do symbol "("; e <- pExpr; symbol ")"; return e
---  <|> do x <- pName; option (Var x) (pIndex x)
---  where
---    pIndex x = do symbol "["; e <- pExpr; symbol "]"; return $ Arr x e
 
-pConst :: Parser Constant
-pConst =
-  do symbol "'"; Atom <$> pName
-  <|> do symbol "("; c1 <- pConst; 
-         symbol "."; c2 <- pConst; 
-         symbol ")"; return $ Pair c1 c2
+pConstant :: Parser Value
+pConstant = symbol "'" >> pValue
+
+pValue :: Parser Value
+pValue =
+  do symbol "("; c1 <- pValue; 
+     symbol "."; c2 <- pValue; 
+     symbol ")"; return $ Pair c1 c2
+  <|> Atom <$> pName
   <|> Num <$> pNum
 
 parseSpec :: String -> EM Store
@@ -116,14 +116,7 @@ parseSpec = parseStr pFile
   where pFile = do whitespace; res <- many pDeclaration; eof; return $ makeStore res
 
 pDeclaration :: Parser (Name, Value)
-pDeclaration = do n <- pName; symbol "="; v <- pValue; return (n,v)
-
-pValue :: Parser Value
-pValue = 
-  ScalarVal <$> pNum
-  <|> do symbol "["; l <- commaSep pNum; symbol "]"; return $ listToArr l 
-  <|> do symbol "("; l <- commaSep pNum; symbol ")"; return $ listToStack l 
-  where commaSep p  = p `sepBy` symbol ","
+pDeclaration = do n <- pName; symbol "="; v <- pConstant; return (n,v)
 
 pName :: Parser String
 pName = 
@@ -133,19 +126,19 @@ pName =
   where 
     pChar = alphaNum <|> char '_' <|> char '\''
     restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
-                  "skip", "hd", "tl", "assert"]
+                  "skip", "hd", "tl", "assert", "nil"]
 
 pNum :: Parser Word
 pNum = lexeme . try $ read <$> many1 digit
 
 word :: String -> Parser ()
-word s = lexeme . try $ do _ <- string s; notFollowedBy alphaNum; return ()
+word s = lexeme . try $ string s >> notFollowedBy alphaNum
 
 symbol :: String -> Parser ()
-symbol s = lexeme $ do _ <- string s; return ()
+symbol s = lexeme . void $ string s
 
 lexeme :: Parser a -> Parser a
-lexeme p = do a <- p; whitespace; return a
+lexeme p = p <* whitespace
 
 whitespace :: Parser ()
 whitespace = do 
@@ -157,5 +150,8 @@ comment = do
   _ <- try (string "//") 
   _ <- manyTill anyChar eol
   return ()
-      where eol = (do _ <- newline; return ()) <|> eof
+      where eol = void newline <|> eof
+
+void :: Parser a -> Parser ()
+void p = do _ <- p; return () 
 

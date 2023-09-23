@@ -13,7 +13,7 @@ data Block label = Block
   deriving (Eq, Show, Read)
 
 
--- TODO: Rename to Landing?
+-- TODO: Better name, Landing/Origin?
 data IfFrom label = 
     From label 
   | FromCond Expr label label 
@@ -27,31 +27,23 @@ data Jump label =
   deriving (Eq, Show, Read)
 
 data Step = 
-    UpdateV Name RevOp Expr
-  | Match Pattern Pattern
+    Update Name RevOp Expr
+  | Replacement Pattern Pattern
   | Assert Expr
   | Skip
   deriving (Eq, Show, Read)
 
 data Expr =
-    EConst Constant
-  | EVar Name
-  | EOp BinOp Expr Expr
-  | EHd Expr
-  | ETl Expr
-  | EPair Expr Expr
+    Const Value
+  | Var Name
+  | Op BinOp Expr Expr
+  | UOp UnOp Expr
   deriving (Eq, Show, Read)
 
 data Pattern =
-    PConst Constant
-  | PVar Name
-  | PPair Pattern Pattern
-  deriving (Eq, Show, Read)
-
-data Constant =
-    Atom String
-  | Num  IntType
-  | Pair Constant Constant
+    QConst Value
+  | QVar Name
+  | QPair Pattern Pattern
   deriving (Eq, Show, Read)
 
 data BinOp =
@@ -63,6 +55,8 @@ data BinOp =
   | Less
   | Greater
   | Equal
+  | Index
+  | Cons
   deriving (Eq, Show, Read)
 
 data RevOp =
@@ -71,10 +65,13 @@ data RevOp =
   | Xor
   deriving (Eq, Show, Read)
 
-type Program' label = [Block' label]
-
-data Level = Res | Elim
+data UnOp = 
+    Hd
+  | Tl
+  | Not
   deriving (Eq, Show, Read)
+
+type Program' label = [Block' label]
 
 data Block' label = Block' 
   { name' :: label
@@ -85,32 +82,28 @@ data Block' label = Block'
   deriving (Eq, Show, Read)
 
 data IfFrom' label = 
-    From' Level label
+    From' label
   | FromCond' Level Expr' label label 
-  | Entry' Level
+  | Entry'
   deriving (Eq, Show, Read)
 
 data Jump' label = 
-    Goto' Level label 
+    Goto' label 
   | If' Level Expr' label label 
-  | Exit' Level
+  | Exit'
   deriving (Eq, Show, Read)
 
 data Step' = 
-    UpdateV' Level Name RevOp Expr'
-  | UpdateA' Level Name Expr' RevOp Expr'
-  | Push' Level Name Name
-  | Pop' Level Name Name
+    Update' Level Name RevOp Expr'
+  | Replacement' Level Pattern Pattern
   | Assert' Level Expr'
   | Skip' Level
   deriving (Eq, Show, Read)
 
 data Expr' =
-    Const' Level IntType
+    Const' Level Value
   | Var' Level Name
-  | Arr' Level Name Expr'
   | Op' Level BinOp Expr' Expr'
-  | Top' Level Name
-  | Empty' Level Name
+  | UOp' Level UnOp Expr'
   | Lift Expr'
   deriving (Eq, Show, Read)

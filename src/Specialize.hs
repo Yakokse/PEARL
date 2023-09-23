@@ -29,15 +29,17 @@ specProg _ _ _ [] seen res =
   do logM "Specialization done."; return ([], seen, res)
 specProg format entry prog (p:ps) seen res 
   | p `elem` seen = 
-    do logM $ "REPEAT: " ++ prettyAnn format (fst p)
+    do logM $ "REPEAT POINT: " ++ prettyAnn format (fst p)
        specProg format entry prog ps seen res
   | otherwise = 
     do logM $ prettyAnn format (fst p)
        let (current@(l, s), origin) = p
        b <- raise $ getBlockErr' format prog l
        case specBlock entry s b origin of
-        Nothing -> specProg format entry prog ps seen res
-        Just (b', p') -> do
+        Left e -> logM ("ERROR: " ++ e ) >> 
+                  logM ("FROM POINT: " ++ prettyAnn format (fst p)) >>
+                    specProg format entry prog ps seen res
+        Right (b', p') -> do
           let pnew = map (\x -> (x, current)) p'
           let seen' = p : seen
           res' <- merge format b' res
@@ -62,7 +64,7 @@ merge format block prog
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
 specBlock :: Eq a => a -> Store -> Block' a -> (a, Store) 
-                                 -> Maybe (Block (Annotated a), [Point a])
+                                 -> EM (Block (Annotated a), [Point a])
 specBlock entry s b origin = 
   do let l = (name' b, Just s)
      f <- specFrom entry s (from' b) origin
@@ -72,24 +74,24 @@ specBlock entry s b origin =
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
 specFrom :: Eq a => a -> Store -> IfFrom' a -> (a, Store) 
-                            -> Maybe (IfFrom (Annotated a))
-specFrom _ _ (From' _ l) origin 
+                            -> EM (IfFrom (Annotated a))
+specFrom _ _ (From' l) origin 
   | l `isFrom` origin = return . From $ annotate l origin
-  | otherwise         = Nothing
-specFrom x _ (Entry' _) (l, _) 
+  | otherwise         = Left "Invalid jump to an unconditional from."
+specFrom x _ Entry' (l, _) 
   | l == x    = return Entry 
-  | otherwise = Nothing
-specFrom _ s (FromCond' Elim e l1 l2) origin = 
-  do v <- getInt e s
+  | otherwise = Left "Invalid jump to entry block."
+specFrom _ s (FromCond' Static e l1 l2) origin = 
+  do v <- getValue e s
      let l = if truthy v then l1 else l2
      if l `isFrom` origin 
       then return . From $ annotate l origin
-      else Nothing
-specFrom _ s (FromCond' Res e l1 l2) origin  
+      else Left "Jump not from expected block."
+specFrom _ s (FromCond' Dynamic e l1 l2) origin  
   | l1 `isFrom` origin || l2 `isFrom` origin = 
     do e' <- getExpr e s
        return $ FromCond e' (annotate l1 origin) (annotate l2 origin)
-  | otherwise = Nothing
+  | otherwise = Left "Jump not from either of the expected blocks."
 
 isFrom :: Eq a => a -> (a, Store) -> Bool
 isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
@@ -98,138 +100,105 @@ annotate :: Eq a => a -> (a, Store) -> Annotated a
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> Jump' a -> Maybe (Jump (Annotated a), [Point a])
-specJump _ (Exit' _) = return (Exit, [])
-specJump s (Goto' _ l) = return (Goto (l, Just s), [(l, s)])
-specJump s (If' Res e l1 l2) = 
+specJump :: Store -> Jump' a -> EM (Jump (Annotated a), [Point a])
+specJump _ Exit' = return (Exit, [])
+specJump s (Goto' l) = return (Goto (l, Just s), [(l, s)])
+specJump s (If' Dynamic e l1 l2) = 
   do e' <- getExpr e s; 
      return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)]) 
-specJump s (If' Elim e l1 l2) = 
-  do v <- getInt e s
+specJump s (If' Static e l1 l2) = 
+  do v <- getValue e s
      return $ 
       if truthy v 
         then (Goto (l1, Just s), [(l1, s)]) 
         else (Goto (l2, Just s), [(l2, s)])
 
-specSteps :: Store -> [Step'] -> Maybe (Store, [Step])
+specSteps :: Store -> [Step'] -> EM (Store, [Step])
 specSteps s [] = return (s, [])
 specSteps s (a:as) = 
   do (s'', a') <- specStep s a
      (s', as') <- specSteps s'' as
      return (s', a' ++ as')
     
-specStep :: Store -> Step' -> Maybe (Store, [Step])
-specStep s (Skip' Res) = return (s, [Skip])
-specStep s (Skip' Elim) = return (s, [])
-specStep s (Assert' Res e) = 
+specStep :: Store -> Step' -> EM (Store, [Step])
+specStep s (Skip' Dynamic) = return (s, [Skip])
+specStep s (Skip' Static) = return (s, [])
+specStep s (Assert' Dynamic e) = 
   do e' <- getExpr e s
      return (s, [Assert e'])
-specStep s (Assert' Elim e) = 
-  do v <- getInt e s
+specStep s (Assert' Static e) = 
+  do v <- getValue e s
      if truthy v
       then return (s, [])
-      else Nothing
-specStep s (Push' Res n1 n2) = return (s, [Push n1 n2])
-specStep s (Push' Elim n1 n2) = 
-  do i <- getVarScalar n1 s
-     stack <- getVarStack n2 s
-     let s' = update n1 (ScalarVal 0) s 
-     let s'' = update n2 (StackVal (i:stack)) s' 
-     return (s'', [])
-specStep s (Pop' Res n1 n2) = return (s, [Pop n1 n2])
-specStep s (Pop' Elim n1 n2) = 
-  do i <- getVarScalar n1 s
-     stack <- getVarStack n2 s
-     case (i, stack) of
-      (0, x:xs) -> 
-        let s' = update n1 (ScalarVal x) s 
-            s'' = update n2 (StackVal xs) s'
-        in return (s'', [])
-      (0, _) -> Nothing
-      _ -> Nothing
-specStep s (UpdateV' Res n op e) = 
+      else Left "Assert failed."
+specStep s (Update' Dynamic n op e) = 
   do e' <- getExpr e s
-     return (s, [UpdateV n op e'])
-specStep s (UpdateV' Elim n op e) = 
-  do i <- getInt e $ s `without` n
-     v <- getVarScalar n s
-     let s' = update n (ScalarVal $ calcR op v i) s
+     return (s, [Update n op e'])
+specStep s (Update' Static n op e) = 
+  do i <- getValue e $ s `without` n
+     v <- find n s
+     res <- calcR op v i
+     let s' = update n res s
      return (s', [])
-specStep s (UpdateA' Res n e1 op e2) = 
-  do e1' <- getExpr e1 s; e2' <- getExpr e2 s
-     return (s, [UpdateA n e1' op e2'])
-specStep s (UpdateA' Elim n e1 op e2) =
-  do i1 <- getInt e1 $ s `without` n
-     i2 <- getInt e2 $ s `without` n
-     arr <- getVarArr n s
-     let val = calcR op (arr ! i1) i2
-         arr' = updateIdx arr i1 val
-     return (update n (ArrVal arr') s, [])
+specStep s (Replacement' Dynamic q1 q2) = return (s, [Replacement q1 q2])
+specStep s (Replacement' Static q1 q2) = 
+  do (s', v) <- deconstruct s q2
+     s'' <- construct s' v q1
+     return (s'', [])
+  where
+    deconstruct store (QConst v) = return (store,v)
+    deconstruct store (QVar n) = 
+      do v <- find n store
+         let store' = update n Nil store
+         return (store', v)
+    deconstruct store (QPair q1' q2') =
+      do (store', v)   <- deconstruct store q1'
+         (store'', v') <- deconstruct store' q2'
+         return (store'', Pair v v')
+    construct store v (QConst v') =
+      if v == v' 
+        then return store 
+        else Left "Non-matching constants."
+    construct store v (QVar n) =
+      do v' <- find n store
+         if v' == Nil 
+          then return $ update n v store 
+          else Left "Non-nill variable."
+    construct store (Pair v1 v2) (QPair q1' q2') =
+      do store' <- construct store v1 q1'
+         construct store' v2 q2'
+    construct _ _ (QPair _ _) = Left "Scalar value with cons pattern."
 
-type PEValue = Either IntType Expr
-
-specExpr :: Store -> Expr' -> Maybe PEValue
-specExpr _ (Const' Res x) = return . Right $ Const x
-specExpr _ (Const' Elim x) = return . Left $ x
-specExpr _ (Var' Res n) = return . Right $ Var n
-specExpr s (Var' Elim n) = 
-  do v <- getVarScalar n s; return . Left $ v
-specExpr s (Arr' Res n e) = 
-  do e' <- getExpr e s; return . Right $ Arr n e'
-specExpr s (Arr' Elim n e) = 
-  do i <- getInt e s; a <- getVarArr n s; return . Left $ a ! i
-specExpr _ (Top' Res n) = return . Right $ Top n
-specExpr s (Top' Elim n) = 
-  do v <- getVarStack n s
-     case v of 
-      (x:_) -> return . Left $ x
-      [] -> Nothing
-specExpr _ (Empty' Res n) = return . Right $ Empty n
-specExpr s (Empty' Elim n) = 
-  do v <- getVarStack n s
-     case v of 
-      (_:_) -> return . Left $ 0
-      [] -> return . Left $ 1
-specExpr s (Op' Res op e1 e2) = 
+type PEValue = Either Value Expr
+specExpr :: Store -> Expr' -> EM PEValue
+specExpr _ (Const' Dynamic c) = return . Right $ Const c
+specExpr _ (Const' Static c) = return $ Left c
+specExpr _ (Var' Dynamic n) = return . Right $ Var n
+specExpr s (Var' Static n) = 
+  do v <- find n s; return . Left $ v
+specExpr s (Op' Dynamic op e1 e2) = 
   do e1' <- getExpr e1 s; e2' <- getExpr e2 s
      return . Right $ Op op e1' e2'
-specExpr s (Op' Elim op e1 e2) = 
-  do v1 <- getInt e1 s; v2 <- getInt e2 s
-     res <- calc op v1 v2
-     return . Left $ res
-specExpr s (Lift e) = do i <- getInt e s; return . Right $ Const i
+specExpr s (Op' Static op e1 e2) = 
+  do v1 <- getValue e1 s; v2 <- getValue e2 s
+     Left <$> calc op v1 v2
+specExpr s (UOp' Dynamic op e) = 
+  do e' <- getExpr e s; return . Right $ UOp op e'
+specExpr s (UOp' Static op e) = 
+  do v <- getValue e s;
+     Left <$> calcU op v
+specExpr s (Lift e) = Right . Const <$> getValue e s
 
-getExpr ::  Expr' -> Store -> Maybe Expr
+getExpr ::  Expr' -> Store -> EM Expr
 getExpr e s = 
   do res <- specExpr s e
      case res of
       Right e' -> return e'
-      _ -> Nothing
+      _ -> Left "Expression expected"
 
-getInt ::  Expr' -> Store -> Maybe IntType
-getInt e s = 
-  do res <- specExpr s e 
+getValue ::  Expr' -> Store -> EM Value
+getValue e s = 
+  do res <- specExpr s e
      case res of
-      Left i -> return i
-      _ -> Nothing
-
-getVarScalar :: Name -> Store -> Maybe IntType
-getVarScalar n s = 
-  do v <- find n s
-     case v of
-      ScalarVal x -> return x
-      _ -> Nothing
-
-getVarArr :: Name -> Store -> Maybe ArrayType
-getVarArr n s = 
-  do v <- find n s
-     case v of
-      ArrVal x -> return x
-      _ -> Nothing
-
-getVarStack :: Name -> Store -> Maybe StackType
-getVarStack n s = 
-  do v <- find n s
-     case v of
-      StackVal x -> return x
-      _ -> Nothing
+      Left v -> return v
+      _ -> Left "Value expected"
