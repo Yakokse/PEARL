@@ -37,7 +37,7 @@ calcR :: RevOp -> Value -> Value -> EM Value
 calcR Add a b = 
   do x <- getNum a; y <- getNum b; return . Num $ x + y
 calcR Sub a b = 
-  do x <- getNum a; y <- getNum b; return . Num $ x + y
+  do x <- getNum a; y <- getNum b; return . Num $ x - y
 calcR Xor a b =
   if a == b then return Nil else do isNil a; return b
 

@@ -17,7 +17,10 @@ serializeAnn f (l, Nothing) = f l ++ "_NULL"
 serializeAnn f (l, Just s) = f l ++ serializeStore s 
   where 
     serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList
-    serialize = intercalate "_" . map show . valueToList 
+    serialize (Atom a) = a
+    serialize (Num i) = show i
+    serialize (Pair v1 v2) = "ZS"++ serialize v1 ++ "_" ++ serialize v2 ++ "ZE"
+    serialize Nil = "nil"
 
 prettyAnn :: Print a -> (a, Store) -> String
 prettyAnn f (l, s) = f l ++ ": " ++ prettyStore s
@@ -26,7 +29,7 @@ prettyStore :: Store -> String
 prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . storeToList
 
 prettyProg :: Print a -> Program a -> String
-prettyProg f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock f)
+prettyProg f = intercalate "\n" . concatMap (prettyBlock f)
 
 prettyBlock :: Print a -> Block a -> [String]
 prettyBlock f b = 
@@ -34,7 +37,7 @@ prettyBlock f b =
   map ('\t' :) 
     (prettyFrom f (from b) 
     ++ map prettyStep (body b) 
-    ++ prettyJump f (jump b))
+    ++ prettyJump f (jump b)) ++ [""]
 
 prettyFrom :: Print a -> IfFrom a -> [String]
 prettyFrom f (From l) = ["from " ++ f l]
@@ -98,7 +101,7 @@ prettyUOp Not = "!"
 prettyVal :: Value -> String
 prettyVal (Atom a) = a
 prettyVal (Num i) = show i
-prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ " )"
+prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ ")"
 prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String

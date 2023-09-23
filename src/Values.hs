@@ -56,9 +56,6 @@ makeStore = Map.fromList
 storeToList :: Store -> [(Name, Value)]
 storeToList = Map.toAscList
 
-valueToList :: Value -> [IntType]
-valueToList = undefined
-
 update :: Name -> Value -> Store -> Store
 update = Map.insert
 

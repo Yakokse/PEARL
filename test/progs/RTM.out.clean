@@ -1,514 +1,334 @@
-init_Q_1_pc_0:
+init_Q_nil_Q1_nil_Q2_nil_S1_nil_S2_nil_pc_nil:
 	entry
-	S += 32
-	assert((1 && (S = 32)))
-	S += 0
-	goto act2_Q_2_pc_0
+	S ^= 'BLANK
+	assert(('true && (S = 'BLANK)))
+	goto act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
 
+act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0:
+	fi ('true && (S = 'BLANK))
+		from init_Q_nil_Q1_nil_Q2_nil_S1_nil_S2_nil_pc_nil
+		else act2_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	assert(!(('true && (S = 'SLASH))))
+	assert(!(('nil && (S = 'RIGHT))))
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto right_1b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+		else right_1p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
 
-act2_Q_2_pc_0:
-	fi (1 && (S = 32))
-		from init_Q_1_pc_0
-		else act2_Q_2_pc_7
-	assert((0 = (1 && (S = 47))))
-	assert((0 = (0 && (S = 62))))
-	if (empty S_left && (S = 32))
-		goto right_1b_Q_3_pc_1
-		else right_1p_Q_3_pc_1
+right_1b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	from act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	S ^= 'BLANK
+	goto right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
 
+right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	fi (S_left = 'nil)
+		from right_1b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+		else right_1p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	if (S_right = 'nil)
+		goto right_2b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+		else right_2p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
 
-right_1b_Q_3_pc_1:
-	from act2_Q_2_pc_0
-	S -= 32
-	goto right1_Q_3_pc_1
+right_2b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	from right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	S += 'BLANK
+	goto right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
 
+right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from right_2b_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+		else right_2p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	if ('true && (S = '0))
+		goto write_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2
+		else act2_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2
 
-right1_Q_3_pc_1:
-	fi empty S_left
-		from right_1b_Q_3_pc_1
-		else right_1p_Q_3_pc_1
-	if empty S_right
-		goto right_2b_Q_3_pc_1
-		else right_2p_Q_3_pc_1
+write_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	from right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	S += '1
+	goto act2_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
 
+act2_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	fi ('true && (S = '1))
+		from write_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2
+		else act2_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	if ('nil && (S = '1))
+		goto write_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else act2_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3
 
-right_2b_Q_3_pc_1:
-	from right1_Q_3_pc_1
-	S += 32
-	goto right2_Q_3_pc_1
+write_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	from act2_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	S += '18446744073709551615
+	goto act2_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
 
+act2_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	fi ('nil && (S = '0))
+		from write_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else act2_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	if ('true && (S = 'BLANK))
+		goto write_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+		else act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
 
-right2_Q_3_pc_1:
-	fi (empty S_right && (S = 32))
-		from right_2b_Q_3_pc_1
-		else right_2p_Q_3_pc_1
-	if (1 && (S = 0))
-		goto write_Q_3_pc_2
-		else act2_Q_3_pc_2
+write_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
+	from act2_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+	goto act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
 
+act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
+	fi ('true && (S = 'BLANK))
+		from write_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+		else act2_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3
+	assert(!(('true && (S = 'SLASH))))
+	assert(!(('nil && (S = 'LEFT))))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto left_1b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+		else left_1p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
-write_Q_3_pc_2:
-	from right2_Q_3_pc_1
-	S += 1
-	goto act2_Q_4_pc_2
+left_1b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	from act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+	S ^= 'BLANK
+	goto left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
+left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	fi (S_right = 'nil)
+		from left_1b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+		else left_1p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	if (S_left = 'nil)
+		goto left_2b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+		else left_2p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
-act2_Q_4_pc_2:
-	fi (1 && (S = 1))
-		from write_Q_3_pc_2
-		else act2_Q_4_pc_1
-	if (0 && (S = 1))
-		goto write_Q_4_pc_3
-		else act2_Q_4_pc_3
+left_2b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	from left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	S ^= 'BLANK
+	goto left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
+left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from left_2b_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+		else left_2p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	if ('true && (S = '0))
+		goto write_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
+		else act2_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
 
-write_Q_4_pc_3:
-	from act2_Q_4_pc_2
-	S += 18446744073709551615
-	goto act2_Q_3_pc_3
+write_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6:
+	from left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	S += '0
+	assert(('true && (S = '0)))
+	if ('nil && (S = 'BLANK))
+		goto write_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
 
+write_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	from write_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	goto act2_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
 
-act2_Q_3_pc_3:
-	fi (0 && (S = 0))
-		from write_Q_4_pc_3
-		else act2_Q_3_pc_2
-	if (1 && (S = 32))
-		goto write_Q_3_pc_4
-		else act2_Q_3_pc_4
+act2_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	fi ('nil && (S = 'BLANK))
+		from write_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	if ('nil && (S = 'BLANK))
+		goto write_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+		else act2_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
 
+write_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0:
+	from act2_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	assert(('nil && (S = 'BLANK)))
+	exit_control_var ^= '0
+	goto exit_merge_0_1
 
-write_Q_3_pc_4:
-	from act2_Q_3_pc_3
-	S += 0
-	goto act2_Q_4_pc_4
+exit_merge_0_1:
+	fi (exit_control_var < '1)
+		from write_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+		else write_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	goto exit_merge_0_3
 
-
-act2_Q_4_pc_4:
-	fi (1 && (S = 32))
-		from write_Q_3_pc_4
-		else act2_Q_4_pc_3
-	assert((0 = (1 && (S = 47))))
-	goto act2_Q_4_pc_5
-
-
-act2_Q_4_pc_5:
-	fi (0 && (S = 60))
-		from write_Q_3_pc_5
-		else act2_Q_4_pc_4
-	if (empty S_right && (S = 32))
-		goto left_1b_Q_5_pc_5
-		else left_1p_Q_5_pc_5
-
-
-left_1b_Q_5_pc_5:
-	from act2_Q_4_pc_5
-	S -= 32
-	goto left1_Q_5_pc_5
-
-
-left1_Q_5_pc_5:
-	fi empty S_right
-		from left_1b_Q_5_pc_5
-		else left_1p_Q_5_pc_5
-	if empty S_left
-		goto left_2b_Q_5_pc_5
-		else left_2p_Q_5_pc_5
-
-
-left_2b_Q_5_pc_5:
-	from left1_Q_5_pc_5
-	S += 32
-	goto left2_Q_5_pc_5
-
-
-left2_Q_5_pc_5:
-	fi (empty S_left && (S = 32))
-		from left_2b_Q_5_pc_5
-		else left_2p_Q_5_pc_5
-	if (1 && (S = 0))
-		goto write_Q_5_pc_6
-		else act2_Q_5_pc_6
-
-
-write_Q_5_pc_6:
-	from left2_Q_5_pc_5
-	S += 0
-	assert((1 && (S = 0)))
-	if (0 && (S = 32))
-		goto write_Q_4_pc_7
-		else act2_Q_4_pc_7
-
-
-write_Q_4_pc_7:
-	from write_Q_5_pc_6
-	S += 0
-	goto act2_Q_5_pc_7
-
-
-act2_Q_5_pc_7:
-	fi (0 && (S = 32))
-		from write_Q_4_pc_7
-		else act2_Q_5_pc_6
-	if (0 && (S = 32))
-		goto write_Q_5_pc_0
-		else act2_Q_5_pc_0
-
-
-write_Q_5_pc_0:
-	from act2_Q_5_pc_7
-	S += 0
-	assert((0 && (S = 32)))
-	exit_control_var += 0
-	goto exit_merge_0_2
-
-
-exit_merge_0_2:
-	fi (exit_control_var < 1)
-		from write_Q_5_pc_0
-		else exit_merge_1_2
-	goto exit_merge_0_5
-
-
-exit_merge_0_5:
-	fi (exit_control_var < 3)
-		from exit_merge_0_2
-		else exit_merge_3_5
+exit_merge_0_3:
+	fi (exit_control_var < '2)
+		from exit_merge_0_1
+		else exit_merge_2_3
 	exit
 
-
-act2_Q_5_pc_0:
-	fi (0 && (S = 32))
-		from write_Q_4_pc_0
-		else act2_Q_5_pc_7
-	if (0 && (S = 47))
-		goto write_Q_5_pc_1
-		else act2_Q_5_pc_1
-
-
-write_Q_5_pc_1:
-	from act2_Q_5_pc_0
-	S += 15
-	assert((0 && (S = 62)))
-	exit_control_var += 1
-	goto exit_merge_1_2
-
-
-exit_merge_1_2:
-	fi (exit_control_var < 2)
-		from write_Q_5_pc_1
-		else write_Q_5_pc_2
-	goto exit_merge_0_2
-
-
-act2_Q_5_pc_1:
-	fi (0 && (S = 62))
-		from write_Q_4_pc_1
-		else act2_Q_5_pc_0
-	if (0 && (S = 0))
-		goto write_Q_5_pc_2
-		else act2_Q_5_pc_2
-
-
-write_Q_5_pc_2:
-	from act2_Q_5_pc_1
-	S += 1
-	assert((0 && (S = 1)))
-	exit_control_var += 2
-	goto exit_merge_1_2
-
-
-act2_Q_5_pc_2:
-	fi (0 && (S = 1))
-		from write_Q_4_pc_2
-		else act2_Q_5_pc_1
-	if (0 && (S = 1))
-		goto write_Q_5_pc_3
-		else act2_Q_5_pc_3
-
-
-write_Q_5_pc_3:
-	from act2_Q_5_pc_2
-	S += 18446744073709551615
-	goto act2_Q_4_pc_3
-
-
-act2_Q_4_pc_3:
-	fi (0 && (S = 0))
-		from write_Q_5_pc_3
-		else act2_Q_4_pc_2
-	if (0 && (S = 32))
-		goto write_Q_4_pc_4
-		else act2_Q_4_pc_4
-
-
-write_Q_4_pc_4:
-	from act2_Q_4_pc_3
-	S += 0
-	goto act2_Q_5_pc_4
-
-
-act2_Q_5_pc_4:
-	fi (0 && (S = 32))
-		from write_Q_4_pc_4
-		else act2_Q_5_pc_3
-	assert((0 && (S = 47)))
-	S += 13
-	assert((0 && (S = 60)))
-	exit_control_var += 3
-	goto exit_merge_3_5
-
-
-exit_merge_3_5:
-	fi (exit_control_var < 4)
-		from act2_Q_5_pc_4
-		else exit_merge_4_5
-	goto exit_merge_0_5
-
-
-act2_Q_5_pc_3:
-	from act2_Q_5_pc_2
-	assert((0 = (0 && (S = 0))))
-	if (0 && (S = 32))
-		goto write_Q_5_pc_4
-		else act2_Q_5_pc_4
-
-
-write_Q_5_pc_4:
-	from act2_Q_5_pc_3
-	S += 0
-	assert((0 && (S = 32)))
-	exit_control_var += 4
-	goto exit_merge_4_5
-
-
-exit_merge_4_5:
-	fi (exit_control_var < 5)
-		from write_Q_5_pc_4
-		else write_Q_5_pc_7
-	goto exit_merge_3_5
-
-
-act2_Q_4_pc_7:
-	fi (0 && (S = 32))
-		from write_Q_3_pc_7
-		else write_Q_5_pc_6
-	if (0 && (S = 32))
-		goto write_Q_4_pc_0
-		else act2_Q_4_pc_0
-
-
-write_Q_4_pc_0:
-	from act2_Q_4_pc_7
-	S += 0
-	goto act2_Q_5_pc_0
-
-
-act2_Q_4_pc_0:
-	fi (0 && (S = 32))
-		from write_Q_3_pc_0
-		else act2_Q_4_pc_7
-	if (0 && (S = 47))
-		goto write_Q_4_pc_1
-		else act2_Q_4_pc_1
-
-
-write_Q_4_pc_1:
-	from act2_Q_4_pc_0
-	S += 15
-	goto act2_Q_5_pc_1
-
-
-act2_Q_4_pc_1:
-	fi (0 && (S = 62))
-		from act2_Q_3_pc_0
-		else act2_Q_4_pc_0
-	if (0 && (S = 0))
-		goto write_Q_4_pc_2
-		else act2_Q_4_pc_2
-
-
-write_Q_4_pc_2:
-	from act2_Q_4_pc_1
-	S += 1
-	goto act2_Q_5_pc_2
-
-
-act2_Q_5_pc_6:
-	from left2_Q_5_pc_5
-	assert((0 = (0 && (S = 0))))
-	if (1 && (S = 32))
-		goto write_Q_5_pc_7
-		else act2_Q_5_pc_7
-
-
-write_Q_5_pc_7:
-	from act2_Q_5_pc_6
-	S += 0
-	assert((1 && (S = 32)))
-	exit_control_var += 5
-	goto exit_merge_4_5
-
-
-left_2p_Q_5_pc_5:
-	from left1_Q_5_pc_5
-	pop S S_left
-	goto left2_Q_5_pc_5
-
-
-left_1p_Q_5_pc_5:
-	from act2_Q_4_pc_5
-	push S S_right
-	goto left1_Q_5_pc_5
-
-
-act2_Q_3_pc_4:
-	fi (0 && (S = 32))
-		from write_Q_2_pc_4
-		else act2_Q_3_pc_3
-	if (0 && (S = 47))
-		goto write_Q_3_pc_5
-		else act2_Q_3_pc_5
-
-
-write_Q_3_pc_5:
-	from act2_Q_3_pc_4
-	S += 13
-	goto act2_Q_4_pc_5
-
-
-act2_Q_3_pc_5:
-	fi (0 && (S = 60))
-		from write_Q_2_pc_5
-		else act2_Q_3_pc_4
-	if (0 && (S = 0))
-		goto write_Q_3_pc_6
-		else act2_Q_3_pc_6
-
-
-write_Q_3_pc_6:
-	from act2_Q_3_pc_5
-	S += 0
-	goto act2_Q_2_pc_6
-
-
-act2_Q_2_pc_6:
-	fi (0 && (S = 0))
-		from write_Q_3_pc_6
-		else act2_Q_2_pc_5
-	if (0 && (S = 32))
-		goto write_Q_2_pc_7
-		else act2_Q_2_pc_7
-
-
-write_Q_2_pc_7:
-	from act2_Q_2_pc_6
-	S += 0
-	goto act2_Q_3_pc_7
-
-
-act2_Q_3_pc_7:
-	fi (0 && (S = 32))
-		from write_Q_2_pc_7
-		else act2_Q_3_pc_6
-	if (0 && (S = 32))
-		goto write_Q_3_pc_0
-		else act2_Q_3_pc_0
-
-
-write_Q_3_pc_0:
-	from act2_Q_3_pc_7
-	S += 0
-	goto act2_Q_4_pc_0
-
-
-act2_Q_3_pc_0:
-	fi (0 && (S = 32))
-		from write_Q_2_pc_0
-		else act2_Q_3_pc_7
-	assert((0 && (S = 47)))
-	S += 15
-	goto act2_Q_4_pc_1
-
-
-act2_Q_2_pc_7:
-	from act2_Q_2_pc_6
-	assert((0 = (0 && (S = 32))))
-	if (0 && (S = 32))
-		goto write_Q_2_pc_0
-		else act2_Q_2_pc_0
-
-
-write_Q_2_pc_0:
-	from act2_Q_2_pc_7
-	S += 0
-	goto act2_Q_3_pc_0
-
-
-act2_Q_3_pc_6:
-	from act2_Q_3_pc_5
-	assert((0 = (0 && (S = 0))))
-	if (0 && (S = 32))
-		goto write_Q_3_pc_7
-		else act2_Q_3_pc_7
-
-
-write_Q_3_pc_7:
-	from act2_Q_3_pc_6
-	S += 0
-	goto act2_Q_4_pc_7
-
-
-act2_Q_3_pc_2:
-	from right2_Q_3_pc_1
-	assert((0 = (0 && (S = 1))))
-	if (1 && (S = 1))
-		goto write_Q_3_pc_3
-		else act2_Q_3_pc_3
-
-
-write_Q_3_pc_3:
-	from act2_Q_3_pc_2
-	S += 18446744073709551615
-	assert((1 && (S = 0)))
-	if (0 && (S = 32))
-		goto write_Q_2_pc_4
-		else act2_Q_2_pc_4
-
-
-write_Q_2_pc_4:
-	from write_Q_3_pc_3
-	S += 0
-	goto act2_Q_3_pc_4
-
-
-act2_Q_2_pc_4:
-	from write_Q_3_pc_3
-	assert((0 = (0 && (S = 32))))
-	if (0 && (S = 47))
-		goto write_Q_2_pc_5
-		else act2_Q_2_pc_5
-
-
-write_Q_2_pc_5:
-	from act2_Q_2_pc_4
-	S += 13
-	goto act2_Q_3_pc_5
-
-
-act2_Q_2_pc_5:
-	from act2_Q_2_pc_4
-	assert((0 = (0 && (S = 60))))
-	assert((0 = (0 && (S = 0))))
-	goto act2_Q_2_pc_6
-
-
-right_2p_Q_3_pc_1:
-	from right1_Q_3_pc_1
-	pop S S_right
-	goto right2_Q_3_pc_1
-
-
-right_1p_Q_3_pc_1:
-	from act2_Q_2_pc_0
-	push S S_left
-	goto right1_Q_3_pc_1
+act2_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0:
+	fi ('nil && (S = 'BLANK))
+		from write_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+		else act2_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	assert(!(('nil && (S = 'SLASH))))
+	assert(!(('nil && (S = 'RIGHT))))
+	if ('nil && (S = '0))
+		goto write_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+		else act2_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+
+write_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	from act2_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	S += '1
+	assert(('nil && (S = '1)))
+	exit_control_var ^= '1
+	goto exit_merge_0_1
+
+act2_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	fi ('nil && (S = '1))
+		from write_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
+		else act2_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	if ('nil && (S = '1))
+		goto write_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else act2_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3
+
+write_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	from act2_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	S += '18446744073709551615
+	goto act2_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3
+
+act2_Q_4_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	fi ('nil && (S = '0))
+		from write_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else act2_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	assert(!(('nil && (S = 'BLANK))))
+	goto act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+
+act2_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	from act2_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	assert(!(('nil && (S = '0))))
+	assert(('nil && (S = 'BLANK)))
+	assert(('nil && (S = 'BLANK)))
+	exit_control_var ^= '2
+	goto exit_merge_2_3
+
+exit_merge_2_3:
+	fi (exit_control_var < '3)
+		from act2_Q_5_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else write_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	goto exit_merge_0_3
+
+act2_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	fi ('nil && (S = 'BLANK))
+		from write_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else write_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	if ('nil && (S = 'BLANK))
+		goto write_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+		else act2_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+
+write_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0:
+	from act2_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	goto act2_Q_5_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+
+act2_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0:
+	fi ('nil && (S = 'BLANK))
+		from act2_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+	assert(!(('nil && (S = 'SLASH))))
+	assert(!(('nil && (S = 'RIGHT))))
+	if ('nil && (S = '0))
+		goto write_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
+		else act2_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2
+
+write_Q_4_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	from act2_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	S += '1
+	goto act2_Q_5_Q1_3_Q2_4_S1_0_S2_1_pc_2
+
+act2_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6:
+	from left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	assert(!(('nil && (S = '0))))
+	if ('true && (S = 'BLANK))
+		goto write_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+
+write_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	from act2_Q_5_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	assert(('true && (S = 'BLANK)))
+	exit_control_var ^= '3
+	goto exit_merge_2_3
+
+left_2p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	from left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+	(S.S_left) <- S_left
+	goto left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+
+left_1p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
+	from act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+	S_right <- (S.S_right)
+	goto left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
+
+act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
+	fi ('nil && (S = 'BLANK))
+		from write_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+		else act2_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+	assert(!(('nil && (S = 'SLASH))))
+	assert(!(('nil && (S = 'LEFT))))
+	if ('nil && (S = '0))
+		goto write_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6
+		else act2_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6
+
+write_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6:
+	from act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+	S += '0
+	goto act2_Q_2_Q1_5_Q2_4_S1_0_S2_0_pc_6
+
+act2_Q_2_Q1_5_Q2_4_S1_0_S2_0_pc_6:
+	fi ('nil && (S = '0))
+		from write_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6
+		else act2_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+	if ('nil && (S = 'BLANK))
+		goto write_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+
+write_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	from act2_Q_2_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	goto act2_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+
+act2_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	fi ('nil && (S = 'BLANK))
+		from write_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	assert(('nil && (S = 'BLANK)))
+	goto act2_Q_4_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+
+act2_Q_2_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	from act2_Q_2_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	assert(!(('nil && (S = 'BLANK))))
+	assert(!(('nil && (S = 'BLANK))))
+	goto act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+
+act2_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6:
+	from act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+	assert(!(('nil && (S = '0))))
+	if ('nil && (S = 'BLANK))
+		goto write_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+		else act2_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+
+write_Q_3_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
+	from act2_Q_3_Q1_5_Q2_4_S1_0_S2_0_pc_6
+	goto act2_Q_4_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7
+
+act2_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2:
+	from right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	assert(!(('nil && (S = '1))))
+	if ('true && (S = '1))
+		goto write_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+		else act2_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+
+write_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3:
+	from act2_Q_3_Q1_3_Q2_4_S1_0_S2_1_pc_2
+	S += '18446744073709551615
+	assert(('true && (S = '0)))
+	if ('nil && (S = 'BLANK))
+		goto write_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+		else act2_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+
+write_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
+	from write_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+	goto act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
+
+act2_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
+	from write_Q_3_Q1_3_Q2_2_S1_1_S2_0_pc_3
+	assert(!(('nil && (S = 'BLANK))))
+	assert(!(('nil && (S = 'SLASH))))
+	assert(!(('nil && (S = 'LEFT))))
+	assert(!(('nil && (S = '0))))
+	goto act2_Q_2_Q1_5_Q2_4_S1_0_S2_0_pc_6
+
+right_2p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	from right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+	(S.S_right) <- S_right
+	goto right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
+
+right_1p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
+	from act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
+	S_left <- (S.S_left)
+	goto right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1

@@ -1,13 +1,10 @@
-module Parser (parseProg, parseSpec) where
+module Parser where
 
 import AST
 import Values
 import Text.ParserCombinators.Parsec
 
 type Label = String
-
--- NOTE: Added Paren to expr, assoc, precedence
--- Consider white space handling, currently lenient
 
 parseStr :: Parser a -> String -> EM a
 parseStr p s = case runParser p () "" s of
@@ -97,6 +94,7 @@ pFactor =
   Const <$> pConstant
   <|> do word "hd"; UOp Hd <$> pExpr
   <|> do word "tl"; UOp Tl <$> pExpr
+  <|> Var <$> pName
   <|> do symbol "!"; UOp Not <$> pExpr
   <|> do symbol "("; e <- pExpr; symbol ")"; return e
 
@@ -108,6 +106,7 @@ pValue =
   do symbol "("; c1 <- pValue; 
      symbol "."; c2 <- pValue; 
      symbol ")"; return $ Pair c1 c2
+  <|> do word "nil"; return Nil
   <|> Atom <$> pName
   <|> Num <$> pNum
 

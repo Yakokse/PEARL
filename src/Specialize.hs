@@ -37,7 +37,7 @@ specProg format entry prog (p:ps) seen res
        b <- raise $ getBlockErr' format prog l
        case specBlock entry s b origin of
         Left e -> logM ("ERROR: " ++ e ) >> 
-                  logM ("FROM POINT: " ++ prettyAnn format (fst p)) >>
+                  logM ("IN POINT: " ++ prettyAnn format (fst p)) >>
                     specProg format entry prog ps seen res
         Right (b', p') -> do
           let pnew = map (\x -> (x, current)) p'
@@ -135,9 +135,9 @@ specStep s (Update' Dynamic n op e) =
   do e' <- getExpr e s
      return (s, [Update n op e'])
 specStep s (Update' Static n op e) = 
-  do i <- getValue e $ s `without` n
-     v <- find n s
-     res <- calcR op v i
+  do rhs <- getValue e $ s `without` n
+     lhs <- find n s
+     res <- calcR op lhs rhs
      let s' = update n res s
      return (s', [])
 specStep s (Replacement' Dynamic q1 q2) = return (s, [Replacement q1 q2])
