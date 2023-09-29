@@ -35,6 +35,7 @@ library
       Specialize
       Utils
       Values
+      Wellformed
   other-modules:
       Paths_PERevFlow
   hs-source-dirs:

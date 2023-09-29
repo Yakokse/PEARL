@@ -12,6 +12,7 @@ import Annotate
 import Specialize
 import PostProcessing
 import PrettyPrint
+import Wellformed
 
 data Opts = Opts { outputFile :: String, skipSpec :: Bool, verbose :: Bool, skipPost :: Bool, liftstate :: Bool }
 
@@ -55,6 +56,7 @@ main =
      progStr <- readFile progPath
      trace opts "- Parsing program."
      prog <- fromEM "parsing" $ parseProg progStr
+     _ <- fromEM "wellformedness check" $ wellformedProg id prog
      trace opts $ "Reading division (and specilization data) from " ++ specPath ++ "."
      specStr <- readFile specPath
      trace opts "- Parsing division."
