@@ -1,16 +1,17 @@
 init: entry
-      Rules ^= Transitions
+      pc ^= '0
       Q ^= Start
-      if Transitions goto loop else stop
+      if pc_max = '0 goto stop else loop
 
 loop: fi Q = Start from init else act4
       if Q = End goto stop else act1
 
-stop: fi Transitions from loop else init
+stop: fi pc_max = '0 from init else loop
       exit
 
 act1: from loop 
-      ((Q1 . (S1 . (S2 . Q2))) . Rules) <- Rules
+      Rule ^= Transitions # pc
+      (Q1 . (S1 . (S2 . Q2))) <- Rule
       if Q = Q1 && S = S1 goto write else act2
 
 write: from act1
@@ -24,15 +25,16 @@ act2: fi Q = Q2 && S = S2 from write else act1
       if Q = Q1 && S1 = 'SLASH goto move else act3
 
 act3: fi Q = Q2 && S1 = 'SLASH from move1 else act2
-      RulesRev <- ((Q1 . (S1 . (S2 . Q2))) . RulesRev)
-      if Rules goto act4 else reload
+      Rule <- (Q1 . (S1 . (S2 . Q2)))
+      Rule ^= Transitions # pc
+      pc += '1
+      if pc = pc_max goto clear else act4
 
-reload: fi Rules from reload else act3
-        (Rule . RulesRev) <- RulesRev
-        Rules <- (Rule . Rules)
-        if RulesRev goto reload else act4
+clear: from act3
+       pc -= pc_max
+       goto act4
 
-act4: fi !RulesRev from reload else act3
+act4: fi pc = '0 from clear else act3
       goto loop
 
 move: from act2
