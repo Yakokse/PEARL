@@ -237,12 +237,12 @@ write_Q_5_Q1_5_Q2_6_S1_BLANK_S2_BLANK_pc_7:
 
 left_2p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
 	from left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
-	(S.S_left) <- S_left
+	(S . S_left) <- S_left
 	goto left2_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
 left_1p_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5:
 	from act2_Q_4_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4
-	S_right <- (S.S_right)
+	S_right <- (S . S_right)
 	goto left1_Q_5_Q1_4_Q2_5_S1_SLASH_S2_LEFT_pc_5
 
 act2_Q_3_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
@@ -325,10 +325,10 @@ act2_Q_2_Q1_3_Q2_4_S1_BLANK_S2_BLANK_pc_4:
 
 right_2p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
 	from right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
-	(S.S_right) <- S_right
+	(S . S_right) <- S_right
 	goto right2_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1
 
 right_1p_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1:
 	from act2_Q_2_Q1_1_Q2_2_S1_BLANK_S2_BLANK_pc_0
-	S_left <- (S.S_left)
+	S_left <- (S . S_left)
 	goto right1_Q_3_Q1_2_Q2_3_S1_SLASH_S2_RIGHT_pc_1

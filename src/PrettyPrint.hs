@@ -64,7 +64,7 @@ prettyStep (Replacement q1 q2) = prettyPat q1 ++ " <- " ++ prettyPat q2
 prettyPat :: Pattern -> String
 prettyPat (QConst v) = prettyVal v
 prettyPat (QVar n) = n
-prettyPat (QPair q1 q2) = "(" ++ prettyPat q1 ++ "." ++ prettyPat q2 ++ ")"
+prettyPat (QPair q1 q2) = "(" ++ prettyPat q1 ++ " . " ++ prettyPat q2 ++ ")"
 
 prettyExpr :: Expr -> String
 prettyExpr (Const v)     = "'" ++ prettyVal v

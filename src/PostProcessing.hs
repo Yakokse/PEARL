@@ -1,14 +1,72 @@
 module PostProcessing where
 import AST
 import Utils
-import Data.List (partition)
+import Data.List (partition, elemIndex)
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 import Values
+import Operators
 import Data.Maybe (maybeToList)
 
 -- TODO: Arbitrary push expressions will remove magic variable
 -- Pushnz only?
+constFoldE :: Expr -> LEM Expr 
+constFoldE (Const v) = return $ Const v
+constFoldE (Var n)   = return $ Var n
+constFoldE (UOp op e) = do
+  e' <- constFoldE e
+  case e' of
+    Const v -> 
+      logM "U.Op. reduced." >> emToLEM (Const <$> calcU op v)
+    _ -> return $ UOp op e'
+constFoldE (Op op e1 e2) = do
+  e1' <- constFoldE e1
+  e2' <- constFoldE e2
+  case (op, e1', e2') of
+    (_, Const v1, Const v2) -> 
+      logM "Bin.Op. reduced." >> emToLEM (Const <$> calc op v1 v2)
+    (And, Const v, _) -> 
+      logM "'And' reduced." >> return (if truthy v then e2' else Const falseV)
+    (And, _, Const v) -> 
+      logM "'And' reduced." >> return (if truthy v then e1' else Const falseV)
+    (Or, Const v, _) -> 
+      logM "'Or' reduced." >> return (if truthy v then Const trueV else e2')
+    (Or, _, Const v) ->
+      logM "'Or' reduced." >> return (if truthy v then Const trueV else e1')
+    _ -> return $ Op op e1' e2'
+
+constFold :: Program a -> LEM (Program a)
+constFold p = concat <$> mapM constFoldB p
+  where 
+    constFoldF (FromCond e l1 l2) = 
+      do e' <- constFoldE e 
+         return $ case e' of 
+          Const v -> From $ if truthy v then l1 else l2
+          _ -> FromCond e' l1 l2
+    constFoldF f = return f
+    constFoldJ (If e l1 l2) = 
+      do e' <- constFoldE e
+         return $ case e' of 
+          Const v -> Goto $ if truthy v then l1 else l2
+          _ -> If e' l1 l2
+    constFoldJ j = return j
+    constFoldS (Update n op e) =
+      do e' <- constFoldE e; return $ Update n op e'
+    constFoldS (Assert e) = Assert <$> constFoldE e
+    constFoldS step = return step
+    constFoldB b = 
+      let lem = 
+            (do f' <- constFoldF $ from b
+                b' <- mapM constFoldS $ body b
+                j' <- constFoldJ $ jump b
+                return b{from = f', body = b', jump = j'})
+      in case runLEM lem of
+        (Right res, l) -> do
+          logManyM l >> return [res]
+        (Left err, _) -> 
+          logM ("Error during constant propagation: " ++ err) >> return []
+
 liftStore :: Program (Annotated a) -> Program (Annotated a)
 liftStore = map appendStore 
   where 
@@ -125,3 +183,12 @@ compressPaths p =
                       in (b:bs, ls)
                   Just _ -> ([b], [l])
                   Nothing -> ([b], [])
+
+enumerateAnn :: Program (Annotated a) -> Program (a, Int)
+enumerateAnn p = 
+  let stores = Set.toList . Set.fromList $ map (snd . name) p
+      enum (l, s) = 
+        case elemIndex s stores of
+          Just i -> (l, i+1)
+          Nothing -> (l, 0)
+  in changeLabel enum p

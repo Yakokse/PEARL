@@ -1,13 +1,13 @@
 init: entry
-      if dyn = 0 goto fst else snd
+      if dyn goto fst else snd
 
 fst: from init
-     elim += 1
+     elim ^= 'a
      goto stop
 
 snd: from init
-     elim += 2
+     elim ^= 'b
      goto stop
 
-stop: fi dyn = 0 from fst else snd
+stop: fi dyn from fst else snd
       exit

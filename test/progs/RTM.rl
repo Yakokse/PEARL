@@ -16,18 +16,13 @@ act1: from loop
       if Q = Q1 && S = S1 goto write else act2
 
 write: from act1
-       Q += Q2 - Q1
-       if S1 = 'BLANK goto write1 else writeNum
+       Q ^= Q1
+       Q ^= Q2
+       S ^= S1
+       S ^= S2
+       goto act2
 
-// Avoid Blank typing issues
-writeNum: from write
-          S += S2 - S1
-          goto write1
-
-write1: fi S1 = 'BLANK from write else writeNum
-        goto act2
-
-act2: fi Q = Q2 && S = S2 from write1 else act1
+act2: fi Q = Q2 && S = S2 from write else act1
       if Q = Q1 && S1 = 'SLASH goto move else act3
 
 act3: fi Q = Q2 && S1 = 'SLASH from move1 else act2

@@ -21,7 +21,7 @@ Transitions =
   ((4 . (SLASH . (LEFT  . 5))) . 
   ((5 . (0 .     (0     . 4))) . 
   ((5 . (BLANK . (BLANK . 6))) . 
-  nil))))))))
+   nil))))))))
 
 // Tape for full specialization
 //S_left = 'nil

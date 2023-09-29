@@ -14,7 +14,7 @@ data Value =
   | Num  IntType
   | Pair Value Value
   | Nil
-  deriving (Eq, Show, Read) 
+  deriving (Eq, Show, Read, Ord) 
 
 type Store = Map.Map Name Value
 
@@ -83,3 +83,11 @@ raise em = LEM (em, [])
 
 logM :: String -> LEM ()
 logM s = LEM (Right (), [s])
+
+logManyM :: [String] -> LEM ()
+logManyM = mapM_ logM
+
+emToLEM :: EM a -> LEM a
+emToLEM m = LEM $ case m of
+  Left e -> (Left e, [e])
+  Right s -> (Right s, [])

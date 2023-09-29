@@ -1,0 +1,37 @@
+init_n_3:
+	entry
+	goto loop_n_3
+
+
+loop_n_3:
+	fi empty s
+		from init_n_3
+		else loop_NULL
+	push x s
+	x += top s
+	goto loop_n_2
+
+
+loop_n_2:
+	fi empty s
+		from init_NULL
+		else loop_n_3
+	push x s
+	x += top s
+	goto loop_n_1
+
+
+loop_n_1:
+	fi empty s
+		from init_NULL
+		else loop_n_2
+	push x s
+	x += top s
+	goto stop_n_0
+
+
+stop_n_0:
+	fi empty s
+		from init_NULL
+		else loop_n_1
+	exit

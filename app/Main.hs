@@ -86,23 +86,29 @@ main2 opts prog2 store =
      if skipPost opts
       then do trace opts "- Skip post processing"
               return $ prettyProg id clean
-      else main3 opts clean
+      else main3 opts lifted
 
-main3 :: Opts -> Program String -> IO String
-main3 opts clean = 
+main3 :: Opts -> Program (Annotated String) -> IO String
+main3 opts prog = 
   do trace opts "- POST PROCESSING"
      let showLength p = trace opts $ "Nr. of blocks: " ++ show (length p)
-     showLength clean
-     trace opts "- Merging exits"
-     let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
-     let singleExit = mergeExits newName clean
-     showLength singleExit
+     showLength prog
+     trace opts "- Folding constants"
+     (folded, l) <- fromLEM "Folding" $ constFold prog
+     trace opts $ "Expressions reduced: " ++ show (length . lines $ l)
      trace opts "- Removing dead blocks"
-     let liveProg = removeDeadBlocks singleExit
+     let liveProg = removeDeadBlocks folded
      showLength liveProg
      trace opts "- Adding assertions"
      let withAssertions = changeConditionals liveProg
      trace opts "- Compressing paths"
      merged <- fromEM "Path compression" $ compressPaths withAssertions
      showLength merged
-     return $ prettyProg id merged 
+     trace opts "- Cleaning names"
+     let numeratedStore = enumerateAnn merged
+     let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
+     trace opts "- Merging exits"
+     let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
+     let singleExit = mergeExits newName clean
+     showLength singleExit
+     return $ prettyProg id singleExit 

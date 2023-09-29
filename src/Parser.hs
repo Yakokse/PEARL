@@ -96,7 +96,11 @@ pFactor =
   <|> do word "tl"; UOp Tl <$> pExpr
   <|> Var <$> pName
   <|> do symbol "!"; UOp Not <$> pExpr
-  <|> do symbol "("; e <- pExpr; symbol ")"; return e
+  <|> do symbol "("; e <- pExpr; res <- maybeCons e; symbol ")"; return res
+  where
+    maybeCons e = 
+      do symbol "."; Op Cons e <$> pExpr
+      <|> return e
 
 pConstant :: Parser Value
 pConstant = symbol "'" >> pValue

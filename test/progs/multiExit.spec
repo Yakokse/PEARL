@@ -1,1 +1,1 @@
-elim = 0
+elim = 'nil
