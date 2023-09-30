@@ -38,14 +38,14 @@ fromEM :: String -> EM a -> IO a
 fromEM _ (Right a) = return a
 fromEM s (Left e) = die $ "Error while " ++ s ++ ": " ++ e
 
-fromLEM :: String -> LEM a -> IO (a, String)
-fromLEM _ (LEM (Right a, l)) = return (a, unlines l)
+fromLEM :: String -> LEM a -> IO (a, [String])
+fromLEM _ (LEM (Right a, l)) = return (a, l)
 fromLEM s (LEM (Left e, l)) = 
   do putStrLn "LOG:" 
      mapM_ putStrLn l
      die $ "Error while " ++ s ++ ": " ++ e  
   
--- TODO: Verify correctness of initial program, redo spec input maybe? Logging improvements
+-- TODO: Improve SPEC format, Logging improvements
 main :: IO ()
 main =
   do ss <- getArgs
@@ -56,7 +56,7 @@ main =
      progStr <- readFile progPath
      trace opts "- Parsing program."
      prog <- fromEM "parsing" $ parseProg progStr
-     _ <- fromEM "wellformedness check" $ wellformedProg id prog
+     _ <- fromEM "wellformedness check of input prog" $ wellformedProg id prog
      trace opts $ "Reading division (and specilization data) from " ++ specPath ++ "."
      specStr <- readFile specPath
      trace opts "- Parsing division."
@@ -69,11 +69,12 @@ main =
      let store = remove (allDyn congruentDiv) initStore
      trace opts "- Annotating program"
      let prog2 = annotateProg congruentDiv prog
+     _ <- fromEM "This should never happen. Please report otherwise." 
+                 (wellformedProg' congruentDiv prog2)
      str <- if skipSpec opts 
               then do trace opts "- Skip specialization";
                       return $ prettyProg' id prog2 
               else main2 opts prog2 store
-     -- TODO: verify prog2/entry prog     
      trace opts $ "Writing to " ++ outputFile opts 
      writeFile (outputFile opts) str 
      trace opts "Program ran successfully"
@@ -82,7 +83,7 @@ main2 :: Opts -> Program' String -> Store -> IO String
 main2 opts prog2 store = 
   do trace opts "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize id prog2 store "entry"
-     trace opts $ "Trace: (label: State)\n" ++ l
+     trace opts $ "Trace: (label: State)\n" ++ unlines l
      let lifted = if liftstate opts then liftStore res else res
      let clean = changeLabel (serializeAnn id) lifted
      if skipPost opts
@@ -97,7 +98,7 @@ main3 opts prog =
      showLength prog
      trace opts "- Folding constants"
      (folded, l) <- fromLEM "Folding" $ constFold prog
-     trace opts $ "Expressions reduced: " ++ show (length . lines $ l)
+     trace opts $ "Expressions reduced: " ++ show (length l)
      trace opts "- Removing dead blocks"
      let liveProg = removeDeadBlocks folded
      showLength liveProg
