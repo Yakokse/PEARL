@@ -1,0 +1,14 @@
+init_1:
+	entry
+	assert((list = 'nil))
+	list <- (x . list)
+	x ^= hd(list)
+	assert(!((list = 'nil)))
+	list <- (x . list)
+	x ^= hd(list)
+	assert(!((list = 'nil)))
+	list <- (x . list)
+	x ^= hd(list)
+	assert(!((list = 'nil)))
+	list <- (x . list)
+	exit

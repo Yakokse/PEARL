@@ -1,0 +1,23 @@
+init_1:
+	entry
+	if dyn
+		goto fst_1
+		else snd_1
+
+fst_1:
+	from init_1
+	assert(dyn)
+	exit_control_var ^= '0
+	goto exit_merge_0_1
+
+snd_1:
+	from init_1
+	assert(!(dyn))
+	exit_control_var ^= '1
+	goto exit_merge_0_1
+
+exit_merge_0_1:
+	fi (exit_control_var < '1)
+		from fst_1
+		else snd_1
+	exit

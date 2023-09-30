@@ -1,0 +1,143 @@
+init_9:
+	entry
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	goto act2_1
+
+act2_1:
+	fi (S = 'BLANK)
+		from init_9
+		else write_3
+	assert(!((S = 'SLASH)))
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto right_1b_2
+		else right_1p_2
+
+right_1b_2:
+	from act2_1
+	S ^= 'BLANK
+	goto right1_2
+
+right1_2:
+	fi (S_left = 'nil)
+		from right_1b_2
+		else right_1p_2
+	if (S_right = 'nil)
+		goto right_2b_2
+		else right_2p_2
+
+right_2b_2:
+	from right1_2
+	S += 'BLANK
+	goto right2_2
+
+right2_2:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from right_2b_2
+		else right_2p_2
+	if (S = '0)
+		goto write_4
+		else act2_4
+
+write_4:
+	from right2_2
+	S ^= '0
+	S ^= '1
+	goto act2_5
+
+act2_5:
+	fi (S = '1)
+		from write_4
+		else write_8
+	goto act2_6
+
+act2_6:
+	fi (S = 'BLANK)
+		from act2_3
+		else act2_5
+	assert(!((S = 'SLASH)))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto left_1b_7
+		else left_1p_7
+
+left_1b_7:
+	from act2_6
+	S ^= 'BLANK
+	goto left1_7
+
+left1_7:
+	fi (S_right = 'nil)
+		from left_1b_7
+		else left_1p_7
+	if (S_left = 'nil)
+		goto left_2b_7
+		else left_2p_7
+
+left_2b_7:
+	from left1_7
+	S ^= 'BLANK
+	goto left2_7
+
+left2_7:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from left_2b_7
+		else left_2p_7
+	if (S = '0)
+		goto write_8
+		else act2_8
+
+write_8:
+	from left2_7
+	S ^= '0
+	S ^= '0
+	assert((S = '0))
+	goto act2_5
+
+act2_8:
+	from left2_7
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	exit
+
+left_2p_7:
+	from left1_7
+	(S . S_left) <- S_left
+	goto left2_7
+
+left_1p_7:
+	from act2_6
+	S_right <- (S . S_right)
+	goto left1_7
+
+act2_4:
+	from right2_2
+	if (S = '1)
+		goto write_3
+		else act2_3
+
+write_3:
+	from act2_4
+	S ^= '1
+	S ^= '0
+	assert((S = '0))
+	goto act2_1
+
+act2_3:
+	from act2_4
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	goto act2_6
+
+right_2p_2:
+	from right1_2
+	(S . S_right) <- S_right
+	goto right2_2
+
+right_1p_2:
+	from act2_1
+	S_left <- (S . S_left)
+	goto right1_2

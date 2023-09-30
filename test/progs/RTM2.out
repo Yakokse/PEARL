@@ -1,0 +1,6 @@
+init_17_1:
+	entry
+	S ^= 'BLANK
+	S_left ^= 'nil
+	S_right ^= '(0.(0.(1.nil)))
+	exit
