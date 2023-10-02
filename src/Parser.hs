@@ -3,7 +3,7 @@ module Parser where
 import AST
 import Values
 import Text.ParserCombinators.Parsec
-
+import Data.Functor (($>), void)
 type Label = String
 
 parseStr :: Parser a -> String -> EM a
@@ -15,7 +15,7 @@ parseProg :: String -> EM (Program Label)
 parseProg = parseStr pProg
 
 pProg :: Parser (Program Label)
-pProg = whitespace >> many1 pBlock <* eof
+pProg = whitespace *> many1 pBlock <* eof
 
 pBlock :: Parser (Block Label)
 pBlock = 
@@ -26,100 +26,97 @@ pLabel :: Parser String
 pLabel = pName <* symbol ":"
 
 pFrom :: Parser (IfFrom Label)
-pFrom = 
-  do word "entry"; return Entry
-  <|> do word "fi"; e <- pExpr; word "from"; l1 <- pName; word "else"
-         FromCond e l1 <$> pName
-  <|> do word "from"; From <$> pName
+pFrom = choice [
+    word "entry" $> Entry
+  , FromCond <$> (word "fi" *> pExpr) <*> (word "from" *> pName) <*> (word "else" *> pName)
+  , From <$> (word "from" *> pName)
+  ]
 
 pGoto :: Parser (Jump Label)
-pGoto = 
-  do word "exit"; return Exit
-  <|> do word "if"; e <- pExpr; word "goto"; l1 <- pName; word "else"
-         If e l1 <$> pName
-  <|> do word "goto"; Goto <$> pName
+pGoto = choice [
+    word "exit" $> Exit
+  , If <$> (word "if" *> pExpr) <*> (word "goto" *> pName) <*> (word "else" *> pName)
+  , Goto <$> (word "goto" *> pName)
+  ]
 
 pStep :: Parser Step
-pStep = 
-  do word "skip"; return Skip
-  <|> do word "assert"; symbol "("; e <- pExpr; symbol ")"; return (Assert e)
-  <|> try pUpdate
-  <|> do p1 <- pPattern; symbol "<-"; Replacement p1 <$> pPattern
+pStep = choice [
+    word "skip" $> Skip
+  , Assert <$> (word "assert" *> symbol "(" *> pExpr <* symbol ")")
+  , try pUpdate
+  , Replacement <$> pPattern <*> (symbol "<-" *> pPattern)
+  ]
 
 pUpdate :: Parser Step
 pUpdate = 
-  do n <- pName; op <- pOp; Update n op <$> pExpr
+  Update <$> pName <*> pOp <*> pExpr
   where 
-    pOp = do symbol "+="; return Add
-        <|> do symbol "-="; return Sub
-        <|> do symbol "^="; return Xor
+    pOp = choice [symbol "+=" $> Add, symbol "-=" $> Sub, symbol "^=" $> Xor]
 
 pPattern :: Parser Pattern
-pPattern = 
-  do QVar <$> pName
-  <|> QConst <$> pConstant
-  <|> do symbol "("; q1 <- pPattern; 
-         symbol "."; q2 <- pPattern; 
-         symbol ")"; return $ QPair q1 q2
+pPattern = choice [
+    QVar <$> pName
+  , QConst <$> pConstant
+  , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
+  ]
 
 pExpr :: Parser Expr
 pExpr = chainl1 pComparison pRelOp
   where 
-    pRelOp = do symbol "&&"; return . Op $ And
-          <|> do symbol "||"; return . Op $ Or  
+    pRelOp = choice [ symbol "&&" $> Op And
+                    , symbol "||" $> Op Or]
 
 pComparison :: Parser Expr
 pComparison = chainl1 pEquation pComp
   where 
-    pComp = do symbol "<"; return . Op $ Less
-            <|> do symbol ">"; return . Op $ Greater
-            <|> do symbol "="; return . Op $ Equal  
+    pComp = choice [ symbol "<" $> Op Less
+                   , symbol ">" $> Op Greater
+                   , symbol "=" $> Op Equal]
 
 pEquation :: Parser Expr
 pEquation = chainl1 pTerm pAddOp
   where
-    pAddOp = do symbol "+"; return . Op $ ROp Add
-            <|> do symbol "-"; return . Op $ ROp Sub  
-            <|> do symbol "^"; return . Op $ ROp Xor  
+    pAddOp = choice [ symbol "+" $> Op (ROp Add)
+                    , symbol "-" $> Op (ROp Sub)
+                    , symbol "^" $> Op (ROp Xor)]
 
 pTerm :: Parser Expr
 pTerm = chainl1 pFactor pMulOp
   where
-    pMulOp = do symbol "*"; return . Op $ Mul
-            <|> do symbol "/"; return . Op $ Div
-            <|> do symbol "#"; return . Op $ Index
+    pMulOp = choice [ symbol "*" $> Op Mul
+                    , symbol "/" $> Op Div
+                    , symbol "#" $> Op Index]
 
 pFactor :: Parser Expr
-pFactor = 
-  Const <$> pConstant
-  <|> do word "hd"; UOp Hd <$> pExpr
-  <|> do word "tl"; UOp Tl <$> pExpr
-  <|> Var <$> pName
-  <|> do symbol "!"; UOp Not <$> pExpr
-  <|> do symbol "("; e <- pExpr; res <- maybeCons e; symbol ")"; return res
+pFactor = choice [
+    Const <$> pConstant
+  , UOp Hd <$> (word "hd" *> pExpr)
+  , UOp Tl <$> (word "tl" *> pExpr)
+  , Var <$> pName
+  , UOp Not <$> (symbol "!" *> pExpr)
+  , do symbol "("; e <- pExpr; res <- maybeCons e; symbol ")"; return res
+  ]
   where
-    maybeCons e = 
-      do symbol "."; Op Cons e <$> pExpr
-      <|> return e
+    maybeCons e = choice [Op Cons e <$> (symbol "." *> pExpr), return e]
+  
 
 pConstant :: Parser Value
-pConstant = symbol "'" >> pValue
+pConstant = symbol "'" *> pValue
 
 pValue :: Parser Value
-pValue =
-  do symbol "("; c1 <- pValue; 
-     symbol "."; c2 <- pValue; 
-     symbol ")"; return $ Pair c1 c2
-  <|> do word "nil"; return Nil
-  <|> Atom <$> pName
-  <|> Num <$> pNum
+pValue = choice [
+    Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
+  , word "nil" $> Nil
+  , Atom <$> pName
+  , Num <$> pNum
+  ]
 
 parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
-  where pFile = do whitespace; res <- many pDeclaration; eof; return $ makeStore res
+  where pFile = makeStore <$> (whitespace *> many pDeclaration <* eof)
 
 pDeclaration :: Parser (Name, Value)
-pDeclaration = do n <- pName; symbol "="; v <- pConstant; return (n,v)
+pDeclaration = (,) <$> pName <*> (symbol "=" *> pConstant)
 
 pName :: Parser String
 pName = 
@@ -127,7 +124,7 @@ pName =
     do c <- letter; cs <- many pChar; 
        if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
   where 
-    pChar = alphaNum <|> char '_' <|> char '\''
+    pChar = choice [alphaNum, char '_', char '\'']
     restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
                   "skip", "hd", "tl", "assert", "nil"]
 
@@ -135,7 +132,7 @@ pNum :: Parser Word
 pNum = lexeme . try $ read <$> many1 digit
 
 word :: String -> Parser ()
-word s = lexeme . try $ string s >> notFollowedBy alphaNum
+word s = lexeme . try $ string s *> notFollowedBy alphaNum
 
 symbol :: String -> Parser ()
 symbol s = lexeme . void $ string s
@@ -149,12 +146,6 @@ whitespace = do
   optional (do comment; whitespace)
 
 comment :: Parser ()
-comment = do 
-  _ <- try (string "//") 
-  _ <- manyTill anyChar eol
-  return ()
-      where eol = void newline <|> eof
-
-void :: Parser a -> Parser ()
-void p = do _ <- p; return () 
+comment = void $ try (string "//") *> manyTill anyChar eol
+    where eol = void newline <|> eof
 
