@@ -1,3 +1,6 @@
+(Start End Transitions S_left S S_right) -> (Start End Transitions S_left S S_right)
+with (Q Q1 Q2 S1 S2 Rules RulesRev Rule)
+
 init: entry
       Rules ^= Transitions
       Q ^= Start

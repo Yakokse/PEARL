@@ -1,17 +1,6 @@
-// Inner variables
-Q = 'nil
-Q1 = 'nil
-S1 = 'nil
-S2 = 'nil
-Q2 = 'nil
-RulesRev = 'nil
-Rules = 'nil
-Rule = 'nil
-
 // Describe the TM
 Start = '1
 End = '6
-pc_max = '8
 Transitions = 
  '((1 . (BLANK . (BLANK . 2))) . 
   ((2 . (SLASH . (RIGHT . 3))) . 

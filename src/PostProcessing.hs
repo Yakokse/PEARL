@@ -36,7 +36,7 @@ constFoldE (Op op e1 e2) = do
       logM "'Or' reduced." >> return (if truthy v then Const trueV else e1')
     _ -> return $ Op op e1' e2'
 
-constFold :: Program a -> LEM (Program a)
+constFold :: [Block a] -> LEM [Block a]
 constFold p = concat <$> mapM constFoldB p
   where 
     constFoldF (FromCond e l1 l2) = 
@@ -52,15 +52,21 @@ constFold p = concat <$> mapM constFoldB p
           _ -> If e' l1 l2
     constFoldJ j = return j
     constFoldS (Update n op e) =
-      do e' <- constFoldE e; return $ Update n op e'
-    constFoldS (Assert e) = Assert <$> constFoldE e
-    constFoldS step = return step
+      do e' <- constFoldE e; return [Update n op e']
+    constFoldS (Assert e) = do
+      e' <- constFoldE e
+      case e' of
+        Const v -> if truthy v 
+                    then return [] 
+                    else raise (Left "Assert failed")
+        _ -> return [Assert e']
+    constFoldS step = return [step]
     constFoldB b = 
       let lem = 
             (do f' <- constFoldF $ from b
-                b' <- mapM constFoldS $ body b
+                bs' <- mapM constFoldS $ body b
                 j' <- constFoldJ $ jump b
-                return b{from = f', body = b', jump = j'})
+                return b{from = f', body = concat bs', jump = j'})
       in case runLEM lem of
         (Right res, l) -> do
           logManyM l >> return [res]
@@ -68,7 +74,7 @@ constFold p = concat <$> mapM constFoldB p
           logM ("Error during constant propagation: " ++ err) >> return []
 
 liftStore :: Program (Annotated a) -> Program (Annotated a)
-liftStore = map appendStore 
+liftStore (decl, p) = (decl, map appendStore p)
   where 
     appendStore b 
       | not $ isExit b = b
@@ -77,7 +83,7 @@ liftStore = map appendStore
       }
     inline = foldr (\(n,v) acc -> Update n Xor (Const v)   : acc) [] . storeToList
 
-removeDeadBlocks :: Eq a => Program a -> Program a
+removeDeadBlocks :: Eq a => [Block a] -> [Block a]
 removeDeadBlocks p = 
   let bs = filter isExit p
       liveBlocks = traceProg bs []
@@ -90,35 +96,36 @@ removeDeadBlocks p =
         let new = concatMap (maybeToList . getBlock p) $ fromLabels b
         in traceProg (new ++ bs) (b:res)
 
-changeConditionals :: Eq a => Program a -> Program a
-changeConditionals p = map changeCond p
+changeConditionals :: Eq a => [Block a] -> [Block a]
+changeConditionals prog = map changeCond prog
   where
     changeCond b = 
       let (f, assFrom) = checkFrom $ from b
           (j, assJump) = checkJump $ jump b
       in b {from = f, jump = j, body = assFrom ++ body b ++ assJump}
     checkFrom f = case f of
-      FromCond e l1 l2 | not $ l2 `nameIn` p -> 
+      FromCond e l1 l2 | not $ l2 `nameIn` prog -> 
         (From l1, [Assert e])
-      FromCond e l1 l2 | not $ l1 `nameIn` p -> 
+      FromCond e l1 l2 | not $ l1 `nameIn` prog -> 
         (From l2, [Assert (UOp Not e)])
       _ -> (f , [])
     checkJump j = case j of
-      If e l1 l2 | not $ l2 `nameIn` p -> 
+      If e l1 l2 | not $ l2 `nameIn` prog -> 
         (Goto l1, [Assert e])
-      If e l1 l2 | not $ l1 `nameIn` p -> 
+      If e l1 l2 | not $ l1 `nameIn` prog -> 
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
 
+-- TODO: CHANGE DECL HERE
 mergeExits :: (IntType -> IntType -> a) -> Program a -> Program a
-mergeExits showBounds p = 
+mergeExits showBounds (decl, p) = 
   let (exits, remaining) = partition isExit p in
   case length exits of 
-    n | n <= 1 -> p
+    n | n <= 1 -> (decl, p)
     _ ->
       let (exit, _, _, newBlocks) = 
             merge $ zipWith (\b i -> (addControl b i,i,i)) exits [0..]
-      in remaining ++ newBlocks ++ [exit]
+      in (decl, remaining ++ newBlocks ++ [exit])
   where
     exitVar = "exit_control_var"
     addControl block val = block {
@@ -145,7 +152,7 @@ mergeExits showBounds p =
             }
       in (newBlock, lb, ub, b1':b2':bs1++bs2)    
 
-compressPaths :: Ord a => Program a -> EM (Program a)
+compressPaths :: Ord a => [Block a] -> EM [Block a]
 compressPaths p = 
   do entry <- getEntryBlock p
      let bss = chainBlocks [name entry] []
@@ -184,7 +191,7 @@ compressPaths p =
                   Just _ -> ([b], [l])
                   Nothing -> ([b], [])
 
-enumerateAnn :: Program (Annotated a) -> Program (a, Int)
+enumerateAnn :: [Block (Annotated a)] -> [Block (a, Int)]
 enumerateAnn p = 
   let stores = Set.toList . Set.fromList $ map (snd . name) p
       enum (l, s) = 

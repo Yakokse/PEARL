@@ -4,32 +4,104 @@ import AST
 import Utils
 import Values
 import Division
+import Data.Set ( fromList, size )
 
 wellformedProg :: Eq a => (a -> String) -> Program a -> EM ()
-wellformedProg format p = 
-  do _ <- getEntryBlock p
+wellformedProg format (decl, p) = 
+  do _ <- wellformedDecl decl
+     _ <- getEntryBlock p
      _ <- getExitBlock p
-     mapM_ (wellformedBlock format p) p
+     let allVars = getVarsDecl decl
+     mapM_ (wellformedBlock format (decl, p) allVars) p
 
-wellformedBlock :: Eq a => (a -> String) -> Program a -> Block a -> EM ()
-wellformedBlock format p b = 
+wellformedDecl :: VariableDecl -> EM ()
+wellformedDecl decl = 
+  let intraVar = not (repeatedVars inp || repeatedVars out || repeatedVars tmp)
+      interVar = notTemp inp && notTemp out
+  in if intraVar && interVar 
+    then return ()
+    else Left "Malformed declaration"
+  where 
+    inp = input decl
+    out = output decl
+    tmp = temp decl
+    repeatedVars vs = length vs /= size (fromList vs)
+    notTemp = all (`notElem` tmp)
+    
+
+wellformedBlock :: Eq a => (a -> String) -> Program a -> [Name] -> Block a -> EM ()
+wellformedBlock format p ns b = 
   do mapM_ checkFrom $ jumpLabels b
      mapM_ checkGoto $ fromLabels b
+     mapM_ (wellformedStep ns) $ body b
+     wellformedJump ns $ jump b
+     wellformedFrom ns $ from b
   where 
     checkFrom l = do
-      b' <- getBlockErr format p l
+      b' <- getBlockErr format (snd p) l
       if name b `elem` fromLabels b' 
         then return ()
         else Left $ format (name b) ++ " not mentioned in " ++ format l
     checkGoto l = do
-      b' <- getBlockErr format p l
+      b' <- getBlockErr format (snd p) l
       if name b `elem` jumpLabels b' 
         then return ()
         else Left $ format (name b) ++ " not mentioned in " ++ format l
 
+wellformedJump :: [Name] -> Jump a -> EM ()
+wellformedJump _ (Goto _) = return ()
+wellformedJump ns (If e _ _) = 
+  wellformedExp ns e
+wellformedJump _ Exit = return ()
+
+wellformedFrom :: [Name] -> IfFrom a -> EM ()
+wellformedFrom _  (From _) = return ()
+wellformedFrom ns (FromCond e _ _) = 
+  wellformedExp ns e
+wellformedFrom _  Entry = return ()
+
+wellformedStep :: [Name] -> Step -> EM ()
+wellformedStep _ Skip = return ()
+wellformedStep ns (Assert e) = 
+  wellformedExp ns e
+wellformedStep ns (Replacement q1 q2) =
+  wellformedPat ns (QPair q1 q2)
+wellformedStep ns (Update n _ e) =
+  do isDefined n ns
+     wellformedExp (filter (/= n) ns) e
+
+wellformedPat :: [Name] -> Pattern -> EM ()
+wellformedPat _ (QConst _) = return ()
+wellformedPat ns (QVar n) = isDefined n ns
+wellformedPat ns (QPair q1 q2) =
+  do wellformedPat ns q1
+     wellformedPat ns q2
+
+wellformedExp :: [Name] -> Expr -> EM ()
+wellformedExp _ (Const _) = return ()
+wellformedExp ns (Var n) = 
+  isDefined n ns
+wellformedExp ns (Op _ e1 e2) = 
+  do wellformedExp ns e1
+     wellformedExp ns e2
+wellformedExp ns (UOp _ e) = 
+  wellformedExp ns e
+
+isDefined :: Name -> [Name] -> EM ()
+isDefined n ns = 
+  if n `elem` ns 
+    then return () 
+    else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
+
 wellformedProg' :: Division -> Program' a -> EM ()
-wellformedProg' d = mapM_ wellformedBlock'
+wellformedProg' d (decl, prog) = 
+  wellformedDecl' >> mapM_ wellformedBlock' prog
   where 
+    wellformedDecl' = 
+      let valid = all (\(n, t) -> t == getType n d) 
+      in if valid (input' decl) && valid (output' decl) && valid (temp' decl) 
+          then return ()
+          else Left "Declaration type failed."
     wellformedBlock' b = do
       wellformedFrom' d $ from' b
       mapM_ (wellformedStep' d) $ body' b
@@ -55,19 +127,19 @@ wellformedStep' d (Update' l n _ e) =
       then return ()
       else Left "Update mismatch."
 wellformedStep' d (Replacement' l p1 p2) =
-  do ml' <- wellformedPat d (QPair p1 p2)
+  do ml' <- wellformedPat' d (QPair p1 p2)
      case ml' of
       Just l' | l == l' -> return ()
       Nothing -> return ()
       _ -> Left "Pattern mismatch."
 
 -- Nothing represents either type, as constants are nondeterministic o.w.
-wellformedPat :: Division -> Pattern -> EM (Maybe Level)
-wellformedPat _ (QConst _) = return Nothing
-wellformedPat d (QVar n) = return . Just $ getType n d
-wellformedPat d (QPair q1 q2) = 
-  do ml1 <- wellformedPat d q1
-     ml2 <- wellformedPat d q2
+wellformedPat' :: Division -> Pattern -> EM (Maybe Level)
+wellformedPat' _ (QConst _) = return Nothing
+wellformedPat' d (QVar n) = return . Just $ getType n d
+wellformedPat' d (QPair q1 q2) = 
+  do ml1 <- wellformedPat' d q1
+     ml2 <- wellformedPat' d q2
      case ml1 of
       Nothing -> return ml2
       Just t1 -> 

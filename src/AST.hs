@@ -2,7 +2,13 @@ module AST where
 
 import Values 
 
-type Program label = [Block label]
+type Program label = (VariableDecl, [Block label])
+
+data VariableDecl = VariableDecl 
+  { input  :: [Name]
+  , output :: [Name]
+  , temp   :: [Name] 
+  }
 
 data Block label = Block 
   { name :: label
@@ -71,7 +77,13 @@ data UnOp =
   | Not
   deriving (Eq, Show, Read)
 
-type Program' label = [Block' label]
+type Program' label = (VariableDecl', [Block' label])
+
+data VariableDecl' = VariableDecl' 
+  { input'  :: [(Name, Level)]
+  , output' :: [(Name, Level)]
+  , temp'   :: [(Name, Level)] 
+  }
 
 data Block' label = Block' 
   { name' :: label

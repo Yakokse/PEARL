@@ -5,7 +5,14 @@ import Division
 import Values
 
 annotateProg :: Division -> Program a -> Program' a
-annotateProg d = map (annotateBlock d)
+annotateProg d (decl, p)= (annotateDecl d decl, map (annotateBlock d) p)
+
+annotateDecl :: Division -> VariableDecl -> VariableDecl'
+annotateDecl d VariableDecl{input = i, output = o, temp = t} =
+  VariableDecl'{ input' = map annVar i
+               , output' = map annVar o
+               , temp' = map annVar t}
+  where annVar n = (n, getType n d)
 
 annotateBlock :: Division -> Block a -> Block' a
 annotateBlock d b = 

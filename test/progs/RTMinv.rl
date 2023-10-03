@@ -1,0 +1,162 @@
+move1:
+	from act3
+	if (S2 = 'LEFT)
+		goto left2
+		else right2
+
+right2:
+	from move1
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto right_2b
+		else right_2p
+
+right_2p:
+	from right2
+	S_right <- (S . S_right)
+	goto right1
+
+right_2b:
+	from right2
+	S -= 'BLANK
+	goto right1
+
+right1:
+	fi (S_right = 'nil)
+		from right_2b
+		else right_2p
+	if (S_left = 'nil)
+		goto right_1b
+		else right_1p
+
+right_1p:
+	from right1
+	(S . S_left) <- S_left
+	goto right
+
+right_1b:
+	from right1
+	S ^= 'BLANK
+	goto right
+
+right:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from right_1b
+		else right_1p
+	goto move
+
+left2:
+	from move1
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto left_2b
+		else left_2p
+
+left_2p:
+	from left2
+	S_left <- (S . S_left)
+	goto left1
+
+left_2b:
+	from left2
+	S ^= 'BLANK
+	goto left1
+
+left1:
+	fi (S_left = 'nil)
+		from left_2b
+		else left_2p
+	if (S_right = 'nil)
+		goto left_1b
+		else left_1p
+
+left_1p:
+	from left1
+	(S . S_right) <- S_right
+	goto left
+
+left_1b:
+	from left1
+	S ^= 'BLANK
+	goto left
+
+left:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from left_1b
+		else left_1p
+	goto move
+
+move:
+	fi (S2 = 'LEFT)
+		from left
+		else right
+	Q -= (Q2 - Q1)
+	goto act2
+
+act4:
+	from loop
+	if !(RulesRev)
+		goto reload
+		else act3
+
+reload:
+	fi RulesRev
+		from reload
+		else act4
+	(Rule . Rules) <- Rules
+	RulesRev <- (Rule . RulesRev)
+	if Rules
+		goto reload
+		else act3
+
+act3:
+	fi Rules
+		from act4
+		else reload
+	((Q1 . (S1 . (S2 . Q2))) . RulesRev) <- RulesRev
+	if ((Q = Q2) && (S1 = 'SLASH))
+		goto move1
+		else act2
+
+act2:
+	fi ((Q = Q1) && (S1 = 'SLASH))
+		from move
+		else act3
+	if ((Q = Q2) && (S = S2))
+		goto write
+		else act1
+
+write:
+	from act2
+	S ^= S2
+	S ^= S1
+	Q ^= Q2
+	Q ^= Q1
+	goto act1
+
+act1:
+	fi ((Q = Q1) && (S = S1))
+		from write
+		else act2
+	Rules <- ((Q1 . (S1 . (S2 . Q2))) . Rules)
+	goto loop
+
+stop:
+	entry
+	if Transitions
+		goto loop
+		else init
+
+loop:
+	fi (Q = End)
+		from stop
+		else act1
+	if (Q = Start)
+		goto init
+		else act4
+
+init:
+	fi Transitions
+		from loop
+		else stop
+	Q ^= Start
+	Rules ^= Transitions
+	exit

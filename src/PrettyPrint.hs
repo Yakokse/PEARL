@@ -29,7 +29,11 @@ prettyStore :: Store -> String
 prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . storeToList
 
 prettyProg :: Print a -> Program a -> String
-prettyProg f = intercalate "\n" . concatMap (prettyBlock f)
+prettyProg f (decl, p)= prettyDecl decl ++ intercalate "\n" (concatMap (prettyBlock f) p)
+
+prettyDecl :: VariableDecl -> String
+prettyDecl d = "(" ++ unwords (input d) ++ ") -> (" ++ unwords (input d) ++ ")" ++ tmp
+ where tmp = if null (temp d) then "\n\n" else unwords (temp d) ++ "\n\n"
 
 prettyBlock :: Print a -> Block a -> [String]
 prettyBlock f b = 
@@ -105,7 +109,14 @@ prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ ")"
 prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String
-prettyProg' f = intercalate "\n" . intercalate ["\n"] . map (prettyBlock' f)
+prettyProg' f (decl, p) = prettyDecl' decl ++ intercalate "\n" (concatMap (prettyBlock' f) p)
+
+prettyDecl' :: VariableDecl' -> String
+prettyDecl' d = "(" ++ unwords (annVars $ input' d) ++ ") -> (" ++ unwords (annVars $ input' d) ++ ")" ++ tempVars
+ where 
+  tempVars = if null (temp' d) then "\n\n" else unwords (annVars $ temp' d) ++ "\n\n"
+  annVars = map (\(n,t) -> case t of Dynamic -> '%':n; _ -> n)
+
 
 prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b = 
@@ -113,7 +124,7 @@ prettyBlock' f b =
   map ('\t' :) 
     (prettyFrom' f (from' b) 
     ++ map prettyStep' (body' b) 
-    ++ prettyJump' f (jump' b))
+    ++ prettyJump' f (jump' b)) ++ [""]
 
 prettyFrom' :: Print a -> IfFrom' a -> [String]
 prettyFrom' f (From' l)  = ["from " ++ f l]

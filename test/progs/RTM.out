@@ -1,3 +1,5 @@
+(S_left S S_right) -> (S_left S S_right)
+
 init_9:
 	entry
 	assert((S = 'BLANK))

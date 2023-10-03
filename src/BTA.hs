@@ -15,7 +15,7 @@ makeCongruent p = fixed (execState $ checkProg p)
                | otherwise = fixed f $ f d'
 
 checkProg :: Program a -> ST ()
-checkProg = mapM_ checkBlock
+checkProg (_, p) = mapM_ checkBlock p
 
 checkBlock :: Block a -> ST ()
 checkBlock b = 

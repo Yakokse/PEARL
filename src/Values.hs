@@ -59,8 +59,14 @@ storeToList = Map.toAscList
 update :: Name -> Value -> Store -> Store
 update = Map.insert
 
+updateWithStore :: Store -> Store -> Store
+updateWithStore s1 s2 = Map.union s2 s1
+
 without :: Store -> Name -> Store
 without s n = Map.delete n s
+
+isIn :: Name -> Store -> Bool
+isIn = Map.member
 
 remove :: [Name] -> Store -> Store
 remove ns = Map.filterWithKey (\n _ -> n `notElem` ns) 

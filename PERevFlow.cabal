@@ -28,6 +28,7 @@ library
       AST
       BTA
       Division
+      Inverter
       Operators
       Parser
       PostProcessing

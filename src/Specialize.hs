@@ -12,21 +12,26 @@ type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
--- TODO: Extend program with log
--- TODO: Check program before all of this
-
-
 specialize :: (Eq a, Show a) => Print a -> Program' a -> Store -> a -> LEM (Program (Annotated a))
-specialize format prog s entry = 
+specialize format (decl, prog) s entry = 
   do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
-     (_, _, res) <- specProg format entry prog pending [] [] 
-     return $ reverse res -- Reverse for nicer ordering of blocks
+     res <- specProg format entry prog pending [] [] 
+     let decl' = specDecl decl
+     return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
-specProg :: (Eq a, Show a) => Print a -> a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
-                            -> LEM (Pending a, Seen a, Program (Annotated a))
-specProg _ _ _ [] seen res = 
-  do logM "Specialization done."; return ([], seen, res)
+specDecl :: VariableDecl' -> VariableDecl
+specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
+  where 
+    validate = map fst . filter (\(_,t) -> t == Dynamic)
+    inp = validate $ input' decl
+    out = validate $ output' decl
+    tmp = validate $ temp' decl
+
+specProg :: (Eq a, Show a) => Print a -> a -> [Block' a] -> Pending a -> Seen a -> [Block (Annotated a)] 
+                            -> LEM [Block (Annotated a)]
+specProg _ _ _ [] _ res = 
+  do logM "Specialization done."; return res
 specProg format entry prog (p:ps) seen res 
   | p `elem` seen = 
     do logM $ "REPEAT POINT: " ++ prettyAnn format (fst p)
@@ -45,8 +50,8 @@ specProg format entry prog (p:ps) seen res
           res' <- merge format b' res
           specProg format entry prog (pnew ++ ps) seen' res'
 
-merge :: Eq a => Print a -> Block (Annotated a) -> Program (Annotated a) 
-                            -> LEM (Program (Annotated a))
+merge :: Eq a => Print a -> Block (Annotated a) -> [Block (Annotated a)]
+                            -> LEM [Block (Annotated a)]
 merge format block prog 
   | name block `notElem` map name prog = return $ block : prog
   | otherwise = 

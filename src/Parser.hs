@@ -15,7 +15,13 @@ parseProg :: String -> EM (Program Label)
 parseProg = parseStr pProg
 
 pProg :: Parser (Program Label)
-pProg = whitespace *> many1 pBlock <* eof
+pProg = (,) <$> (whitespace *> pDecl) <*> (many1 pBlock <* eof)
+
+pDecl :: Parser VariableDecl
+pDecl = 
+  do inp <- pNames; symbol "->"; out <- pNames; tmp <- option [] (word "with" *> pNames)
+     return VariableDecl {input=inp, output=out, temp=tmp}
+  where pNames = symbol "(" *> manyTill pName (symbol ")")
 
 pBlock :: Parser (Block Label)
 pBlock = 
@@ -126,7 +132,7 @@ pName =
   where 
     pChar = choice [alphaNum, char '_', char '\'']
     restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
-                  "skip", "hd", "tl", "assert", "nil"]
+                  "skip", "hd", "tl", "assert", "nil", "with"]
 
 pNum :: Parser Word
 pNum = lexeme . try $ read <$> many1 digit

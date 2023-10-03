@@ -4,10 +4,13 @@ import AST
 import Values
 import Data.List (union)
 
-changeLabel :: (a -> b) -> Program a -> Program b
-changeLabel t = map (block t)
+nonInput :: VariableDecl -> [Name]
+nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
+
+changeLabel :: (a -> b) -> [Block a] -> [Block b]
+changeLabel t = map (changeBlock t)
   where 
-    block f b = Block
+    changeBlock f b = Block
       { name = f $ name b
       , from = appFrom f $ from b
       , body = body b
@@ -21,8 +24,10 @@ changeLabel t = map (block t)
     appJump f (If e l1 l2) = If e (f l1) (f l2)
 
 getVarsProg :: Program a -> [Name]
-getVarsProg = foldl helper []
-    where helper acc block  = acc `union` getVarsBlock block
+getVarsProg (decl, _) = getVarsDecl decl
+
+getVarsDecl :: VariableDecl -> [Name]
+getVarsDecl decl = input decl `union` output decl `union` temp decl
 
 getVarsBlock :: Block a -> [Name]
 getVarsBlock b = bodyVars `union` fromVars `union` gotoVars
@@ -57,7 +62,7 @@ getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
 getVarsExp (UOp _ e) = getVarsExp e
 
 
-getEntry :: Program a -> EM a
+getEntry :: [Block a] -> EM a
 getEntry p = 
   case filter f p of
     [] -> Left "No entry point found"
@@ -66,7 +71,7 @@ getEntry p =
   where 
     f b = case from b of Entry -> True; _ -> False
 
-getExitBlock :: Program a -> EM (Block a)
+getExitBlock :: [Block a] -> EM (Block a)
 getExitBlock p = 
   case filter f p of
     [] -> Left "No entry point found"
@@ -75,7 +80,7 @@ getExitBlock p =
   where 
     f b = case jump b of Exit -> True; _ -> False
 
-getEntryBlock :: Program a -> EM (Block a)
+getEntryBlock :: [Block a] -> EM (Block a)
 getEntryBlock p = 
   case filter f p of
     [] -> Left "No entry point found"
@@ -84,7 +89,7 @@ getEntryBlock p =
   where 
     f b = case from b of Entry -> True; _ -> False
 
-getEntry' :: Program' a -> EM a
+getEntry' :: [Block' a] -> EM a
 getEntry' p = 
   case filter f p of
     [] -> Left "No entry point found"
@@ -93,26 +98,26 @@ getEntry' p =
   where 
     f b = case from' b of Entry' -> True; _ -> False
 
-getBlock :: Eq a => Program a -> a -> Maybe (Block a)
+getBlock :: Eq a => [Block a] -> a -> Maybe (Block a)
 getBlock p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
     _   -> Nothing
 
-getBlock' :: Eq a => Program' a -> a -> Maybe (Block' a)
+getBlock' :: Eq a => [Block' a] -> a -> Maybe (Block' a)
 getBlock' p l = 
   case filter (\b -> name' b == l) p of
     [b] -> return b
     _   -> Nothing
 
-getBlockErr :: Eq a => (a -> String) -> Program a -> a -> EM (Block a)
+getBlockErr :: Eq a => (a -> String) -> [Block a] -> a -> EM (Block a)
 getBlockErr format p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ format l
     _   -> Left $ "Multiple blocks found named: " ++ format l 
 
-getBlockErr' :: Eq a => (a -> String) -> Program' a -> a -> EM (Block' a)
+getBlockErr' :: Eq a => (a -> String) -> [Block' a] -> a -> EM (Block' a)
 getBlockErr' format p l = 
   case filter (\b -> name' b == l) p of
     [b] -> return b
@@ -135,5 +140,5 @@ jumpLabels Block{jump = Exit} = []
 jumpLabels Block{jump = Goto l} = [l]
 jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
 
-nameIn :: Eq a => a -> Program a -> Bool
+nameIn :: Eq a => a -> [Block a] -> Bool
 nameIn l = any (\b -> name b == l)
