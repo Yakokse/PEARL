@@ -13,6 +13,6 @@ Transitions =
    nil))))))))
 
 // Tape for full specialization
-//S = 'nil
+//S = 'BLANK
 //S_left = 'nil
 //S_right = '(1 . (1 . (0 . nil)))

@@ -6,13 +6,13 @@ import Values
 import Division
 import Data.Set ( fromList, size )
 
-wellformedProg :: Eq a => (a -> String) -> Program a -> EM ()
-wellformedProg format (decl, p) = 
+wellformedProg :: (Eq a, Show a) => Program a -> EM ()
+wellformedProg (decl, p) = 
   do _ <- wellformedDecl decl
      _ <- getEntryBlock p
      _ <- getExitBlock p
      let allVars = getVarsDecl decl
-     mapM_ (wellformedBlock format (decl, p) allVars) p
+     mapM_ (wellformedBlock (decl, p) allVars) p
 
 wellformedDecl :: VariableDecl -> EM ()
 wellformedDecl decl = 
@@ -29,8 +29,8 @@ wellformedDecl decl =
     notTemp = all (`notElem` tmp)
     
 
-wellformedBlock :: Eq a => (a -> String) -> Program a -> [Name] -> Block a -> EM ()
-wellformedBlock format p ns b = 
+wellformedBlock :: (Eq a, Show a) => Program a -> [Name] -> Block a -> EM ()
+wellformedBlock p ns b = 
   do mapM_ checkFrom $ jumpLabels b
      mapM_ checkGoto $ fromLabels b
      mapM_ (wellformedStep ns) $ body b
@@ -38,15 +38,15 @@ wellformedBlock format p ns b =
      wellformedFrom ns $ from b
   where 
     checkFrom l = do
-      b' <- getBlockErr format (snd p) l
+      b' <- getBlockErr (snd p) l
       if name b `elem` fromLabels b' 
         then return ()
-        else Left $ format (name b) ++ " not mentioned in " ++ format l
+        else Left $ show (name b) ++ " not mentioned in " ++ show l
     checkGoto l = do
-      b' <- getBlockErr format (snd p) l
+      b' <- getBlockErr (snd p) l
       if name b `elem` jumpLabels b' 
         then return ()
-        else Left $ format (name b) ++ " not mentioned in " ++ format l
+        else Left $ show (name b) ++ " not mentioned in " ++ show l
 
 wellformedJump :: [Name] -> Jump a -> EM ()
 wellformedJump _ (Goto _) = return ()
@@ -54,9 +54,9 @@ wellformedJump ns (If e _ _) =
   wellformedExp ns e
 wellformedJump _ Exit = return ()
 
-wellformedFrom :: [Name] -> IfFrom a -> EM ()
+wellformedFrom :: [Name] -> ComeFrom a -> EM ()
 wellformedFrom _  (From _) = return ()
-wellformedFrom ns (FromCond e _ _) = 
+wellformedFrom ns (Fi e _ _) = 
   wellformedExp ns e
 wellformedFrom _  Entry = return ()
 
@@ -107,10 +107,10 @@ wellformedProg' d (decl, prog) =
       mapM_ (wellformedStep' d) $ body' b
       wellformedJump' d $ jump' b
 
-wellformedFrom' :: Division -> IfFrom' a -> EM ()
+wellformedFrom' :: Division -> ComeFrom' a -> EM ()
 wellformedFrom' _ Entry'         = return ()
 wellformedFrom' _ (From' _ )     = return ()
-wellformedFrom' d (FromCond' l e _ _) =
+wellformedFrom' d (Fi' l e _ _) =
   do l' <- wellformedExp' d e
      if l == l' then return ()
      else Left "From mismatch."

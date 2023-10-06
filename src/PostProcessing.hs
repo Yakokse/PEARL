@@ -39,11 +39,11 @@ constFoldE (Op op e1 e2) = do
 constFold :: [Block a] -> LEM [Block a]
 constFold p = concat <$> mapM constFoldB p
   where 
-    constFoldF (FromCond e l1 l2) = 
+    constFoldF (Fi e l1 l2) = 
       do e' <- constFoldE e 
          return $ case e' of 
           Const v -> From $ if truthy v then l1 else l2
-          _ -> FromCond e' l1 l2
+          _ -> Fi e' l1 l2
     constFoldF f = return f
     constFoldJ (If e l1 l2) = 
       do e' <- constFoldE e
@@ -104,9 +104,9 @@ changeConditionals prog = map changeCond prog
           (j, assJump) = checkJump $ jump b
       in b {from = f, jump = j, body = assFrom ++ body b ++ assJump}
     checkFrom f = case f of
-      FromCond e l1 l2 | not $ l2 `nameIn` prog -> 
+      Fi e l1 l2 | not $ l2 `nameIn` prog -> 
         (From l1, [Assert e])
-      FromCond e l1 l2 | not $ l1 `nameIn` prog -> 
+      Fi e l1 l2 | not $ l1 `nameIn` prog -> 
         (From l2, [Assert (UOp Not e)])
       _ -> (f , [])
     checkJump j = case j of
@@ -146,7 +146,7 @@ mergeExits showBounds (decl, p) =
           expr = Op Less (Var exitVar) (Const . Num $ divider)
           newBlock = Block 
             { name = newName
-            , from = FromCond expr (name b1) (name b2)
+            , from = Fi expr (name b1) (name b2)
             , body = []
             , jump = Exit
             }

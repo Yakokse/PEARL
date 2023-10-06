@@ -12,7 +12,7 @@ data VariableDecl = VariableDecl
 
 data Block label = Block 
   { name :: label
-  , from :: IfFrom label
+  , from :: ComeFrom label
   , body :: [Step]
   , jump :: Jump label
   }
@@ -20,9 +20,9 @@ data Block label = Block
 
 
 -- TODO: Better name, ComeFrom
-data IfFrom label = 
+data ComeFrom label = 
     From label 
-  | FromCond Expr label label 
+  | Fi Expr label label 
   | Entry
   deriving (Eq, Show, Read)
 
@@ -88,15 +88,15 @@ data VariableDecl' = VariableDecl'
 
 data Block' label = Block' 
   { name' :: label
-  , from' :: IfFrom' label
+  , from' :: ComeFrom' label
   , body' :: [Step']
   , jump' :: Jump' label
   }
   deriving (Eq, Show, Read)
 
-data IfFrom' label = 
+data ComeFrom' label = 
     From' label
-  | FromCond' Level Expr' label label 
+  | Fi' Level Expr' label label 
   | Entry'
   deriving (Eq, Show, Read)
 

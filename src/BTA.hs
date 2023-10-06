@@ -23,8 +23,8 @@ checkBlock b =
      mapM_ checkStep $ body b
      checkJump $ jump b
 
-checkFrom :: IfFrom a -> ST ()
-checkFrom (FromCond e _ _ ) = do _ <- checkExpr e; return ()
+checkFrom :: ComeFrom a -> ST ()
+checkFrom (Fi e _ _ ) = do _ <- checkExpr e; return ()
 checkFrom _ = return ()
 
 checkJump :: Jump a -> ST ()

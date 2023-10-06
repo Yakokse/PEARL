@@ -39,12 +39,12 @@ annotateStep d (Assert e) =
   in Assert' btType e'
 annotateStep _ Skip = Skip' Static               
 
-annotateFrom :: Division -> IfFrom a -> IfFrom' a
+annotateFrom :: Division -> ComeFrom a -> ComeFrom' a
 annotateFrom _ Entry = Entry'
 annotateFrom _ (From l) = From' l
-annotateFrom d (FromCond e l1 l2) =
+annotateFrom d (Fi e l1 l2) =
   let (e', btType) = annotateExp d e 
-  in FromCond' btType e' l1 l2
+  in Fi' btType e' l1 l2
 
 annotateGoto :: Division -> Jump a -> Jump' a
 annotateGoto _ Exit = Exit'

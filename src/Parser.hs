@@ -31,10 +31,10 @@ pBlock =
 pLabel :: Parser String
 pLabel = pName <* symbol ":"
 
-pFrom :: Parser (IfFrom Label)
+pFrom :: Parser (ComeFrom Label)
 pFrom = choice [
     word "entry" $> Entry
-  , FromCond <$> (word "fi" *> pExpr) <*> (word "from" *> pName) <*> (word "else" *> pName)
+  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pName) <*> (word "else" *> pName)
   , From <$> (word "from" *> pName)
   ]
 

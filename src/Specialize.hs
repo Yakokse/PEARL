@@ -13,11 +13,11 @@ type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
-specialize :: (Eq a, Show a) => Print a -> Program' a -> Store -> a -> LEM (Program (Annotated a))
-specialize format (decl, prog) s entry = 
+specialize :: (Eq a, Show a) => Program' a -> Store -> a -> LEM (Program (Annotated a))
+specialize (decl, prog) s entry = 
   do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
-     res <- specProg format entry (decl, prog) pending [] [] 
+     res <- specProg entry (decl, prog) pending [] [] 
      let decl' = specDecl decl
      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
@@ -29,43 +29,43 @@ specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
     out = validate $ output' decl
     tmp = validate $ temp' decl
 
-specProg :: (Eq a, Show a) => Print a -> a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
+specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
                             -> LEM [Block (Annotated a)]
-specProg _ _ _ [] _ res = 
+specProg _ _ [] _ res = 
   do logM "Specialization done."; return res
-specProg format entry (decl, prog) (p:ps) seen res 
+specProg entry (decl, prog) (p:ps) seen res 
   | p `elem` seen = 
-    do logM $ "REPEAT POINT: " ++ prettyAnn format (fst p)
-       specProg format entry (decl, prog) ps seen res
+    do logM $ "REPEAT POINT: " ++ prettyAnn show (fst p)
+       specProg entry (decl, prog) ps seen res
   | otherwise = 
-    do logM $ prettyAnn format (fst p)
+    do logM $ prettyAnn show (fst p)
        let (current@(l, s), origin) = p
-       b <- raise $ getBlockErr' format prog l
+       b <- raise $ getBlockErr' prog l
        case specBlock entry decl s b origin of
         Left e -> logM ("ERROR: " ++ e ) >> 
-                  logM ("IN POINT: " ++ prettyAnn format (fst p)) >>
-                    specProg format entry (decl, prog) ps seen res
+                  logM ("IN POINT: " ++ prettyAnn show (fst p)) >>
+                    specProg entry (decl, prog) ps seen res
         Right (b', p') -> do
           let pnew = map (\x -> (x, current)) p'
           let seen' = p : seen
-          res' <- merge format b' res
-          specProg format entry (decl, prog) (pnew ++ ps) seen' res'
+          res' <- merge b' res
+          specProg entry (decl, prog) (pnew ++ ps) seen' res'
 
-merge :: Eq a => Print a -> Block (Annotated a) -> [Block (Annotated a)]
+merge :: (Eq a, Show a) => Block (Annotated a) -> [Block (Annotated a)]
                             -> LEM [Block (Annotated a)]
-merge format block prog 
+merge block prog 
   | name block `notElem` map name prog = return $ block : prog
   | otherwise = 
     do logM "MERGE"
-       b <- raise $ getBlockErr (serializeAnn format) prog $ name block
+       b <- raise $ getBlockErr prog $ name block
        b' <- raise $ mergeBlocks b block
        let rest = filter (\x -> name block /= name x) prog
        return $ b' : rest
   where 
     mergeBlocks x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
-    mergeFi (FromCond e (l1, s1) (l2, s2)) (FromCond e' (l1', s1') (l2', s2')) 
+    mergeFi (Fi e (l1, s1) (l2, s2)) (Fi e' (l1', s1') (l2', s2')) 
       | e == e' && l1 == l1' && l2 == l2' = 
-          return $ FromCond e (l1, s1 <|> s1') (l2, s2 <|> s2') 
+          return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2') 
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
@@ -79,24 +79,24 @@ specBlock entry decl s b origin =
      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
-specFrom :: Eq a => a -> Store -> IfFrom' a -> (a, Store) 
-                            -> EM (IfFrom (Annotated a))
+specFrom :: Eq a => a -> Store -> ComeFrom' a -> (a, Store) 
+                            -> EM (ComeFrom (Annotated a))
 specFrom _ _ (From' l) origin 
   | l `isFrom` origin = return . From $ annotate l origin
   | otherwise         = Left "Invalid jump to an unconditional from."
 specFrom x _ Entry' (l, _) 
   | l == x    = return Entry 
   | otherwise = Left "Invalid jump to entry block."
-specFrom _ s (FromCond' Static e l1 l2) origin = 
+specFrom _ s (Fi' Static e l1 l2) origin = 
   do v <- getValue e s
      let l = if truthy v then l1 else l2
      if l `isFrom` origin 
       then return . From $ annotate l origin
       else Left "Jump not from expected block."
-specFrom _ s (FromCond' Dynamic e l1 l2) origin  
+specFrom _ s (Fi' Dynamic e l1 l2) origin  
   | l1 `isFrom` origin || l2 `isFrom` origin = 
     do e' <- getExpr e s
-       return $ FromCond e' (annotate l1 origin) (annotate l2 origin)
+       return $ Fi e' (annotate l1 origin) (annotate l2 origin)
   | otherwise = Left "Jump not from either of the expected blocks."
 
 isFrom :: Eq a => a -> (a, Store) -> Bool

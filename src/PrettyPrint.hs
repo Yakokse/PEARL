@@ -44,9 +44,9 @@ prettyBlock f b =
     ++ map prettyStep (body b) 
     ++ prettyJump f (jump b)) ++ [""]
 
-prettyFrom :: Print a -> IfFrom a -> [String]
+prettyFrom :: Print a -> ComeFrom a -> [String]
 prettyFrom f (From l) = ["from " ++ f l]
-prettyFrom f (FromCond e l1 l2) = 
+prettyFrom f (Fi e l1 l2) = 
   [ "fi " ++ prettyExpr e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]
@@ -127,13 +127,13 @@ prettyBlock' f b =
     ++ map prettyStep' (body' b) 
     ++ prettyJump' f (jump' b)) ++ [""]
 
-prettyFrom' :: Print a -> IfFrom' a -> [String]
+prettyFrom' :: Print a -> ComeFrom' a -> [String]
 prettyFrom' f (From' l)  = ["from " ++ f l]
-prettyFrom' f (FromCond' Dynamic e l1 l2) = 
+prettyFrom' f (Fi' Dynamic e l1 l2) = 
   [ "%fi " ++ prettyExpr' e
   , "\t%from " ++ f l1
   , "\t%else " ++ f l2]
-prettyFrom' f (FromCond' Static e l1 l2) = 
+prettyFrom' f (Fi' Static e l1 l2) = 
   [ "fi " ++ prettyExpr' e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]

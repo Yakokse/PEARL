@@ -25,7 +25,7 @@ changeLabel t = map (changeBlock t)
       }
     appFrom _ Entry = Entry
     appFrom f (From l) = From (f l)
-    appFrom f (FromCond e l1 l2) = FromCond e (f l1) (f l2)
+    appFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
     appJump _ Exit = Exit
     appJump f (Goto l) = Goto (f l)
     appJump f (If e l1 l2) = If e (f l1) (f l2)
@@ -40,26 +40,26 @@ getVarsDecl' :: VariableDecl' -> [(Name, Level)]
 getVarsDecl' decl = input' decl `union` output' decl `union` temp' decl
 
 
-getVarsBlock :: Block a -> [Name]
-getVarsBlock b = bodyVars `union` fromVars `union` gotoVars
-  where 
-    bodyVars = foldl (\acc e -> acc `union` getVarsStep  e) [] $ body b
-    fromVars = getVarsFrom . from $ b
-    gotoVars = getVarsJump . jump $ b
-
-getVarsFrom :: IfFrom a -> [Name]
-getVarsFrom (FromCond e _ _) = getVarsExp e
-getVarsFrom _ = []
-
-getVarsJump :: Jump a -> [Name]
-getVarsJump (If e _ _) = getVarsExp e
-getVarsJump _ = []
-
-getVarsStep :: Step -> [Name]
-getVarsStep (Update n _ e) = [n] `union` getVarsExp e
-getVarsStep (Replacement q1 q2) = getVarsPat q1 `union` getVarsPat q2
-getVarsStep (Assert e) = getVarsExp e
-getVarsStep Skip = []
+-- getVarsBlock :: Block a -> [Name]
+-- getVarsBlock b = bodyVars `union` fromVars `union` gotoVars
+--   where 
+--     bodyVars = foldl (\acc e -> acc `union` getVarsStep  e) [] $ body b
+--     fromVars = getVarsFrom . from $ b
+--     gotoVars = getVarsJump . jump $ b
+-- 
+-- getVarsFrom :: ComeFrom a -> [Name]
+-- getVarsFrom (Fi e _ _) = getVarsExp e
+-- getVarsFrom _ = []
+-- 
+-- getVarsJump :: Jump a -> [Name]
+-- getVarsJump (If e _ _) = getVarsExp e
+-- getVarsJump _ = []
+-- 
+-- getVarsStep :: Step -> [Name]
+-- getVarsStep (Update n _ e) = [n] `union` getVarsExp e
+-- getVarsStep (Replacement q1 q2) = getVarsPat q1 `union` getVarsPat q2
+-- getVarsStep (Assert e) = getVarsExp e
+-- getVarsStep Skip = []
 
 getVarsPat :: Pattern -> [Name]
 getVarsPat (QConst _) = []
@@ -121,19 +121,19 @@ getBlock' p l =
     [b] -> return b
     _   -> Nothing
 
-getBlockErr :: Eq a => (a -> String) -> [Block a] -> a -> EM (Block a)
-getBlockErr format p l = 
+getBlockErr :: (Eq a, Show a) => [Block a] -> a -> EM (Block a)
+getBlockErr p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
-    []  -> Left $ "Block not found: " ++ format l
-    _   -> Left $ "Multiple blocks found named: " ++ format l 
+    []  -> Left $ "Block not found: " ++ show l
+    _   -> Left $ "Multiple blocks found named: " ++ show l 
 
-getBlockErr' :: Eq a => (a -> String) -> [Block' a] -> a -> EM (Block' a)
-getBlockErr' format p l = 
+getBlockErr' :: (Eq a, Show a) => [Block' a] -> a -> EM (Block' a)
+getBlockErr' p l = 
   case filter (\b -> name' b == l) p of
     [b] -> return b
-    []  -> Left $ "Block not found: " ++ format l
-    _   -> Left $ "Multiple blocks found named: " ++ format l 
+    []  -> Left $ "Block not found: " ++ show l
+    _   -> Left $ "Multiple blocks found named: " ++ show l 
 
 isExit :: Block a -> Bool
 isExit b = case jump b of Exit -> True; _ -> False
@@ -144,7 +144,7 @@ isExit' b = case jump' b of Exit' -> True; _ -> False
 fromLabels :: Block a -> [a]
 fromLabels Block{from = Entry} = []
 fromLabels Block{from = From l} = [l]
-fromLabels Block{from = FromCond _ l1 l2} = [l1, l2]
+fromLabels Block{from = Fi _ l1 l2} = [l1, l2]
 
 jumpLabels :: Block a -> [a]
 jumpLabels Block{jump = Exit} = []

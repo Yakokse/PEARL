@@ -14,15 +14,15 @@ invertBlock Block {name = l, from = f, body = b, jump = j} = Block
     body = reverse $ map invertStep b,
     jump = invertFrom f}
 
-invertFrom :: IfFrom a -> Jump a
+invertFrom :: ComeFrom a -> Jump a
 invertFrom Entry              = Exit
 invertFrom (From l)           = Goto l
-invertFrom (FromCond e l1 l2) = If e l1 l2
+invertFrom (Fi e l1 l2) = If e l1 l2
 
-invertJump :: Jump a -> IfFrom a
+invertJump :: Jump a -> ComeFrom a
 invertJump Exit         = Entry
 invertJump (Goto l)     = From l
-invertJump (If e l1 l2) = FromCond e l1 l2
+invertJump (If e l1 l2) = Fi e l1 l2
 
 invertStep :: Step -> Step
 invertStep Skip = Skip
