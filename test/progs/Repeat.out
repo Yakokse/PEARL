@@ -1,14 +1,16 @@
+(x) -> (xs)
+
 init_1:
 	entry
-	assert((list = 'nil))
-	list <- (x . list)
-	x ^= hd(list)
-	assert(!((list = 'nil)))
-	list <- (x . list)
-	x ^= hd(list)
-	assert(!((list = 'nil)))
-	list <- (x . list)
-	x ^= hd(list)
-	assert(!((list = 'nil)))
-	list <- (x . list)
+	assert((xs = 'nil))
+	xs <- (x . xs)
+	x ^= hd(xs)
+	assert(!((xs = 'nil)))
+	xs <- (x . xs)
+	x ^= hd(xs)
+	assert(!((xs = 'nil)))
+	xs <- (x . xs)
+	x ^= hd(xs)
+	assert(!((xs = 'nil)))
+	xs <- (x . xs)
 	exit

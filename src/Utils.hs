@@ -7,6 +7,13 @@ import Data.List (union)
 nonInput :: VariableDecl -> [Name]
 nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
 
+staticNonOutput :: VariableDecl' -> [Name]
+staticNonOutput decl =
+  let allVars = getVarsDecl' decl
+      onlyStatic = filter (\(_,l) -> l == Static) allVars
+      nonOutput = filter (`notElem` output' decl) onlyStatic
+  in map fst nonOutput
+
 changeLabel :: (a -> b) -> [Block a] -> [Block b]
 changeLabel t = map (changeBlock t)
   where 
@@ -28,6 +35,10 @@ getVarsProg (decl, _) = getVarsDecl decl
 
 getVarsDecl :: VariableDecl -> [Name]
 getVarsDecl decl = input decl `union` output decl `union` temp decl
+
+getVarsDecl' :: VariableDecl' -> [(Name, Level)]
+getVarsDecl' decl = input' decl `union` output' decl `union` temp' decl
+
 
 getVarsBlock :: Block a -> [Name]
 getVarsBlock b = bodyVars `union` fromVars `union` gotoVars

@@ -1,8 +1,11 @@
-// Random numbers using a LFSR
+(seed n) -> (seed nums) with (bit seedrev seedb tmp)
+
+// Random numbers using a LFSR, gives n+1 numbers based on seed
 // https://www.youtube.com/watch?v=Ks1pw1X22y4
 
 init: entry
-      if count = '0 goto stop else loop
+      (n . nums) <- (n . nums)
+      if n = '0 goto stop else loop
 
 loop: fi nums from loop1 else init
       tmp ^= seed
@@ -36,8 +39,9 @@ append2: fi seed from append2 else append1
          if seedrev goto append2 else loop1
 
 loop1: from append2
-       count -= '1
-       if count = '0 goto stop else loop
+       n -= '1
+       if n = '0 goto stop else loop
 
 stop: fi nums from loop1 else init
+      n ^= '0
       exit

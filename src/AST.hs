@@ -8,7 +8,7 @@ data VariableDecl = VariableDecl
   { input  :: [Name]
   , output :: [Name]
   , temp   :: [Name] 
-  }
+  } deriving (Eq, Show, Read)
 
 data Block label = Block 
   { name :: label
@@ -19,7 +19,7 @@ data Block label = Block
   deriving (Eq, Show, Read)
 
 
--- TODO: Better name, Landing/Origin?
+-- TODO: Better name, ComeFrom
 data IfFrom label = 
     From label 
   | FromCond Expr label label 
@@ -84,6 +84,7 @@ data VariableDecl' = VariableDecl'
   , output' :: [(Name, Level)]
   , temp'   :: [(Name, Level)] 
   }
+  deriving (Eq, Show, Read)
 
 data Block' label = Block' 
   { name' :: label

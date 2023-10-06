@@ -1,3 +1,4 @@
+(dyn) -> (elim dyn)
 init: entry
       if dyn goto fst else snd
 

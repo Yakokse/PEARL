@@ -7,6 +7,7 @@ import Values
 import Utils
 import Operators
 import PrettyPrint
+import Execute
 
 type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
@@ -16,7 +17,7 @@ specialize :: (Eq a, Show a) => Print a -> Program' a -> Store -> a -> LEM (Prog
 specialize format (decl, prog) s entry = 
   do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
-     res <- specProg format entry prog pending [] [] 
+     res <- specProg format entry (decl, prog) pending [] [] 
      let decl' = specDecl decl
      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
@@ -28,27 +29,27 @@ specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
     out = validate $ output' decl
     tmp = validate $ temp' decl
 
-specProg :: (Eq a, Show a) => Print a -> a -> [Block' a] -> Pending a -> Seen a -> [Block (Annotated a)] 
+specProg :: (Eq a, Show a) => Print a -> a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
                             -> LEM [Block (Annotated a)]
 specProg _ _ _ [] _ res = 
   do logM "Specialization done."; return res
-specProg format entry prog (p:ps) seen res 
+specProg format entry (decl, prog) (p:ps) seen res 
   | p `elem` seen = 
     do logM $ "REPEAT POINT: " ++ prettyAnn format (fst p)
-       specProg format entry prog ps seen res
+       specProg format entry (decl, prog) ps seen res
   | otherwise = 
     do logM $ prettyAnn format (fst p)
        let (current@(l, s), origin) = p
        b <- raise $ getBlockErr' format prog l
-       case specBlock entry s b origin of
+       case specBlock entry decl s b origin of
         Left e -> logM ("ERROR: " ++ e ) >> 
                   logM ("IN POINT: " ++ prettyAnn format (fst p)) >>
-                    specProg format entry prog ps seen res
+                    specProg format entry (decl, prog) ps seen res
         Right (b', p') -> do
           let pnew = map (\x -> (x, current)) p'
           let seen' = p : seen
           res' <- merge format b' res
-          specProg format entry prog (pnew ++ ps) seen' res'
+          specProg format entry (decl, prog) (pnew ++ ps) seen' res'
 
 merge :: Eq a => Print a -> Block (Annotated a) -> [Block (Annotated a)]
                             -> LEM [Block (Annotated a)]
@@ -68,13 +69,13 @@ merge format block prog
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specBlock :: Eq a => a -> Store -> Block' a -> (a, Store) 
+specBlock :: Eq a => a -> VariableDecl' -> Store -> Block' a -> (a, Store) 
                                  -> EM (Block (Annotated a), [Point a])
-specBlock entry s b origin = 
+specBlock entry decl s b origin = 
   do let l = (name' b, Just s)
      f <- specFrom entry s (from' b) origin
      (s', as) <- specSteps s $ body' b
-     (j, pending) <- specJump s' $ jump' b
+     (j, pending) <- specJump s' decl $ jump' b
      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
@@ -105,13 +106,22 @@ annotate :: Eq a => a -> (a, Store) -> Annotated a
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> Jump' a -> EM (Jump (Annotated a), [Point a])
-specJump _ Exit' = return (Exit, [])
-specJump s (Goto' l) = return (Goto (l, Just s), [(l, s)])
-specJump s (If' Dynamic e l1 l2) = 
+specJump :: Store -> VariableDecl' -> Jump' a -> EM (Jump (Annotated a), [Point a])
+specJump s decl Exit' = 
+  let checkable = staticNonOutput decl
+      vals = map (`find` s) checkable
+  in 
+  do vs <- sequence vals
+     let pairs = zip checkable vs
+     let offendingVars = filter (\(_,v) -> v /= Nil) pairs
+     case offendingVars of
+      [] -> return (Exit, [])
+      ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
+specJump s _ (Goto' l) = return (Goto (l, Just s), [(l, s)])
+specJump s _ (If' Dynamic e l1 l2) = 
   do e' <- getExpr e s; 
      return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)]) 
-specJump s (If' Static e l1 l2) = 
+specJump s _ (If' Static e l1 l2) = 
   do v <- getValue e s
      return $ 
       if truthy v 
@@ -150,29 +160,6 @@ specStep s (Replacement' Static q1 q2) =
   do (s', v) <- deconstruct s q2
      s'' <- construct s' v q1
      return (s'', [])
-  where
-    deconstruct store (QConst v) = return (store,v)
-    deconstruct store (QVar n) = 
-      do v <- find n store
-         let store' = update n Nil store
-         return (store', v)
-    deconstruct store (QPair q1' q2') =
-      do (store', v)   <- deconstruct store q1'
-         (store'', v') <- deconstruct store' q2'
-         return (store'', Pair v v')
-    construct store v (QConst v') =
-      if v == v' 
-        then return store 
-        else Left "Non-matching constants."
-    construct store v (QVar n) =
-      do v' <- find n store
-         if v' == Nil 
-          then return $ update n v store 
-          else Left "Non-nill variable."
-    construct store (Pair v1 v2) (QPair q1' q2') =
-      do store' <- construct store v1 q1'
-         construct store' v2 q2'
-    construct _ _ (QPair _ _) = Left "Scalar value with cons pattern."
 
 type PEValue = Either Value Expr
 specExpr :: Store -> Expr' -> EM PEValue

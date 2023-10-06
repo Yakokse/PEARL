@@ -42,7 +42,7 @@ find ::  Name -> Store -> EM Value
 find n s = 
   case Map.lookup n s of 
     Just v -> return v
-    Nothing -> Left "Variable not found"
+    Nothing -> Left $ "Variable \"" ++ n ++ "\"  not found during lookup"
 
 vars :: Store -> [Name]
 vars = Map.keys

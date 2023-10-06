@@ -28,6 +28,7 @@ library
       AST
       BTA
       Division
+      Execute
       Inverter
       Operators
       Parser

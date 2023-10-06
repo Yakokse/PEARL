@@ -4,15 +4,14 @@ with (Q Q1 Q2 S1 S2 Rules RulesRev Rule)
 init: entry
       Rules ^= Transitions
       Q ^= Start
-      if Transitions goto loop else stop
+      if Start = End goto stop else act1
 
-loop: fi Q = Start from init else act4
-      if Q = End goto stop else act1
-
-stop: fi Transitions from loop else init
+stop: fi Start = End  from init else endCheck
+      Q ^= End
+      Rules ^= Transitions
       exit
 
-act1: from loop 
+act1: fi Q = Start from init else act4
       ((Q1 . (S1 . (S2 . Q2))) . Rules) <- Rules
       if Q = Q1 && S = S1 goto write else act2
 
@@ -33,10 +32,13 @@ act3: fi Q = Q2 && S1 = 'SLASH from move1 else act2
 reload: fi Rules from reload else act3
         (Rule . RulesRev) <- RulesRev
         Rules <- (Rule . Rules)
-        if RulesRev goto reload else act4
+        if RulesRev goto reload else endCheck
 
-act4: fi !RulesRev from reload else act3
-      goto loop
+endCheck: from reload
+          if Q = End goto stop else act4
+
+act4: fi !RulesRev from endCheck else act3
+      goto act1
 
 move: from act2
       Q += Q2 - Q1

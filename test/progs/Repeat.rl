@@ -1,14 +1,16 @@
-// repeat x n = list of n+1 x's
+(x n) -> (xs)
+// xs is a list of n+1 x's
 
 init: entry
       if n = '0 goto stop else loop
 
-loop: fi list = 'nil from init else loop
-      list <- (x . list)
-      x ^= hd list
+loop: fi xs = 'nil from init else loop
+      xs <- (x . xs)
+      x ^= hd xs
       n -= '1
       if n = '0 goto stop else loop
 
-stop: fi list = 'nil from init else loop
-      list <- (x . list)
+stop: fi xs = 'nil from init else loop
+      xs <- (x . xs)
+      n ^= '0
       exit

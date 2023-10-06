@@ -32,8 +32,9 @@ prettyProg :: Print a -> Program a -> String
 prettyProg f (decl, p)= prettyDecl decl ++ intercalate "\n" (concatMap (prettyBlock f) p)
 
 prettyDecl :: VariableDecl -> String
-prettyDecl d = "(" ++ unwords (input d) ++ ") -> (" ++ unwords (input d) ++ ")" ++ tmp
- where tmp = if null (temp d) then "\n\n" else unwords (temp d) ++ "\n\n"
+prettyDecl d = 
+  "(" ++ unwords (input d) ++ ") -> (" ++ unwords (output d) ++ ")" ++ tmp
+ where tmp = if null (temp d) then "\n\n" else " with (" ++ unwords (temp d) ++ ")\n\n"
 
 prettyBlock :: Print a -> Block a -> [String]
 prettyBlock f b = 

@@ -1,6 +1,9 @@
+(n) -> (nums) with (tmp)
+
 init_9:
 	entry
-	if (count = '0)
+	(n . nums) <- (n . nums)
+	if (n = '0)
 		goto stop_9
 		else loop_9
 
@@ -10,8 +13,8 @@ loop_9:
 		else init_9
 	tmp ^= '(1.(0.(0.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_3
 		else loop_3
 
@@ -20,8 +23,8 @@ loop_3:
 	assert(nums)
 	tmp ^= '(0.(0.(1.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_6
 		else loop_6
 
@@ -30,8 +33,8 @@ loop_6:
 	assert(nums)
 	tmp ^= '(0.(1.(1.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_13
 		else loop_13
 
@@ -40,8 +43,8 @@ loop_13:
 	assert(nums)
 	tmp ^= '(1.(1.(0.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_10
 		else loop_10
 
@@ -50,8 +53,8 @@ loop_10:
 	assert(nums)
 	tmp ^= '(1.(0.(1.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_5
 		else loop_5
 
@@ -60,8 +63,8 @@ loop_5:
 	assert(nums)
 	tmp ^= '(0.(1.(0.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_11
 		else loop_11
 
@@ -70,8 +73,8 @@ loop_11:
 	assert(nums)
 	tmp ^= '(1.(0.(1.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_7
 		else loop_7
 
@@ -80,8 +83,8 @@ loop_7:
 	assert(nums)
 	tmp ^= '(0.(1.(1.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_15
 		else loop_15
 
@@ -90,8 +93,8 @@ loop_15:
 	assert(nums)
 	tmp ^= '(1.(1.(1.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_14
 		else loop_14
 
@@ -100,8 +103,8 @@ loop_14:
 	assert(nums)
 	tmp ^= '(1.(1.(1.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_12
 		else loop_12
 
@@ -110,8 +113,8 @@ loop_12:
 	assert(nums)
 	tmp ^= '(1.(1.(0.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_8
 		else loop_8
 
@@ -120,8 +123,8 @@ loop_8:
 	assert(nums)
 	tmp ^= '(1.(0.(0.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_1
 		else loop_1
 
@@ -130,8 +133,8 @@ loop_1:
 	assert(nums)
 	tmp ^= '(0.(0.(0.(1.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_2
 		else loop_2
 
@@ -140,8 +143,8 @@ loop_2:
 	assert(nums)
 	tmp ^= '(0.(0.(1.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_4
 		else loop_4
 
@@ -150,8 +153,8 @@ loop_4:
 	assert(nums)
 	tmp ^= '(0.(1.(0.(0.nil))))
 	nums <- (tmp . nums)
-	count -= '1
-	if (count = '0)
+	n -= '1
+	if (n = '0)
 		goto stop_9
 		else loop_9
 
@@ -183,6 +186,7 @@ stop_9:
 	fi nums
 		from loop_4
 		else init_9
+	n ^= '0
 	exit_control_var ^= '0
 	goto exit_merge_0_2
 
@@ -195,12 +199,14 @@ exit_merge_1_2:
 stop_3:
 	from loop_9
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '1
 	goto exit_merge_1_2
 
 stop_6:
 	from loop_3
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '2
 	goto exit_merge_1_2
 
@@ -219,24 +225,28 @@ exit_merge_5_6:
 stop_13:
 	from loop_6
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '3
 	goto exit_merge_3_4
 
 stop_10:
 	from loop_13
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '4
 	goto exit_merge_3_4
 
 stop_5:
 	from loop_10
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '5
 	goto exit_merge_5_6
 
 stop_11:
 	from loop_5
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '6
 	goto exit_merge_5_6
 
@@ -267,24 +277,28 @@ exit_merge_9_10:
 stop_7:
 	from loop_11
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '7
 	goto exit_merge_7_8
 
 stop_15:
 	from loop_7
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '8
 	goto exit_merge_7_8
 
 stop_14:
 	from loop_15
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '9
 	goto exit_merge_9_10
 
 stop_12:
 	from loop_14
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '10
 	goto exit_merge_9_10
 
@@ -303,24 +317,28 @@ exit_merge_13_14:
 stop_8:
 	from loop_12
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '11
 	goto exit_merge_11_12
 
 stop_1:
 	from loop_8
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '12
 	goto exit_merge_11_12
 
 stop_2:
 	from loop_1
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '13
 	goto exit_merge_13_14
 
 stop_4:
 	from loop_2
 	assert(nums)
+	n ^= '0
 	exit_control_var ^= '14
 	goto exit_merge_13_14
 

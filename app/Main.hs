@@ -73,8 +73,7 @@ fromLEM s (LEM (Left e, l)) =
      mapM_ putStrLn l
      die $ "Error while " ++ s ++ ": " ++ e  
   
--- TODO: Improve SPEC format, Logging improvements
--- TODO: Semantics of decl, check at exit (plumbing :()
+-- TODO: Improve SPEC format, Logging improvements, BTA policy for output, conditional lift
 main :: IO ()
 main =
   do ss <- getArgs

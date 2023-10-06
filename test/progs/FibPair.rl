@@ -1,3 +1,5 @@
+(n) -> (a b)
+
 init: entry
       a ^= '0
       b ^= '1
@@ -10,4 +12,5 @@ loop: fi (a . b) = '(0 . 1) from init else loop
       if n = '0 goto stop else loop
 
 stop: fi (a . b) = '(0 . 1) from init else loop
+      n ^= '0
       exit
