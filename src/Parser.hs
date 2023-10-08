@@ -19,14 +19,12 @@ pProg = (,) <$> (whitespace *> pDecl) <*> (many1 pBlock <* eof)
 
 pDecl :: Parser VariableDecl
 pDecl = 
-  do inp <- pNames; symbol "->"; out <- pNames; tmp <- option [] (word "with" *> pNames)
-     return VariableDecl {input=inp, output=out, temp=tmp}
-  where pNames = symbol "(" *> manyTill pName (symbol ")")
+  VariableDecl <$> pNames <*> (symbol "->" *> pNames)
+               <*> option [] (word "with" *> pNames)
+  where pNames = symbol "(" *> many pName <* symbol ")"
 
 pBlock :: Parser (Block Label)
-pBlock = 
-  do n <- pLabel; f <- pFrom; b <- many pStep; g <- pGoto;
-     return Block {name = n, from = f, body = b, jump = g}
+pBlock = Block <$> pLabel <*> pFrom <*> many pStep <*> pGoto
 
 pLabel :: Parser String
 pLabel = pName <* symbol ":"
@@ -105,10 +103,10 @@ pAtom :: Parser Expr
 pAtom = choice [
     Const <$> pConstant
   , Var <$> pName
-  , do symbol "("; e <- pExpr; res <- maybeCons e; symbol ")"; return res
+  , (symbol "(" *> pExpr >>= maybeCons) <* symbol ")"
   ]
   where
-    maybeCons e = choice [Op Cons e <$> (symbol "." *> pExpr), return e]
+    maybeCons e = option e $ Op Cons e <$> (symbol "." *> pExpr)
 
 pConstant :: Parser Value
 pConstant = symbol "'" *> pValue
@@ -151,9 +149,7 @@ lexeme :: Parser a -> Parser a
 lexeme p = p <* whitespace
 
 whitespace :: Parser ()
-whitespace = do 
-  _ <- many space 
-  optional (do comment; whitespace)
+whitespace = many space *> optional (comment >> whitespace)
 
 comment :: Parser ()
 comment = void $ try (string "//") *> manyTill anyChar eol
