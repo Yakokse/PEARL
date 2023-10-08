@@ -1,17 +1,14 @@
 module PostProcessing where
 import AST
 import Utils
-import Data.List (partition, elemIndex, transpose)
+import Data.List (elemIndex)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import Values
 import Operators
 import Data.Maybe (maybeToList, fromMaybe)
-import GHC.IO (unsafePerformIO)
 
--- TODO: Arbitrary push expressions will remove magic variable
--- Pushnz only?
 constFoldE :: Expr -> LEM Expr 
 constFoldE (Const v) = return $ Const v
 constFoldE (Var n)   = return $ Var n
@@ -116,57 +113,6 @@ changeConditionals prog = map changeCond prog
       If e l1 l2 | not $ l1 `nameIn` prog -> 
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
-
-mergeExits :: Show a => (IntType -> IntType -> a) -> Program (Annotated a) -> Program (Annotated a)
-mergeExits showBounds (decl, p) = 
-  let exits' = map (liftDiffs diffVars) exits
-      newDecl = decl {output = output decl ++ diffVars}
-      (exit, _, _, _, newBlocks) = 
-          merge $ zipWith (\b i -> (b,i,i)) exits' [0..]
-  in (newDecl, remaining ++ newBlocks ++ [exit])
-  where
-    getStoreB = getStore . name
-    (exits, remaining) = unsafePerformIO $ let x = partition isExit p in print (fst x) >> return x
-    stores = unsafePerformIO $ let x = transpose $ map (storeToList . getStoreB) exits
-              in print (map (storeToList . getStoreB) exits) >> return x
-    diffVars = unsafePerformIO $ let x = findDif stores in print stores >> return x
-    findDif = map (fst . head) . filter (\vs -> any (/= head vs) vs)
-    liftDiffs names block =
-      let s = getStoreB block
-          assign n = 
-            case find n s of 
-                 Right v -> [Update n Xor (Const v)]; 
-                 _ -> []
-          assignVars = concatMap assign names
-      in block {body = body block ++ assignVars} 
-    getVals b = 
-      case mapM (`find` getStoreB b) diffVars of
-        Right vs -> vs
-        Left _ -> []
-    merge [] = undefined
-    merge [(b, lb, ub)] = (b, lb, ub, [zip diffVars $ getVals b], [])
-    merge tpls =
-      let n = length tpls `div` 2
-          (b1, lb, _, vals1, bs1) = merge $ take n tpls
-          (b2, _, ub, vals2, bs2) = merge $ drop n tpls
-          newName = (showBounds lb ub, Nothing)
-          b1' = b1 { jump = Goto newName}
-          b2' = b2 { jump = Goto newName}
-          equals = map (map (\(var,v) -> Op Equal (Var var) (Const v))) vals1
-          foldAnd [] = Const $ Atom "dbg"
-          foldAnd [e] = e
-          foldAnd (e:es) = Op And e $ foldAnd es
-          foldOr [] = undefined
-          foldOr [es] = foldAnd es
-          foldOr (es:ess) = Op Or (foldAnd es) $ foldOr ess
-          expr = foldOr equals
-          newBlock = Block 
-            { name = newName
-            , from = Fi expr (name b1) (name b2)
-            , body = []
-            , jump = Exit
-            }
-      in (newBlock, lb, ub, vals1 ++ vals2, b1':b2':bs1++bs2)    
 
 compressPaths :: Ord a => [Block a] -> EM [Block a]
 compressPaths p = 

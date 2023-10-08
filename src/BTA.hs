@@ -7,7 +7,6 @@ import Control.Monad.State
 
 type ST a = State Division a
 
--- TODO: Expr: static a[dydnamic e] needs detection, time for a state monad prob
 makeCongruent :: Program a -> Division -> Division
 makeCongruent p = fixed (execState $ checkProg p)
   where 
@@ -15,12 +14,12 @@ makeCongruent p = fixed (execState $ checkProg p)
                | otherwise = fixed f $ f d'
 
 checkProg :: Program a -> ST ()
-checkProg (_, p) = mapM_ checkBlock p
+checkProg (decl, p) = mapM_ (checkBlock decl) p
 
-checkBlock :: Block a -> ST ()
-checkBlock b = 
+checkBlock :: VariableDecl -> Block a -> ST ()
+checkBlock decl b = 
   do checkFrom $ from b
-     mapM_ checkStep $ body b
+     mapM_ (checkStep decl) $ body b
      checkJump $ jump b
 
 checkFrom :: ComeFrom a -> ST ()
@@ -31,14 +30,18 @@ checkJump :: Jump a -> ST ()
 checkJump (If e _ _) = do _ <- checkExpr e; return ()
 checkJump _ = return ()
 
-checkStep :: Step -> ST ()
-checkStep (Update n _ e) = 
-  do b <- checkExpr e; when b $ setDyn n
-checkStep (Replacement q1 q2) = 
+checkStep :: VariableDecl -> Step -> ST ()
+checkStep decl (Update n _ e) = 
+  do b <- checkExpr e; 
+     when b $ setDyn n; 
+     when (n `elem` output decl) $ setDyn n
+checkStep decl (Replacement q1 q2) = 
   do b1 <- checkPat q1; b2 <- checkPat q2 
-     when (b1 || b2) $ setDyns (getVarsPat (QPair q1 q2))
-checkStep (Assert _) = return ()
-checkStep Skip = return ()
+     let ns = getVarsPat (QPair q1 q2)
+     when (b1 || b2) $ setDyns ns
+     when (any (`elem` output decl) ns) $ setDyns ns
+checkStep _ (Assert _) = return ()
+checkStep _ Skip = return ()
 
 checkPat :: Pattern -> ST Bool
 checkPat (QConst _) = return False

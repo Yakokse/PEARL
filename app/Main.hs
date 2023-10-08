@@ -86,7 +86,7 @@ writeOutput opts str =
   do trace opts $ "Writing to " ++ outputFile opts 
      writeFile (outputFile opts) str 
 
--- TODO: Improve SPEC format, Logging improvements, TM BTA policy for output, conditional lift of store (VS TM)
+-- TODO: Improve SPEC format
 main :: IO ()
 main =
   do ss <- getArgs
@@ -159,7 +159,7 @@ main2 opts prog2 store =
   do trace opts "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize prog2 store "entry"
      traceB (showTrace opts) $ "Trace: (label: State)\n" ++ unlines l
-     let (decl, lifted) = if liftstate opts then liftStore res else res -- TODO: Refine
+     let (decl, lifted) = if liftstate opts then liftStore res else res
      let clean = changeLabel (serializeAnn id) lifted
      if skipPost opts
       then do trace opts "- Skip post processing"
@@ -183,15 +183,7 @@ main3 opts prog' =
      trace opts "- Compressing paths"
      merged <- fromEM "Path compression" $ compressPaths withAssertions
      showLength merged
-     let multiExit = exitCount merged > 1
-     when multiExit $ trace opts "- Merging exits"
-     let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
-     let (singleDecl, singleProg) = 
-          if multiExit 
-            then mergeExits newName (decl, merged)
-            else (decl, merged)
-     when multiExit . showLength $ singleProg
      trace opts "- Cleaning names"
-     let numeratedStore = enumerateAnn singleProg
+     let numeratedStore = enumerateAnn merged
      let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
-     return $ prettyProg id (singleDecl, clean)
+     return $ prettyProg id (decl, clean)

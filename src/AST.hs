@@ -18,8 +18,6 @@ data Block label = Block
   }
   deriving (Eq, Show, Read)
 
-
--- TODO: Better name, ComeFrom
 data ComeFrom label = 
     From label 
   | Fi Expr label label 
