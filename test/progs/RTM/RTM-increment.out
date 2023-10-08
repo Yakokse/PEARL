@@ -31,7 +31,7 @@ right1_2:
 
 right_2b_2:
 	from right1_2
-	S += 'BLANK
+	S ^= 'BLANK
 	goto right2_2
 
 right2_2:

@@ -1,17 +1,6 @@
-// Inner variables
-Q = 'nil
-Q1 = 'nil
-S1 = 'nil
-S2 = 'nil
-Q2 = 'nil
-RulesRev = 'nil
-Rules = 'nil
-Rule = 'nil
-
 // Describe the TM
 Start = '6
 End = '1
-pc_max = '8
 Transitions = 
  '((2 . (BLANK . (BLANK . 1))) . 
   ((3 . (SLASH . (LEFT  . 2))) . 
@@ -24,6 +13,6 @@ Transitions =
    nil))))))))
 
 // Tape for full specialization
-//S = 'nil
+//S = 'BLANK
 //S_left = 'nil
 //S_right = '(1 . (1 . (0 . nil)))

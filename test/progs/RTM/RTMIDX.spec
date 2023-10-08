@@ -1,12 +1,3 @@
-// Inner variables
-Q1 = 'nil
-S1 = 'nil
-S2 = 'nil
-Q2 = 'nil
-Rule = 'nil
-pc = 'nil
-Q = 'nil
-
 // Describe the TM
 Start = '1
 End = '6

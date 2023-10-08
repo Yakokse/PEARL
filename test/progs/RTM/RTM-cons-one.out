@@ -1,0 +1,50 @@
+(S_left S S_right) -> (S_left S S_right)
+
+init_2:
+	entry
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= '1
+	assert((S = '1))
+	assert(!((S = 'SLASH)))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto left_1b_1
+		else left_1p_1
+
+left_1b_1:
+	from init_2
+	S ^= 'BLANK
+	goto left1_1
+
+left1_1:
+	fi (S_right = 'nil)
+		from left_1b_1
+		else left_1p_1
+	if (S_left = 'nil)
+		goto left_2b_1
+		else left_2p_1
+
+left_2b_1:
+	from left1_1
+	S ^= 'BLANK
+	goto left2_1
+
+left2_1:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from left_2b_1
+		else left_2p_1
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	exit
+
+left_2p_1:
+	from left1_1
+	(S . S_left) <- S_left
+	goto left2_1
+
+left_1p_1:
+	from init_2
+	S_right <- (S . S_right)
+	goto left1_1

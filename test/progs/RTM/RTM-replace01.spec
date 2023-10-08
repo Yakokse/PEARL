@@ -1,13 +1,3 @@
-// Inner variables
-Q = 'nil
-Q1 = 'nil
-S1 = 'nil
-S2 = 'nil
-Q2 = 'nil
-RulesRev = 'nil
-Rules = 'nil
-Rule = 'nil
-
 // Describe the TM
 // Replace 0 by 1 in string 0*
 // Example: _000 --> _111
@@ -25,6 +15,6 @@ Transitions =
    nil))))))))
 
 // Tape for full specialization
-//S = 'nil
+//S = 'BLANK
 //S_left = 'nil
 //S_right = '(0 . (0 . (0 . nil)))

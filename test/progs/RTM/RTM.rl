@@ -6,12 +6,12 @@ init: entry
       Q ^= Start
       if Start = End goto stop else act1
 
-stop: fi Start = End  from init else endCheck
+stop: fi Start = End from init else act4
       Q ^= End
       Rules ^= Transitions
       exit
 
-act1: fi Q = Start from init else act4
+act1: fi !RulesRev && Q = Start from init else act4
       ((Q1 . (S1 . (S2 . Q2))) . Rules) <- Rules
       if Q = Q1 && S = S1 goto write else act2
 
@@ -32,16 +32,14 @@ act3: fi Q = Q2 && S1 = 'SLASH from move1 else act2
 reload: fi Rules from reload else act3
         (Rule . RulesRev) <- RulesRev
         Rules <- (Rule . Rules)
-        if RulesRev goto reload else endCheck
+        if RulesRev goto reload else act4
 
-endCheck: from reload
-          if Q = End goto stop else act4
-
-act4: fi !RulesRev from endCheck else act3
-      goto act1
+act4: fi !RulesRev from reload else act3
+      if !RulesRev && Q = End goto stop else act1
 
 move: from act2
-      Q += Q2 - Q1
+      Q ^= Q1
+      Q ^= Q2
       if S2 = 'LEFT goto left else right
 
 left: from move
@@ -84,7 +82,7 @@ right1: fi S_left = 'nil from right_1b else right_1p
         if S_right = 'nil goto right_2b else right_2p
 
 right_2b: from right1 // MERGE? 2
-          S += 'BLANK
+          S ^= 'BLANK
           goto right2
 
 right_2p: from right1

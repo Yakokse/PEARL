@@ -95,16 +95,20 @@ pTerm = chainl1 pFactor pMulOp
 
 pFactor :: Parser Expr
 pFactor = choice [
+    UOp Hd <$> (word "hd" *> pAtom)
+  , UOp Tl <$> (word "tl" *> pAtom)
+  , UOp Not <$> (symbol "!" *> pAtom)
+  , pAtom
+  ]
+
+pAtom :: Parser Expr
+pAtom = choice [
     Const <$> pConstant
-  , UOp Hd <$> (word "hd" *> pExpr)
-  , UOp Tl <$> (word "tl" *> pExpr)
   , Var <$> pName
-  , UOp Not <$> (symbol "!" *> pExpr)
   , do symbol "("; e <- pExpr; res <- maybeCons e; symbol ")"; return res
   ]
   where
     maybeCons e = choice [Op Cons e <$> (symbol "." *> pExpr), return e]
-  
 
 pConstant :: Parser Value
 pConstant = symbol "'" *> pValue

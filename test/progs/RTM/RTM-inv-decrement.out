@@ -1,0 +1,145 @@
+(S_left S S_right) -> (S_left S S_right)
+
+stop_9:
+	entry
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto act1_1
+
+act1_1:
+	fi (S = '0)
+		from write_3
+		else stop_9
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto left_2b_2
+		else left_2p_2
+
+left_2b_2:
+	from act1_1
+	S ^= 'BLANK
+	goto left1_2
+
+left1_2:
+	fi (S_left = 'nil)
+		from left_2b_2
+		else left_2p_2
+	if (S_right = 'nil)
+		goto left_1b_2
+		else left_1p_2
+
+left_1b_2:
+	from left1_2
+	S ^= 'BLANK
+	goto left_2
+
+left_2:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from left_1b_2
+		else left_1p_2
+	assert(!((S = 'SLASH)))
+	if (S = 'BLANK)
+		goto write_4
+		else act1_4
+
+write_4:
+	from left_2
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto act1_5
+
+act1_5:
+	fi (S = '1)
+		from act1_3
+		else write_4
+	goto act1_6
+
+act1_6:
+	fi (S = '0)
+		from act1_8
+		else act1_5
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto right_2b_7
+		else right_2p_7
+
+right_2b_7:
+	from act1_6
+	S -= 'BLANK
+	goto right1_7
+
+right1_7:
+	fi (S_right = 'nil)
+		from right_2b_7
+		else right_2p_7
+	if (S_left = 'nil)
+		goto right_1b_7
+		else right_1p_7
+
+right_1b_7:
+	from right1_7
+	S ^= 'BLANK
+	goto right_7
+
+right_7:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from right_1b_7
+		else right_1p_7
+	assert(!((S = 'SLASH)))
+	if (S = 'BLANK)
+		goto write_8
+		else act1_8
+
+write_8:
+	from right_7
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	exit
+
+act1_8:
+	from right_7
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto act1_6
+
+right_1p_7:
+	from right1_7
+	(S . S_left) <- S_left
+	goto right_7
+
+right_2p_7:
+	from act1_6
+	S_right <- (S . S_right)
+	goto right1_7
+
+act1_4:
+	from left_2
+	if (S = '1)
+		goto write_3
+		else act1_3
+
+write_3:
+	from act1_4
+	S ^= '1
+	S ^= '0
+	goto act1_1
+
+act1_3:
+	from act1_4
+	assert((S = '0))
+	S ^= '0
+	S ^= '1
+	goto act1_5
+
+left_1p_2:
+	from left1_2
+	(S . S_right) <- S_right
+	goto left_2
+
+left_2p_2:
+	from act1_1
+	S_left <- (S . S_left)
+	goto left1_2
