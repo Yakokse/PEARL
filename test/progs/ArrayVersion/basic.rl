@@ -1,4 +1,0 @@
-test: 
-    entry 
-    skip 
-    exit
