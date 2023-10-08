@@ -1,13 +1,14 @@
 module PostProcessing where
 import AST
 import Utils
-import Data.List (partition, elemIndex)
+import Data.List (partition, elemIndex, transpose)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import Values
 import Operators
-import Data.Maybe (maybeToList)
+import Data.Maybe (maybeToList, fromMaybe)
+import GHC.IO (unsafePerformIO)
 
 -- TODO: Arbitrary push expressions will remove magic variable
 -- Pushnz only?
@@ -116,41 +117,56 @@ changeConditionals prog = map changeCond prog
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
 
--- TODO: CHANGE DECL HERE
-mergeExits :: (IntType -> IntType -> a) -> Program a -> Program a
+mergeExits :: Show a => (IntType -> IntType -> a) -> Program (Annotated a) -> Program (Annotated a)
 mergeExits showBounds (decl, p) = 
-  let (exits, remaining) = partition isExit p in
-  case length exits of 
-    n | n <= 1 -> (decl, p)
-    _ ->
-      let (exit, _, _, newBlocks) = 
-            merge $ zipWith (\b i -> (addControl b i,i,i)) exits [0..]
-      in (decl, remaining ++ newBlocks ++ [exit])
+  let exits' = map (liftDiffs diffVars) exits
+      newDecl = decl {output = output decl ++ diffVars}
+      (exit, _, _, _, newBlocks) = 
+          merge $ zipWith (\b i -> (b,i,i)) exits' [0..]
+  in (newDecl, remaining ++ newBlocks ++ [exit])
   where
-    exitVar = "exit_control_var"
-    addControl block val = block {
-      body = body block ++ [Update exitVar Xor (Const . Num $ val)]
-    }
+    getStoreB = getStore . name
+    (exits, remaining) = unsafePerformIO $ let x = partition isExit p in print (fst x) >> return x
+    stores = unsafePerformIO $ let x = transpose $ map (storeToList . getStoreB) exits
+              in print (map (storeToList . getStoreB) exits) >> return x
+    diffVars = unsafePerformIO $ let x = findDif stores in print stores >> return x
+    findDif = map (fst . head) . filter (\vs -> any (/= head vs) vs)
+    liftDiffs names block =
+      let s = getStoreB block
+          assign n = 
+            case find n s of 
+                 Right v -> [Update n Xor (Const v)]; 
+                 _ -> []
+          assignVars = concatMap assign names
+      in block {body = body block ++ assignVars} 
+    getVals b = 
+      case mapM (`find` getStoreB b) diffVars of
+        Right vs -> vs
+        Left _ -> []
     merge [] = undefined
-    merge [(b, lb, ub)] = (b, lb, ub, [])
+    merge [(b, lb, ub)] = (b, lb, ub, [zip diffVars $ getVals b], [])
     merge tpls =
       let n = length tpls `div` 2
-          (b1, lb1, ub1, bs1) = merge $ take n tpls
-          (b2, lb2, ub2, bs2) = merge $ drop n tpls
-          (lb, ub) = (min lb1 lb2, max ub1 ub2)
-          newName = showBounds lb ub
-          newJump = Goto newName
-          b1' = b1 { jump = newJump}
-          b2' = b2 { jump = newJump}
-          divider = if ub1 < lb2 then lb2 else lb1
-          expr = Op Less (Var exitVar) (Const . Num $ divider)
+          (b1, lb, _, vals1, bs1) = merge $ take n tpls
+          (b2, _, ub, vals2, bs2) = merge $ drop n tpls
+          newName = (showBounds lb ub, Nothing)
+          b1' = b1 { jump = Goto newName}
+          b2' = b2 { jump = Goto newName}
+          equals = map (map (\(var,v) -> Op Equal (Var var) (Const v))) vals1
+          foldAnd [] = Const $ Atom "dbg"
+          foldAnd [e] = e
+          foldAnd (e:es) = Op And e $ foldAnd es
+          foldOr [] = undefined
+          foldOr [es] = foldAnd es
+          foldOr (es:ess) = Op Or (foldAnd es) $ foldOr ess
+          expr = foldOr equals
           newBlock = Block 
             { name = newName
             , from = Fi expr (name b1) (name b2)
             , body = []
             , jump = Exit
             }
-      in (newBlock, lb, ub, b1':b2':bs1++bs2)    
+      in (newBlock, lb, ub, vals1 ++ vals2, b1':b2':bs1++bs2)    
 
 compressPaths :: Ord a => [Block a] -> EM [Block a]
 compressPaths p = 
@@ -168,10 +184,7 @@ compressPaths p =
     , jump = jump $ last bs
     }
     relabelPair bs = (name $ last bs, name $ head bs)
-    updateL relab l = 
-      case Map.lookup l relab of
-        Just l' -> l'
-        Nothing -> l
+    updateL relab l = fromMaybe l $ Map.lookup l relab
     chainBlocks [] _ = []
     chainBlocks (l:ls) seen 
       | l `elem` seen = chainBlocks ls seen 

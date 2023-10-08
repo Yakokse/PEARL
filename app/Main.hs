@@ -183,11 +183,15 @@ main3 opts prog' =
      trace opts "- Compressing paths"
      merged <- fromEM "Path compression" $ compressPaths withAssertions
      showLength merged
-     trace opts "- Cleaning names"
-     let numeratedStore = enumerateAnn merged
-     let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
-     trace opts "- Merging exits" -- TODO: Only if needed
+     let multiExit = exitCount merged > 1
+     when multiExit $ trace opts "- Merging exits"
      let newName lb ub = "exit_merge_" ++ show lb ++ "_" ++ show ub
-     let singleExit = mergeExits newName (decl, clean)
-     showLength $ snd singleExit
-     return $ prettyProg id singleExit 
+     let (singleDecl, singleProg) = 
+          if multiExit 
+            then mergeExits newName (decl, merged)
+            else (decl, merged)
+     when multiExit . showLength $ singleProg
+     trace opts "- Cleaning names"
+     let numeratedStore = enumerateAnn singleProg
+     let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
+     return $ prettyProg id (singleDecl, clean)

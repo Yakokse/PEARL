@@ -1,23 +1,23 @@
-init_1:
+(dyn) -> (dyn)
+
+init_2:
 	entry
 	if dyn
-		goto fst_1
-		else snd_1
+		goto fst_2
+		else snd_2
 
-fst_1:
-	from init_1
+fst_2:
+	from init_2
 	assert(dyn)
-	exit_control_var ^= '0
-	goto exit_merge_0_1
+	goto exit_merge_0_1_1
 
-snd_1:
-	from init_1
+snd_2:
+	from init_2
 	assert(!(dyn))
-	exit_control_var ^= '1
-	goto exit_merge_0_1
+	goto exit_merge_0_1_1
 
-exit_merge_0_1:
-	fi (exit_control_var < '1)
-		from fst_1
-		else snd_1
+exit_merge_0_1_1:
+	fi 'dbg
+		from fst_2
+		else snd_2
 	exit

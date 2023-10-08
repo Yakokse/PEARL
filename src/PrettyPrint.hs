@@ -13,7 +13,7 @@ prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . divisionToL
         prettyLvl Dynamic = "Dynamic"
 
 serializeAnn :: Print a -> Annotated a -> String
-serializeAnn f (l, Nothing) = f l ++ "_NULL"
+serializeAnn f (l, Nothing) = f l
 serializeAnn f (l, Just s) = f l ++ serializeStore s 
   where 
     serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serialize i) . storeToList

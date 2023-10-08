@@ -84,12 +84,10 @@ getEntry p =
 
 getExitBlock :: [Block a] -> EM (Block a)
 getExitBlock p = 
-  case filter f p of
+  case filter isExit p of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
-  where 
-    f b = case jump b of Exit -> True; _ -> False
 
 getEntryBlock :: [Block a] -> EM (Block a)
 getEntryBlock p = 
@@ -137,6 +135,9 @@ getBlockErr' p l =
 
 isExit :: Block a -> Bool
 isExit b = case jump b of Exit -> True; _ -> False
+
+exitCount :: [Block a] -> Int
+exitCount = length . filter isExit
 
 isExit' :: Block' a -> Bool
 isExit' b = case jump' b of Exit' -> True; _ -> False
