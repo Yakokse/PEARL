@@ -15,4 +15,4 @@ Transitions =
 // Tape for full specialization
 //S = 'BLANK
 //S_left = 'nil
-//S_right = '(1 . (1 . (0 . nil)))
+//S_right = '(1 . (1 . (0 .  nil)))
