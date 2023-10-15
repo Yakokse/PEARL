@@ -1,4 +1,4 @@
-(n) -> (nums) with (tmp)
+(n) -> (nums exit_control_var) with (tmp)
 
 init_9:
 	entry

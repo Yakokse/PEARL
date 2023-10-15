@@ -46,14 +46,14 @@ usage = "Usage: PERevFlow [invert/specialize] [-i FILE.rl] [-o FILE.rl] [-s FILE
 processInput :: [String] -> Opts -> (Opts, [String])
 processInput ("invert"     : ss) opts = processInput ss $ opts { mode = Invert }
 processInput ("specialize" : ss) opts = processInput ss $ opts { mode = Specialize }
-processInput ("execute"    : ss) opts = processInput ss $ opts { mode = Execute }
+processInput ("interpret"  : ss) opts = processInput ss $ opts { mode = Execute }
 processInput ("-o" : file  : ss) opts = processInput ss $ opts { outputFile = file }
 processInput ("-i" : file  : ss) opts = processInput ss $ opts { inputFile = file }
 processInput ("-s" : file  : ss) opts = processInput ss $ opts { specFile = file }
 processInput ("-skipSpec"  : ss) opts = processInput ss $ opts { skipSpec = True }
 processInput ("-trace"     : ss) opts = processInput ss $ opts { showTrace = True }
 processInput ("-skipPost"  : ss) opts = processInput ss $ opts { skipPost = True }
-processInput ("-verbose"   : ss) opts = processInput ss $ opts { verbose = True }
+processInput ("-silent"    : ss) opts = processInput ss $ opts { verbose = False }
 processInput ("-lift"      : ss) opts = processInput ss $ opts { liftstate = True}
 processInput ss opts = (opts, ss)
 
@@ -126,7 +126,7 @@ execMain opts =
      let outstr = map (\(n,v) -> n ++ ": " ++ prettyVal v) outvals
      putStrLn (unlines outstr)
      trace opts "Execution statistics: "
-     putStrLn $ show stats
+     putStrLn $ show stats -- TODO: Pretty print this
 
 specMain :: Opts -> IO ()
 specMain opts = 

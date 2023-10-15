@@ -1,5 +1,4 @@
 (ys n) -> (xs ys) with (x)
-// xs is a list of n+1 x's
 
 init: entry
       if n = '0 goto stop else loop

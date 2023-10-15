@@ -79,7 +79,12 @@ liftStore (decl, p) = (decl, map appendStore p)
       | otherwise = b {
           body = body b ++ inline (getStore $ name b)
       }
-    inline = foldr (\(n,v) acc -> Update n Xor (Const v)   : acc) [] . storeToList
+    isOut n = n `elem` output decl
+    inline = foldr (\(n,v) acc -> 
+                      if isOut n
+                        then Update n Xor (Const v) : acc
+                        else acc) 
+                    [] . storeToList
 
 removeDeadBlocks :: Eq a => [Block a] -> [Block a]
 removeDeadBlocks p = 
