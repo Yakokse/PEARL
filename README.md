@@ -10,7 +10,7 @@ It can be ran using `stack run -- MODE`, where `MODE` is `specialize`, `interpre
 
 ## Specializer
 Performs partial evaluation of a program with respect to a given specialization input.
-The specialization is given as a sequence of `variable = value` declarations.
+The specialization is given as a sequence of `variable = 'constant` declarations.
 For examples see the "test/progs" folder.
 
 ### Options
