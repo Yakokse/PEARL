@@ -92,7 +92,7 @@ main =
   do ss <- getArgs
      when (null ss) $ die usage 
      let (opts, ss1) = processInput ss defaultOpts
-     unless (null ss1) $ die "Failed to parse whole command input" 
+     unless (null ss1) $ die (unlines ["Failed to parse whole command input", usage])
      case mode opts of
       Specialize -> specMain opts
       Invert     -> invMain opts
