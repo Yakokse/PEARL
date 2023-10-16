@@ -113,9 +113,9 @@ prettyProg' :: Print a -> Program' a -> String
 prettyProg' f (decl, p) = prettyDecl' decl ++ intercalate "\n" (concatMap (prettyBlock' f) p)
 
 prettyDecl' :: VariableDecl' -> String
-prettyDecl' d = "(" ++ unwords (annVars $ input' d) ++ ") -> (" ++ unwords (annVars $ input' d) ++ ")" ++ tempVars
+prettyDecl' d = "(" ++ unwords (annVars $ input' d) ++ ") -> (" ++ unwords (annVars $ output' d) ++ ")" ++ tempVars
  where 
-  tempVars = if null (temp' d) then "\n\n" else unwords (annVars $ temp' d) ++ "\n\n"
+  tempVars = if null (temp' d) then "\n\n" else " with (" ++ unwords (annVars $ temp' d) ++ ")\n\n"
   annVars = map (\(n,t) -> case t of Dynamic -> '%':n; _ -> n)
 
 
@@ -128,7 +128,7 @@ prettyBlock' f b =
     ++ prettyJump' f (jump' b)) ++ [""]
 
 prettyFrom' :: Print a -> ComeFrom' a -> [String]
-prettyFrom' f (From' l)  = ["from " ++ f l]
+prettyFrom' f (From' l)  = ["%from " ++ f l]
 prettyFrom' f (Fi' Dynamic e l1 l2) = 
   [ "%fi " ++ prettyExpr' e
   , "\t%from " ++ f l1
@@ -137,10 +137,10 @@ prettyFrom' f (Fi' Static e l1 l2) =
   [ "fi " ++ prettyExpr' e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]
-prettyFrom' _ Entry' = ["entry"]
+prettyFrom' _ Entry' = ["%entry"]
 
 prettyJump' :: Print a -> Jump' a -> [String]
-prettyJump' f (Goto' l) = ["goto " ++ f l]
+prettyJump' f (Goto' l) = ["%goto " ++ f l]
 prettyJump' f (If' Dynamic e l1 l2) = 
   [ "%if " ++ prettyExpr' e
   , "\t%goto " ++ f l1
@@ -149,7 +149,7 @@ prettyJump' f (If' Static e l1 l2) =
   [ "if " ++ prettyExpr' e
   , "\tgoto " ++ f l1
   , "\telse " ++ f l2]
-prettyJump' _ Exit' = ["exit"]
+prettyJump' _ Exit' = ["%exit"]
 
 prettyStep' :: Step' -> String
 prettyStep' (Update' Dynamic n rop e)  = 

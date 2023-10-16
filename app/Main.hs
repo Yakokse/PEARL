@@ -41,7 +41,7 @@ defaultOpts = Opts { outputFile = "output.rl"
                    , liftstate = False}
 
 usage :: String
-usage = "Usage: PERevFlow [invert/specialize] [-i FILE.rl] [-o FILE.rl] [-s FILE.spec] [-silent] [-trace] [-skipSpec] [-skipPost] [-lift]"
+usage = "Usage: PERevFlow [invert/specialize/interpret] [-i FILE.rl] [-o FILE.rl] [-s FILE.spec] [-silent] [-trace] [-skipSpec] [-skipPost] [-lift]"
 
 processInput :: [String] -> Opts -> (Opts, [String])
 processInput ("invert"     : ss) opts = processInput ss $ opts { mode = Invert }
