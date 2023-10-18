@@ -1,0 +1,145 @@
+(S_left S S_right) -> (S_left S S_right)
+
+init_9:
+	entry
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	goto act2_8
+
+act2_8:
+	fi (S = 'BLANK)
+		from init_9
+		else write_6
+	assert(!((S = 'SLASH)))
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto right_1b_7
+		else right_1p_7
+
+right_1b_7:
+	from act2_8
+	S ^= 'BLANK
+	goto right1_7
+
+right1_7:
+	fi (S_left = 'nil)
+		from right_1b_7
+		else right_1p_7
+	if (S_right = 'nil)
+		goto right_2b_7
+		else right_2p_7
+
+right_2b_7:
+	from right1_7
+	S ^= 'BLANK
+	goto right2_7
+
+right2_7:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from right_2b_7
+		else right_2p_7
+	if (S = '0)
+		goto write_6
+		else act2_6
+
+write_6:
+	from right2_7
+	S ^= '0
+	S ^= '0
+	assert((S = '0))
+	goto act2_8
+
+act2_6:
+	from right2_7
+	if (S = '1)
+		goto write_5
+		else act2_5
+
+write_5:
+	from act2_6
+	S ^= '1
+	S ^= '0
+	assert((S = '0))
+	goto act2_3
+
+act2_3:
+	fi (S = '1)
+		from write_1
+		else write_5
+	goto act2_4
+
+act2_4:
+	fi (S = 'BLANK)
+		from act2_5
+		else act2_3
+	assert(!((S = 'SLASH)))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto left_1b_2
+		else left_1p_2
+
+left_1b_2:
+	from act2_4
+	S ^= 'BLANK
+	goto left1_2
+
+left1_2:
+	fi (S_right = 'nil)
+		from left_1b_2
+		else left_1p_2
+	if (S_left = 'nil)
+		goto left_2b_2
+		else left_2p_2
+
+left_2b_2:
+	from left1_2
+	S ^= 'BLANK
+	goto left2_2
+
+left2_2:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from left_2b_2
+		else left_2p_2
+	if (S = '0)
+		goto write_1
+		else act2_1
+
+write_1:
+	from left2_2
+	S ^= '0
+	S ^= '1
+	goto act2_3
+
+act2_1:
+	from left2_2
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	exit
+
+left_2p_2:
+	from left1_2
+	(S . S_left) <- S_left
+	goto left2_2
+
+left_1p_2:
+	from act2_4
+	S_right <- (S . S_right)
+	goto left1_2
+
+act2_5:
+	from act2_6
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	goto act2_4
+
+right_2p_7:
+	from right1_7
+	(S . S_right) <- S_right
+	goto right2_7
+
+right_1p_7:
+	from act2_8
+	S_left <- (S . S_left)
+	goto right1_7
