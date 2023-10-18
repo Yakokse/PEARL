@@ -1,4 +1,4 @@
 key = '5555555
 
 // Fully specialize
-// msg = '12345
+msg = '12345

@@ -5,13 +5,12 @@ stop_9:
 	assert((S = 'BLANK))
 	S ^= 'BLANK
 	S ^= 'BLANK
-	assert((S = 'BLANK))
 	goto act1_8
 
 act1_8:
-	fi (S = '0)
-		from act1_5
-		else stop_9
+	fi (S = 'BLANK)
+		from stop_9
+		else act1_5
 	if ((S_left = 'nil) && (S = 'BLANK))
 		goto left_2b_7
 		else left_2p_7
@@ -48,25 +47,25 @@ write_6:
 	S ^= 'BLANK
 	S ^= 'BLANK
 	assert((S = 'BLANK))
-	goto act1_3
-
-act1_3:
-	fi (S = '1)
-		from act1_1
-		else write_6
 	goto act1_4
 
 act1_4:
 	fi (S = '0)
 		from write_5
-		else act1_3
+		else write_6
+	goto act1_3
+
+act1_3:
+	fi (S = '1)
+		from act1_1
+		else act1_4
 	if ((S_right = 'nil) && (S = 'BLANK))
 		goto right_2b_2
 		else right_2p_2
 
 right_2b_2:
-	from act1_4
-	S -= 'BLANK
+	from act1_3
+	S ^= 'BLANK
 	goto right1_2
 
 right1_2:
@@ -111,7 +110,7 @@ right_1p_2:
 	goto right_2
 
 right_2p_2:
-	from act1_4
+	from act1_3
 	S_right <- (S . S_right)
 	goto right1_2
 
@@ -132,6 +131,7 @@ act1_5:
 	assert((S = '0))
 	S ^= '0
 	S ^= '0
+	assert((S = '0))
 	goto act1_8
 
 left_1p_7:

@@ -142,7 +142,7 @@ right1:
 
 right_2b:
 	from right2
-	S -= 'BLANK
+	S ^= 'BLANK
 	goto right1
 
 right_2p:

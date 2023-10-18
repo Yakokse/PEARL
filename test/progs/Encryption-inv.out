@@ -1,0 +1,425 @@
+(msg) -> (msg) with (t)
+
+init_20:
+	fi (((msg / '2) * '2) = msg)
+		from even_1
+		else odd_1
+	t -= (msg / '2)
+	t ^= '0
+	exit
+
+even_1:
+	from loop1_1
+	t += msg
+	msg += t
+	goto init_20
+
+loop1_1:
+	fi (((msg / '2) * '2) = msg)
+		from even_2
+		else odd_2
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_1
+		else even_1
+
+even_2:
+	from loop1_2
+	t += msg
+	msg += t
+	goto loop1_1
+
+loop1_2:
+	fi (((msg / '2) * '2) = msg)
+		from even_3
+		else odd_3
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_2
+		else even_2
+
+even_3:
+	from loop1_3
+	t += msg
+	msg += t
+	goto loop1_2
+
+loop1_3:
+	fi (((msg / '2) * '2) = msg)
+		from even_4
+		else odd_4
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_3
+		else even_3
+
+even_4:
+	from loop1_4
+	t += msg
+	msg += t
+	goto loop1_3
+
+loop1_4:
+	fi (((msg / '2) * '2) = msg)
+		from even_5
+		else odd_5
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_4
+		else even_4
+
+even_5:
+	from loop1_5
+	t += msg
+	msg += t
+	goto loop1_4
+
+loop1_5:
+	fi (((msg / '2) * '2) = msg)
+		from even_6
+		else odd_6
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_5
+		else even_5
+
+even_6:
+	from loop1_6
+	t += msg
+	msg += t
+	goto loop1_5
+
+loop1_6:
+	fi (((msg / '2) * '2) = msg)
+		from even_7
+		else odd_7
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_6
+		else even_6
+
+even_7:
+	from loop1_7
+	t += msg
+	msg += t
+	goto loop1_6
+
+loop1_7:
+	fi (((msg / '2) * '2) = msg)
+		from even_8
+		else odd_8
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_7
+		else even_7
+
+even_8:
+	from loop1_8
+	t += msg
+	msg += t
+	goto loop1_7
+
+loop1_8:
+	fi (((msg / '2) * '2) = msg)
+		from even_9
+		else odd_9
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_8
+		else even_8
+
+even_9:
+	from loop1_9
+	t += msg
+	msg += t
+	goto loop1_8
+
+loop1_9:
+	fi (((msg / '2) * '2) = msg)
+		from even_10
+		else odd_10
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_9
+		else even_9
+
+even_10:
+	from loop1_10
+	t += msg
+	msg += t
+	goto loop1_9
+
+loop1_10:
+	fi (((msg / '2) * '2) = msg)
+		from even_11
+		else odd_11
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_10
+		else even_10
+
+even_11:
+	from loop1_11
+	t += msg
+	msg += t
+	goto loop1_10
+
+loop1_11:
+	fi (((msg / '2) * '2) = msg)
+		from even_12
+		else odd_12
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_11
+		else even_11
+
+even_12:
+	from loop1_12
+	t += msg
+	msg += t
+	goto loop1_11
+
+loop1_12:
+	fi (((msg / '2) * '2) = msg)
+		from even_13
+		else odd_13
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_12
+		else even_12
+
+even_13:
+	from loop1_13
+	t += msg
+	msg += t
+	goto loop1_12
+
+loop1_13:
+	fi (((msg / '2) * '2) = msg)
+		from even_14
+		else odd_14
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_13
+		else even_13
+
+even_14:
+	from loop1_14
+	t += msg
+	msg += t
+	goto loop1_13
+
+loop1_14:
+	fi (((msg / '2) * '2) = msg)
+		from even_15
+		else odd_15
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_14
+		else even_14
+
+even_15:
+	from loop1_15
+	t += msg
+	msg += t
+	goto loop1_14
+
+loop1_15:
+	fi (((msg / '2) * '2) = msg)
+		from even_16
+		else odd_16
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_15
+		else even_15
+
+even_16:
+	from loop1_16
+	t += msg
+	msg += t
+	goto loop1_15
+
+loop1_16:
+	fi (((msg / '2) * '2) = msg)
+		from even_17
+		else odd_17
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_16
+		else even_16
+
+even_17:
+	from loop1_17
+	t += msg
+	msg += t
+	goto loop1_16
+
+loop1_17:
+	fi (((msg / '2) * '2) = msg)
+		from even_18
+		else odd_18
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_17
+		else even_17
+
+even_18:
+	from loop1_18
+	t += msg
+	msg += t
+	goto loop1_17
+
+loop1_18:
+	fi (((msg / '2) * '2) = msg)
+		from even_19
+		else odd_19
+	t -= (msg / '2)
+	if !((msg < '5555555))
+		goto odd_18
+		else even_18
+
+even_19:
+	from loop1_19
+	t += msg
+	msg += t
+	goto loop1_18
+
+loop1_19:
+	entry
+	t ^= '0
+	if !((msg < '5555555))
+		goto odd_19
+		else even_19
+
+odd_19:
+	from loop1_19
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_18
+
+odd_18:
+	from loop1_18
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_17
+
+odd_17:
+	from loop1_17
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_16
+
+odd_16:
+	from loop1_16
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_15
+
+odd_15:
+	from loop1_15
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_14
+
+odd_14:
+	from loop1_14
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_13
+
+odd_13:
+	from loop1_13
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_12
+
+odd_12:
+	from loop1_12
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_11
+
+odd_11:
+	from loop1_11
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_10
+
+odd_10:
+	from loop1_10
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_9
+
+odd_9:
+	from loop1_9
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_8
+
+odd_8:
+	from loop1_8
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_7
+
+odd_7:
+	from loop1_7
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_6
+
+odd_6:
+	from loop1_6
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_5
+
+odd_5:
+	from loop1_5
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_4
+
+odd_4:
+	from loop1_4
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_3
+
+odd_3:
+	from loop1_3
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_2
+
+odd_2:
+	from loop1_2
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto loop1_1
+
+odd_1:
+	from loop1_1
+	msg -= '5555555
+	t += msg
+	msg += (t + '1)
+	goto init_20
