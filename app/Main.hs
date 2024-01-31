@@ -1,10 +1,12 @@
 module Main (main) where
 
+import System.Exit (die)
+import Control.Monad (when)
+import Options.Applicative
+
 import Values
 import Parser
-import System.Exit (die)
-import System.Environment (getArgs)
-import Control.Monad(when, unless)
+
 import BTA
 import Division
 import AST
@@ -17,51 +19,97 @@ import Wellformed
 import Inverter
 import Execute
 
-data Mode = Specialize | Invert | Execute
+data Options = Specialize SpecOptions 
+             | Invert InvertOptions 
+             | Interpret InterpretOptions
 
-data Opts = Opts { outputFile :: String
-                 , inputFile :: String
-                 , specFile :: String
-                 , mode :: Mode
-                 , skipSpec :: Bool
-                 , showTrace :: Bool
-                 , verbose :: Bool
-                 , skipPost :: Bool
-                 , liftstate :: Bool }
+data SpecOptions = SpecOptions 
+  { specInpFile   :: String
+  , specOutFile   :: String
+  , specFile      :: String
+  , skipSpecPhase :: Bool
+  , skipPost      :: Bool
+  , specVerbose   :: Bool
+  , specTrace     :: Bool
+  }
 
-defaultOpts :: Opts
-defaultOpts = Opts { outputFile = "output.rl"
-                   , inputFile = "input.rl"
-                   , specFile = "input.spec"
-                   , mode = Specialize
-                   , skipSpec = False
-                   , showTrace = False
-                   , verbose = True
-                   , skipPost = False
-                   , liftstate = False}
+data InvertOptions = InvertOptions
+  { invInpFile :: String
+  , invOutFile :: String
+  , invVerbose :: Bool
+  }
 
-usage :: String
-usage = "Usage: PERevFlow [invert/specialize/interpret] [-i FILE.rl] [-o FILE.rl] [-s FILE.spec] [-silent] [-trace] [-skipSpec] [-skipPost] [-lift]"
+data InterpretOptions = InterpretOptions
+  { intFile      :: String
+  , intInputFile :: String
+  , intTrace     :: Bool
+  , intVerbose   :: Bool
+  }
 
-processInput :: [String] -> Opts -> (Opts, [String])
-processInput ("invert"     : ss) opts = processInput ss $ opts { mode = Invert }
-processInput ("specialize" : ss) opts = processInput ss $ opts { mode = Specialize }
-processInput ("interpret"  : ss) opts = processInput ss $ opts { mode = Execute }
-processInput ("-o" : file  : ss) opts = processInput ss $ opts { outputFile = file }
-processInput ("-i" : file  : ss) opts = processInput ss $ opts { inputFile = file }
-processInput ("-s" : file  : ss) opts = processInput ss $ opts { specFile = file }
-processInput ("-skipSpec"  : ss) opts = processInput ss $ opts { skipSpec = True }
-processInput ("-trace"     : ss) opts = processInput ss $ opts { showTrace = True }
-processInput ("-skipPost"  : ss) opts = processInput ss $ opts { skipPost = True }
-processInput ("-silent"    : ss) opts = processInput ss $ opts { verbose = False }
-processInput ("-lift"      : ss) opts = processInput ss $ opts { liftstate = True}
-processInput ss opts = (opts, ss)
+specParser :: Parser Options
+specParser = Specialize <$> (SpecOptions
+          <$> argument str (metavar "<Input RL file>")
+          <*> argument str (metavar "<Output path>")
+          <*> argument str (metavar "<Spec file>")
+          <*> option auto (long "skipSpec"
+                           <> short 's'
+                           <> value False
+                           <> help "Stop after BTA, printing the RL2 program")
+          <*> option auto (long "skipPost"
+                           <> short 'p'
+                           <> value False
+                           <> help "Stop before post-processing, printing the initial residual program")
+          <*> option auto (long "verbose"
+                           <> short 'v'
+                           <> value True
+                           <> help "Show messages and info for each phase")
+          <*> option auto (long "trace"
+                           <> short 't'
+                           <> value False
+                           <> help "Show trace of specialization (Not recommended)")
+          )
 
-trace :: Opts -> String -> IO ()
-trace opts = traceB (verbose opts)
+inverterParser :: Parser Options
+inverterParser = Invert <$> (InvertOptions
+              <$> argument str (metavar "<Input RL file>")
+              <*> argument str (metavar "<Output path>")
+              <*> option auto (long "verbose"
+                               <> short 'v'
+                               <> value True
+                               <> help "Show messages and info for each phase")
+              )
 
-traceB :: Bool -> String -> IO ()
-traceB b s = when b $ putStrLn s
+interpretParser :: Parser Options
+interpretParser = Interpret <$> (InterpretOptions
+               <$> argument str (metavar "<Input RL file>")
+               <*> argument str (metavar "<Spec file>")
+               <*> option auto (long "trace"
+                                <> short 't'
+                                <> value True
+                                <> help "Show trace of execution")
+               <*> option auto (long "verbose"
+                                <> short 'v'
+                                <> value True
+                                <> help "Show messages and info for each phase")                              
+              )
+
+optParser :: Parser Options
+optParser = hsubparser
+              ( command "spec" (info specParser
+                (progDesc "Specialize an RL program"))
+             <> command "invert" (info inverterParser
+                (progDesc "Invert an RL program"))
+             <> command "interpret" (info interpretParser
+                (progDesc "Interpret an RL program"))
+              )
+
+optsParser :: ParserInfo Options
+optsParser = info (optParser <**> helper)
+  ( fullDesc
+  <> progDesc "Various operations on RL programs (spec/invert/interpret)" )
+
+trace :: Bool -> String -> IO ()
+trace b s = when b $ putStrLn s
 
 fromEM :: String -> EM a -> IO a
 fromEM _ (Right a) = return a
@@ -74,116 +122,132 @@ fromLEM s (LEM (Left e, l)) =
      mapM_ putStrLn l
      die $ "Error while " ++ s ++ ": " ++ e  
 
-parseFile :: String -> Opts -> (String -> EM a) -> String -> IO a
-parseFile goal opts parse file =
-  do trace opts $ "- Reading " ++ goal ++ " from file: " ++ show file
-     str <- readFile file
-     trace opts "- Parsing input"
-     fromEM "parsing" $ parse str
+parseFile :: String -> Bool -> (String -> EM a) -> String -> IO a
+parseFile goal verbose parse file =
+  do trace verbose $ "- Reading " ++ goal ++ " from file: " ++ show file
+     content <- readFile file
+     trace verbose "- Parsing input"
+     fromEM "parsing" $ parse content
 
-writeOutput :: Opts -> String -> IO ()
-writeOutput opts str =
-  do trace opts $ "Writing to " ++ outputFile opts 
-     writeFile (outputFile opts) str 
+writeOutput :: Bool -> String -> String -> IO ()
+writeOutput verbose path content =
+  do trace verbose $ "Writing to " ++ path 
+     writeFile path content 
 
 -- TODO: Improve SPEC format
+-- TODO: Final message
 main :: IO ()
-main =
-  do ss <- getArgs
-     when (null ss) $ die usage 
-     let (opts, ss1) = processInput ss defaultOpts
-     unless (null ss1) $ die (unlines ["Failed to parse whole command input", usage])
-     case mode opts of
-      Specialize -> specMain opts
-      Invert     -> invMain opts
-      Execute    -> execMain opts
-     trace opts "Program ran successfully"
+main = do
+  options <- execParser optsParser
+  case options of
+    Specialize opts -> specMain opts
+    Invert     opts -> invMain  opts
+    Interpret  opts -> intMain  opts
+  putStrLn "Program completed succesfully!"
 
-invMain :: Opts -> IO ()
-invMain opts = 
-  do prog <- parseFile "program" opts parseProg (inputFile opts)
+invMain :: InvertOptions -> IO ()
+invMain invOpts =
+  let inputPath = invInpFile invOpts
+      outputPath = invOutFile invOpts
+      v = invVerbose invOpts
+  in
+  do prog <- parseFile "program" v parseProg inputPath
      _ <- fromEM "performing wellformedness check of input prog" 
               $ wellformedProg prog
-     trace opts "- Inverting program."
+     trace v "- Inverting program."
      let invProg = invertProg prog
      _ <- fromEM "performing wellformedness check of reverse prog" 
               $ wellformedProg invProg
-     let str = prettyProg id invProg
-     writeOutput opts str 
+     let out = prettyProg id invProg
+     writeOutput v outputPath out 
 
-execMain :: Opts -> IO ()
-execMain opts =
-  do prog <- parseFile "program" opts parseProg (inputFile opts)
+-- TODO: Execution trace
+intMain :: InterpretOptions -> IO ()
+intMain intOpts =
+  let filePath = intFile intOpts
+      inputPath = intInputFile intOpts
+      v = intVerbose intOpts
+  in
+  do prog <- parseFile "program" v parseProg filePath
      _ <- fromEM "performing wellformedness check of input prog" 
               $ wellformedProg prog
-     initStore <- parseFile "division and specilization data" 
-                    opts parseSpec (specFile opts)
+     initStore <- parseFile "division and specilization data" v parseSpec inputPath
      (out, _) <- fromLEM "execution" $ runProgram prog initStore
      let (outStore, stats) = out
-     trace opts "Output store: "
+     trace v "Output store: "
      let outvals = filter (\(n, _) -> n `elem` output (fst prog)) 
                     $ storeToList outStore
-     let outstr = map (\(n,v) -> n ++ ": " ++ prettyVal v) outvals
+     let outstr = map (\(n, val) -> n ++ ": " ++ prettyVal val) outvals
      putStrLn (unlines outstr)
-     trace opts "Execution statistics: "
-     putStrLn $ show stats -- TODO: Pretty print this
+     trace v "Execution statistics: "
+     print stats -- TODO: Pretty print this
 
-specMain :: Opts -> IO ()
-specMain opts = 
-  do prog <- parseFile "program" opts parseProg (inputFile opts)
+specMain :: SpecOptions -> IO ()
+specMain specOpts = 
+  let inputPath = specInpFile specOpts
+      outputPath = specOutFile specOpts
+      specPath = specFile specOpts
+      v = specVerbose specOpts
+  in 
+  do prog <- parseFile "program" v parseProg inputPath
      let decl = fst prog
      _ <- fromEM "performing wellformedness check of input prog" 
               $ wellformedProg prog
      initStore <- parseFile "division and specilization data" 
-                    opts parseSpec (specFile opts)
-     trace opts "- Creating initial binding."
+                    v parseSpec specPath
+     trace v "- Creating initial binding."
      initDiv <- fromEM "binding" $ makeDiv initStore decl
-     trace opts $ prettyDiv initDiv
-     trace opts "- Performing BTA"
+     trace v $ prettyDiv initDiv
+     trace v "- Performing BTA"
      let congruentDiv = makeCongruent prog initDiv
-     trace opts $ prettyDiv congruentDiv
+     trace v $ prettyDiv congruentDiv
      let nilStore = makeStore . map (\n -> (n, Nil)) $ nonInput decl
      let store = nilStore `updateWithStore` initStore
-     trace opts "- Annotating program"
+     trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv prog
      _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
                  (wellformedProg' congruentDiv prog2)
-     str <- if skipSpec opts 
-              then do trace opts "- Skip specialization";
+     out <- if skipSpecPhase specOpts 
+              then do trace v "- Skip specialization";
                       return $ prettyProg' id prog2 
-              else main2 opts prog2 store
-     writeOutput opts str 
+              else specMain2 specOpts prog2 store
+     writeOutput v outputPath out
 
-main2 :: Opts -> Program' String -> Store -> IO String
-main2 opts prog2 store = 
-  do trace opts "- Specializing"
+-- todo: pipeline cleanup
+specMain2 :: SpecOptions -> Program' String -> Store -> IO String
+specMain2 specOpts prog2 store = 
+  let v = specVerbose specOpts
+  in
+  do trace v "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize prog2 store "entry"
-     traceB (showTrace opts) $ "Trace: (label: State)\n" ++ unlines l
-     let (decl, lifted) = if liftstate opts then liftStore res else res
+     trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
+     let (decl, lifted) = res
      let clean = changeLabel (serializeAnn id) lifted
-     if skipPost opts
-      then do trace opts "- Skip post processing"
+     if skipPost specOpts
+      then do trace v "- Skip post processing"
               return $ prettyProg id (decl, clean)
-      else main3 opts (decl, lifted)
+      else specmain3 specOpts (decl, lifted)
 
-main3 :: Opts -> Program (Annotated String) -> IO String
-main3 opts prog' = 
+specmain3 :: SpecOptions -> Program (Annotated String) -> IO String
+specmain3 specOpts prog' = 
+  let v = specVerbose specOpts
+  in
   do let (decl, prog) = prog'
-     trace opts "- POST PROCESSING"
-     let showLength p = trace opts $ "Nr. of blocks: " ++ show (length p)
+     trace v "- POST PROCESSING"
+     let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
      showLength prog
-     trace opts "- Folding constants"
+     trace v "- Folding constants"
      (folded, l) <- fromLEM "Folding" $ constFold prog
-     trace opts $ "Expressions reduced: " ++ show (length l)
-     trace opts "- Removing dead blocks"
+     trace v $ "Expressions reduced: " ++ show (length l)
+     trace v "- Removing dead blocks"
      let liveProg = removeDeadBlocks folded
      showLength liveProg
-     trace opts "- Adding assertions"
+     trace v "- Adding assertions"
      let withAssertions = changeConditionals liveProg
-     trace opts "- Compressing paths"
+     trace v "- Compressing paths"
      merged <- fromEM "Path compression" $ compressPaths withAssertions
      showLength merged
-     trace opts "- Cleaning names"
+     trace v "- Cleaning names"
      let numeratedStore = enumerateAnn merged
      let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
      return $ prettyProg id (decl, clean)

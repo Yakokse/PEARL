@@ -24,6 +24,7 @@ dependencies:
 - parsec
 - containers
 - array
+- optparse-applicative
 - mtl
 
 ghc-options:
