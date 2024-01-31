@@ -1,16 +1,16 @@
-(dyn) -> (elim1 elim2 dyn)
+(dyn elim) -> (elim dyn)
 init: entry
-      if dyn goto fst else snd
+      elim ^= '0
+      if dyn = '5 goto fst else snd
 
 fst: from init
-     elim1 ^= 'a
-     elim2 ^= 'a
+     elim1 += '1
      goto stop
 
 snd: from init
-     elim1 ^= 'a
-     elim2 ^= 'b
+     elim1 += '2
      goto stop
 
-stop: fi dyn from fst else snd
+stop: fi dyn = '5 from fst else snd
+      dyn += elim1
       exit
