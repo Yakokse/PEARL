@@ -59,10 +59,10 @@ checkExpr (Op _ e1 e2) =
 checkExpr (UOp _ e)    = checkExpr e
 
 setDyn :: Name -> ST ()
-setDyn n = do d <- get; put $ setType n Dynamic d
+setDyn n = do d <- get; put $ setType n BTDynamic d
 
 setDyns :: [Name] -> ST ()
 setDyns = mapM_ setDyn
 
 isDyn :: Name -> ST Bool
-isDyn n = gets $ isType n Dynamic 
+isDyn n = gets $ isType n BTDynamic 

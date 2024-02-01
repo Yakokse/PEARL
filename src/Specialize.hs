@@ -24,7 +24,7 @@ specialize (decl, prog) s entry =
 specDecl :: VariableDecl' -> VariableDecl
 specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
   where 
-    validate = map fst . filter (\(_,t) -> t == Dynamic)
+    validate = map fst . filter (\(_,t) -> t == BTDynamic)
     inp = validate $ input' decl
     out = validate $ output' decl
     tmp = validate $ temp' decl
@@ -87,13 +87,13 @@ specFrom _ _ (From' l) origin
 specFrom x s Entry' (l, _) 
   | l == x    = return $ Entry $ Just s
   | otherwise = Left "Invalid jump to entry block."
-specFrom _ s (Fi' Static e l1 l2) origin = 
+specFrom _ s (Fi' BTStatic e l1 l2) origin = 
   do v <- getValue e s
      let l = if truthy v then l1 else l2
      if l `isFrom` origin 
       then return . From $ annotate l origin
       else Left "Jump not from expected block."
-specFrom _ s (Fi' Dynamic e l1 l2) origin  
+specFrom _ s (Fi' BTDynamic e l1 l2) origin  
   | l1 `isFrom` origin || l2 `isFrom` origin = 
     do e' <- getExpr e s
        return $ Fi e' (annotate l1 origin) (annotate l2 origin)
@@ -118,10 +118,10 @@ specJump s decl Exit' =
       [] -> return (Exit (Just s), [])
       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
 specJump s _ (Goto' l) = return (Goto (l, Just s), [(l, s)])
-specJump s _ (If' Dynamic e l1 l2) = 
+specJump s _ (If' BTDynamic e l1 l2) = 
   do e' <- getExpr e s; 
      return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)]) 
-specJump s _ (If' Static e l1 l2) = 
+specJump s _ (If' BTStatic e l1 l2) = 
   do v <- getValue e s
      return $ 
       if truthy v 
@@ -136,47 +136,47 @@ specSteps s (a:as) =
      return (s', a' ++ as')
     
 specStep :: Store -> Step' -> EM (Store, [Step])
-specStep s (Skip' Dynamic) = return (s, [Skip])
-specStep s (Skip' Static) = return (s, [])
-specStep s (Assert' Dynamic e) = 
+specStep s (Skip' BTDynamic) = return (s, [Skip])
+specStep s (Skip' BTStatic) = return (s, [])
+specStep s (Assert' BTDynamic e) = 
   do e' <- getExpr e s
      return (s, [Assert e'])
-specStep s (Assert' Static e) = 
+specStep s (Assert' BTStatic e) = 
   do v <- getValue e s
      if truthy v
       then return (s, [])
       else Left "Assert failed."
-specStep s (Update' Dynamic n op e) = 
+specStep s (Update' BTDynamic n op e) = 
   do e' <- getExpr e s
      return (s, [Update n op e'])
-specStep s (Update' Static n op e) = 
+specStep s (Update' BTStatic n op e) = 
   do rhs <- getValue e $ s `without` n
      lhs <- find n s
      res <- calcR op lhs rhs
-     let s' = update n res s
+     let s' = update n (Static res) s
      return (s', [])
-specStep s (Replacement' Dynamic q1 q2) = return (s, [Replacement q1 q2])
-specStep s (Replacement' Static q1 q2) = 
+specStep s (Replacement' BTDynamic q1 q2) = return (s, [Replacement q1 q2])
+specStep s (Replacement' BTStatic q1 q2) = 
   do (s', v) <- deconstruct s q2
      s'' <- construct s' v q1
      return (s'', [])
 
 type PEValue = Either Value Expr
 specExpr :: Store -> Expr' -> EM PEValue
-specExpr _ (Const' Dynamic c) = return . Right $ Const c
-specExpr _ (Const' Static c) = return $ Left c
-specExpr _ (Var' Dynamic n) = return . Right $ Var n
-specExpr s (Var' Static n) = 
+specExpr _ (Const' BTDynamic c) = return . Right $ Const c
+specExpr _ (Const' BTStatic c) = return $ Left c
+specExpr _ (Var' BTDynamic n) = return . Right $ Var n
+specExpr s (Var' BTStatic n) = 
   do v <- find n s; return . Left $ v
-specExpr s (Op' Dynamic op e1 e2) = 
+specExpr s (Op' BTDynamic op e1 e2) = 
   do e1' <- getExpr e1 s; e2' <- getExpr e2 s
      return . Right $ Op op e1' e2'
-specExpr s (Op' Static op e1 e2) = 
+specExpr s (Op' BTStatic op e1 e2) = 
   do v1 <- getValue e1 s; v2 <- getValue e2 s
      Left <$> calc op v1 v2
-specExpr s (UOp' Dynamic op e) = 
+specExpr s (UOp' BTDynamic op e) = 
   do e' <- getExpr e s; return . Right $ UOp op e'
-specExpr s (UOp' Static op e) = 
+specExpr s (UOp' BTStatic op e) = 
   do v <- getValue e s;
      Left <$> calcU op v
 specExpr s (Lift e) = Right . Const <$> getValue e s

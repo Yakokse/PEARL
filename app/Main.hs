@@ -146,11 +146,9 @@ main = do
   putStrLn "Program completed succesfully!"
 
 invMain :: InvertOptions -> IO ()
-invMain invOpts =
-  let inputPath = invInpFile invOpts
-      outputPath = invOutFile invOpts
-      v = invVerbose invOpts
-  in
+invMain InvertOptions { invInpFile = inputPath
+                      , invOutFile = outputPath
+                      , invVerbose = v} =
   do prog <- parseFile "program" v parseProg inputPath
      _ <- fromEM "performing wellformedness check of input prog" 
               $ wellformedProg prog
@@ -161,13 +159,12 @@ invMain invOpts =
      let out = prettyProg id invProg
      writeOutput v outputPath out 
 
+
 -- TODO: Execution trace
 intMain :: InterpretOptions -> IO ()
-intMain intOpts =
-  let filePath = intFile intOpts
-      inputPath = intInputFile intOpts
-      v = intVerbose intOpts
-  in
+intMain InterpretOptions { intFile = filePath
+                         , intInputFile = inputPath
+                         , intVerbose = v} =
   do prog <- parseFile "program" v parseProg filePath
      _ <- fromEM "performing wellformedness check of input prog" 
               $ wellformedProg prog
@@ -177,18 +174,16 @@ intMain intOpts =
      trace v "Output store: "
      let outvals = filter (\(n, _) -> n `elem` output (fst prog)) 
                     $ storeToList outStore
-     let outstr = map (\(n, val) -> n ++ ": " ++ prettyVal val) outvals
+     let outstr = map (\(n, val) -> n ++ ": " ++ prettyBTVal val) outvals
      putStrLn (unlines outstr)
      trace v "Execution statistics: "
      print stats -- TODO: Pretty print this
 
 specMain :: SpecOptions -> IO ()
-specMain specOpts = 
-  let inputPath = specInpFile specOpts
-      outputPath = specOutFile specOpts
-      specPath = specFile specOpts
-      v = specVerbose specOpts
-  in 
+specMain specOpts@SpecOptions { specInpFile = inputPath 
+                              , specOutFile = outputPath
+                              , specFile    = specPath
+                              , specVerbose = v} = 
   do prog <- parseFile "program" v parseProg inputPath
      let decl = fst prog
      _ <- fromEM "performing wellformedness check of input prog" 
@@ -201,7 +196,7 @@ specMain specOpts =
      trace v "- Performing BTA"
      let congruentDiv = makeCongruent prog initDiv
      trace v $ prettyDiv congruentDiv
-     let nilStore = makeStore . map (\n -> (n, Nil)) $ nonInput decl
+     let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
      let store = nilStore `updateWithStore` initStore
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv prog

@@ -10,8 +10,8 @@ nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
 staticNonOutput :: VariableDecl' -> [Name]
 staticNonOutput decl =
   let allVars = getVarsDecl' decl
-      onlyStatic = filter (\(_,l) -> l == Static) allVars
-      nonOutput = filter (`notElem` output' decl) onlyStatic
+      onlyBTStatic = filter (\(_,l) -> l == BTStatic) allVars
+      nonOutput = filter (`notElem` output' decl) onlyBTStatic
   in map fst nonOutput
 
 mapLabel :: (a -> b) -> [Block a c] -> [Block b c]

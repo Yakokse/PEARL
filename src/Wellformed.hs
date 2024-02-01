@@ -175,6 +175,6 @@ wellformedExp' d (UOp' l op e) =
       else Left $ "Un.Op. mismatch: " ++ show op 
 wellformedExp' d (Lift e) =
   do l <- wellformedExp' d e
-     if l == Static
-      then return Dynamic
+     if l == BTStatic
+      then return BTDynamic
       else Left "Lift mismatch"

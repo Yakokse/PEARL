@@ -38,7 +38,7 @@ createStore decl store =
   in if anyTemp || anyOut || not allPresent
   then Left "Invalid input store"
   else 
-    let nilStore = makeStore . map (\n -> (n, Nil)) $ nonInput decl
+    let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
     in return $ nilStore `updateWithStore` store
     
 evalBlocks :: (Eq a, Show a) => 
@@ -95,13 +95,13 @@ evalStep s (Update n op e) =
   do v1 <- lift' $ find n s
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
-     return $ update n v3 s
+     return $ update n (Static v3) s
 
 deconstruct :: Store -> Pattern -> EM (Store, Value)
 deconstruct store (QConst v) = return (store,v)
 deconstruct store (QVar n) = 
   do v <- find n store
-     let store' = update n Nil store
+     let store' = update n (Static Nil) store
      return (store', v)
 deconstruct store (QPair q1' q2') =
   do (store', v)   <- deconstruct store q1'
@@ -116,7 +116,7 @@ construct store v (QConst v') =
 construct store v (QVar n) =
   do v' <- find n store
      if v' == Nil 
-      then return $ update n v store 
+      then return $ update n (Static v) store 
       else Left "Non-nill variable in replacement."
 construct store (Pair v1 v2) (QPair q1' q2') =
   do store' <- construct store v1 q1'

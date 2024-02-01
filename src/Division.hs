@@ -7,6 +7,7 @@ import qualified Data.Map.Strict as Map
  
 
 type Division = Map.Map Name Level
+type DivisionPW = Map.Map Label Division
 
 isType :: Name -> Level-> Division -> Bool
 isType n t d =
@@ -25,10 +26,10 @@ setTypes ns ts bDiv = foldl (\d (n, t) -> setType n t d) bDiv pairs
   where pairs = zip ns ts
 
 allDyn :: Division -> [Name]
-allDyn = map fst . filter ((== Dynamic) . snd) . Map.toList
+allDyn = map fst . filter ((== BTDynamic) . snd) . Map.toList
 
 allStatic :: Division -> [Name]
-allStatic = map fst . filter ((== Static) . snd) . Map.toList
+allStatic = map fst . filter ((== BTStatic) . snd) . Map.toList
 
 defaultDivision :: Division
 defaultDivision = Map.empty
@@ -41,8 +42,8 @@ makeDiv store decl =
   do mapM_ onlyInput names
      let allVars = getVarsDecl decl
          allTypes = map (\n -> if isStatic n 
-                              then Static 
-                              else Dynamic) 
+                              then BTStatic 
+                              else BTDynamic) 
                         allVars
      return $ setTypes allVars allTypes defaultDivision
   where 

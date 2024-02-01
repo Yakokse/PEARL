@@ -8,6 +8,8 @@ type IntType = Word
 type Name = String
 type ErrMsg = String 
 type EM = Either ErrMsg 
+type Label = String
+
 
 data Value = 
     Atom String
@@ -16,10 +18,12 @@ data Value =
   | Nil
   deriving (Eq, Show, Read, Ord) 
 
-type Store = Map.Map Name Value
+data BTValue = Dynamic | Static Value
+  deriving (Eq, Show, Read, Ord)
 
+type Store = Map.Map Name BTValue
 
-data Level = Static | Dynamic
+data Level = BTStatic | BTDynamic
   deriving (Eq, Show, Read)
 
 getStore :: (l, Maybe Store) -> Store
@@ -40,8 +44,9 @@ boolify b = if b then trueV else falseV
 find ::  Name -> Store -> EM Value
 find n s = 
   case Map.lookup n s of 
-    Just v -> return v
-    Nothing -> Left $ "Variable \"" ++ n ++ "\"  not found during lookup"
+    Just (Static v) -> return v
+    Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
+    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
 vars :: Store -> [Name]
 vars = Map.keys
@@ -49,13 +54,13 @@ vars = Map.keys
 emptyStore :: Store
 emptyStore = Map.empty
 
-makeStore :: [(Name, Value)] -> Store
+makeStore :: [(Name, BTValue)] -> Store
 makeStore = Map.fromList
 
-storeToList :: Store -> [(Name, Value)]
+storeToList :: Store -> [(Name, BTValue)]
 storeToList = Map.toAscList
 
-update :: Name -> Value -> Store -> Store
+update :: Name -> BTValue -> Store -> Store
 update = Map.insert
 
 updateWithStore :: Store -> Store -> Store

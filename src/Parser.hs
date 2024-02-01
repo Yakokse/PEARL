@@ -4,7 +4,6 @@ import AST
 import Values
 import Text.ParserCombinators.Parsec
 import Data.Functor (($>), void)
-type Label = String
 
 parseStr :: Parser a -> String -> EM a
 parseStr p s = case runParser p () "" s of
@@ -123,11 +122,11 @@ parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
   where pFile = makeStore <$> (whitespace *> many pDeclaration <* eof)
 
-pDeclaration :: Parser (Name, Value)
-pDeclaration = (,) <$> pName <*> (symbol "=" *> pConstant)
+pDeclaration :: Parser (Name, BTValue)
+pDeclaration = (,) <$> (pName <* symbol "=") <*> (Static <$> pConstant)
 
 pLabelName :: Parser (Label, ())
-pLabelName = (\n -> (n, ())) <$> pName 
+pLabelName = (,) <$> pName <*> return ()
 
 pName :: Parser String
 pName = 
