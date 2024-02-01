@@ -2,7 +2,7 @@ module AST where
 
 import Values 
 
-type Program label = (VariableDecl, [Block label])
+type Program label store = (VariableDecl, [Block label store])
 
 data VariableDecl = VariableDecl 
   { input  :: [Name]
@@ -10,24 +10,24 @@ data VariableDecl = VariableDecl
   , temp   :: [Name] 
   } deriving (Eq, Show, Read)
 
-data Block label = Block 
-  { name :: label
-  , from :: ComeFrom label
+data Block label store = Block 
+  { name :: (label, store)
+  , from :: ComeFrom label store
   , body :: [Step]
-  , jump :: Jump label
+  , jump :: Jump label store
   }
   deriving (Eq, Show, Read)
 
-data ComeFrom label = 
-    From label 
-  | Fi Expr label label 
-  | Entry
+data ComeFrom label store = 
+    From (label, store)
+  | Fi Expr (label, store) (label, store)
+  | Entry store
   deriving (Eq, Show, Read)
 
-data Jump label = 
-    Goto label 
-  | If Expr label label 
-  | Exit
+data Jump label store = 
+    Goto (label, store)
+  | If Expr (label, store) (label, store)
+  | Exit store
   deriving (Eq, Show, Read)
 
 data Step = 

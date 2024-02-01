@@ -34,7 +34,7 @@ constFoldE (Op op e1 e2) = do
       logM "'Or' reduced." >> return (if truthy v then Const trueV else e1')
     _ -> return $ Op op e1' e2'
 
-constFold :: [Block a] -> LEM [Block a]
+constFold :: [Block a b] -> LEM [Block a b]
 constFold p = concat <$> mapM constFoldB p
   where 
     constFoldF (Fi e l1 l2) = 
@@ -71,22 +71,22 @@ constFold p = concat <$> mapM constFoldB p
         (Left err, _) -> 
           logM ("Error during constant propagation: " ++ err) >> return []
 
-liftStore :: Program (Annotated a) -> Program (Annotated a)
-liftStore (decl, p) = (decl, map appendStore p)
-  where 
-    appendStore b 
-      | not $ isExit b = b
-      | otherwise = b {
-          body = body b ++ inline (getStore $ name b)
-      }
-    isOut n = n `elem` output decl
-    inline = foldr (\(n,v) acc -> 
-                      if isOut n
-                        then Update n Xor (Const v) : acc
-                        else acc) 
-                    [] . storeToList
+-- liftStore :: Program (Annotated a) -> Program (Annotated a)
+-- liftStore (decl, p) = (decl, map appendStore p)
+--   where 
+--     appendStore b 
+--       | not $ isExit b = b
+--       | otherwise = b {
+--           body = body b ++ inline (getStore $ name b)
+--       }
+--     isOut n = n `elem` output decl
+--     inline = foldr (\(n,v) acc -> 
+--                       if isOut n
+--                         then Update n Xor (Const v) : acc
+--                         else acc) 
+--                     [] . storeToList
 
-removeDeadBlocks :: Eq a => [Block a] -> [Block a]
+removeDeadBlocks :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 removeDeadBlocks p = 
   let bs = filter isExit p
       liveBlocks = traceProg bs []
@@ -99,7 +99,7 @@ removeDeadBlocks p =
         let new = concatMap (maybeToList . getBlock p) $ fromLabels b
         in traceProg (new ++ bs) (b:res)
 
-changeConditionals :: Eq a => [Block a] -> [Block a]
+changeConditionals :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 changeConditionals prog = map changeCond prog
   where
     changeCond b = 
@@ -119,13 +119,13 @@ changeConditionals prog = map changeCond prog
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
 
-compressPaths :: Ord a => [Block a] -> EM [Block a]
+compressPaths :: (Ord a, Ord b) => [Block a b] -> EM [Block a b]
 compressPaths p = 
   do entry <- getEntryBlock p
      let bss = chainBlocks [name entry] []
      let bs = map combineBlocks bss
      let relabels = Map.fromList $ map relabelPair bss
-     let p' = changeLabel (updateL relabels) bs
+     let p' = mapBoth (updateL relabels) bs
      return p'
   where 
     combineBlocks bs = Block {
@@ -146,7 +146,7 @@ compressPaths p =
             in chain : chainBlocks (new ++ ls) (l : seen)
           Nothing -> chainBlocks ls seen 
     getChain b = case jump b of
-      Exit -> ([b], [])
+      Exit _ -> ([b], [])
       If _ l1 l2 -> ([b], [l1, l2])
       Goto l -> case getBlock p l of
                   Just b'@Block {from = From l'} | name b == l' -> 
@@ -155,11 +155,11 @@ compressPaths p =
                   Just _ -> ([b], [l])
                   Nothing -> ([b], [])
 
-enumerateAnn :: [Block (Annotated a)] -> [Block (a, Int)]
+enumerateAnn :: Ord b => [Block a b] -> [Block a Int]
 enumerateAnn p = 
   let stores = Set.toList . Set.fromList $ map (snd . name) p
-      enum (l, s) = 
+      enum s = 
         case elemIndex s stores of
-          Just i -> (l, i+1)
-          Nothing -> (l, 0)
-  in changeLabel enum p
+          Just i -> i+1
+          Nothing -> 0
+  in mapStore enum p

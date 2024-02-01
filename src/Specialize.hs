@@ -13,7 +13,7 @@ type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
-specialize :: (Eq a, Show a) => Program' a -> Store -> a -> LEM (Program (Annotated a))
+specialize :: (Eq a, Show a) => Program' a -> Store -> a -> LEM (Program a (Maybe Store))
 specialize (decl, prog) s entry = 
   do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
@@ -29,8 +29,8 @@ specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
     out = validate $ output' decl
     tmp = validate $ temp' decl
 
-specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block (Annotated a)] 
-                            -> LEM [Block (Annotated a)]
+specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block a (Maybe Store)] 
+                            -> LEM [Block a (Maybe Store)]
 specProg _ _ [] _ res = 
   do logM "Specialization done."; return res
 specProg entry (decl, prog) (p:ps) seen res 
@@ -51,8 +51,8 @@ specProg entry (decl, prog) (p:ps) seen res
           res' <- merge b' res
           specProg entry (decl, prog) (pnew ++ ps) seen' res'
 
-merge :: (Eq a, Show a) => Block (Annotated a) -> [Block (Annotated a)]
-                            -> LEM [Block (Annotated a)]
+merge :: (Eq a, Show a) => Block a (Maybe Store) -> [Block a (Maybe Store)]
+                            -> LEM [Block a (Maybe Store)]
 merge block prog 
   | name block `notElem` map name prog = return $ block : prog
   | otherwise = 
@@ -65,12 +65,12 @@ merge block prog
     mergeBlocks x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
     mergeFi (Fi e (l1, s1) (l2, s2)) (Fi e' (l1', s1') (l2', s2')) 
       | e == e' && l1 == l1' && l2 == l2' = 
-          return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2') 
+          return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2')
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
 specBlock :: Eq a => a -> VariableDecl' -> Store -> Block' a -> (a, Store) 
-                                 -> EM (Block (Annotated a), [Point a])
+                                 -> EM (Block a (Maybe Store), [Point a])
 specBlock entry decl s b origin = 
   do let l = (name' b, Just s)
      f <- specFrom entry s (from' b) origin
@@ -80,12 +80,12 @@ specBlock entry decl s b origin =
 
 -- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
 specFrom :: Eq a => a -> Store -> ComeFrom' a -> (a, Store) 
-                            -> EM (ComeFrom (Annotated a))
+                            -> EM (ComeFrom a (Maybe Store))
 specFrom _ _ (From' l) origin 
-  | l `isFrom` origin = return . From $ annotate l origin
+  | l `isFrom` origin = return (From (l, Just . snd $ origin))
   | otherwise         = Left "Invalid jump to an unconditional from."
-specFrom x _ Entry' (l, _) 
-  | l == x    = return Entry 
+specFrom x s Entry' (l, _) 
+  | l == x    = return $ Entry $ Just s
   | otherwise = Left "Invalid jump to entry block."
 specFrom _ s (Fi' Static e l1 l2) origin = 
   do v <- getValue e s
@@ -102,11 +102,11 @@ specFrom _ s (Fi' Dynamic e l1 l2) origin
 isFrom :: Eq a => a -> (a, Store) -> Bool
 isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
 
-annotate :: Eq a => a -> (a, Store) -> Annotated a
+annotate :: Eq a => a -> (a, Store) -> (a, Maybe Store)
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> VariableDecl' -> Jump' a -> EM (Jump (Annotated a), [Point a])
+specJump :: Store -> VariableDecl' -> Jump' a -> EM (Jump a (Maybe Store), [Point a])
 specJump s decl Exit' = 
   let checkable = staticNonOutput decl
       vals = map (`find` s) checkable
@@ -115,7 +115,7 @@ specJump s decl Exit' =
      let pairs = zip checkable vs
      let offendingVars = filter (\(_,v) -> v /= Nil) pairs
      case offendingVars of
-      [] -> return (Exit, [])
+      [] -> return (Exit (Just s), [])
       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
 specJump s _ (Goto' l) = return (Goto (l, Just s), [(l, s)])
 specJump s _ (If' Dynamic e l1 l2) = 

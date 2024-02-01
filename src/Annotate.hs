@@ -4,7 +4,7 @@ import AST
 import Division
 import Values
 
-annotateProg :: Division -> Program a -> Program' a
+annotateProg :: Division -> Program a () -> Program' a
 annotateProg d (decl, p)= (annotateDecl d decl, map (annotateBlock d) p)
 
 annotateDecl :: Division -> VariableDecl -> VariableDecl'
@@ -14,10 +14,10 @@ annotateDecl d VariableDecl{input = i, output = o, temp = t} =
                , temp' = map annVar t}
   where annVar n = (n, getType n d)
 
-annotateBlock :: Division -> Block a -> Block' a
+annotateBlock :: Division -> Block a () -> Block' a
 annotateBlock d b = 
   Block' 
-    { name' = name b
+    { name' = fst $ name b
     , from' = annotateFrom d $ from b
     , body' = map (annotateStep d) $ body b
     , jump' = annotateGoto d $ jump b
@@ -39,17 +39,17 @@ annotateStep d (Assert e) =
   in Assert' btType e'
 annotateStep _ Skip = Skip' Static               
 
-annotateFrom :: Division -> ComeFrom a -> ComeFrom' a
-annotateFrom _ Entry = Entry'
-annotateFrom _ (From l) = From' l
-annotateFrom d (Fi e l1 l2) =
+annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
+annotateFrom _ (Entry ()) = Entry'
+annotateFrom _ (From (l, ())) = From' l
+annotateFrom d (Fi e (l1, ()) (l2, ())) =
   let (e', btType) = annotateExp d e 
   in Fi' btType e' l1 l2
 
-annotateGoto :: Division -> Jump a -> Jump' a
-annotateGoto _ Exit = Exit'
-annotateGoto _ (Goto l) = Goto' l
-annotateGoto d (If e l1 l2) =
+annotateGoto :: Division -> Jump a () -> Jump' a
+annotateGoto _ (Exit ()) = Exit'
+annotateGoto _ (Goto (l, ())) = Goto' l
+annotateGoto d (If e (l1, ()) (l2, ())) =
   let (e', btType) = annotateExp d e 
   in If' btType e' l1 l2
 

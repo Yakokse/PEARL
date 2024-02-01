@@ -6,7 +6,7 @@ import Values
 import Division
 import Data.Set ( fromList, size )
 
-wellformedProg :: (Eq a, Show a) => Program a -> EM ()
+wellformedProg :: (Eq a, Show a) => Program a () -> EM ()
 wellformedProg (decl, p) = 
   do _ <- wellformedDecl decl
      _ <- getEntryBlock p
@@ -29,7 +29,7 @@ wellformedDecl decl =
     notTemp = all (`notElem` tmp)
     
 
-wellformedBlock :: (Eq a, Show a) => Program a -> [Name] -> Block a -> EM ()
+wellformedBlock :: (Eq a, Show a) => Program a () -> [Name] -> Block a () -> EM ()
 wellformedBlock p ns b = 
   do mapM_ checkFrom $ jumpLabels b
      mapM_ checkGoto $ fromLabels b
@@ -48,17 +48,17 @@ wellformedBlock p ns b =
         then return ()
         else Left $ show (name b) ++ " not mentioned in " ++ show l
 
-wellformedJump :: [Name] -> Jump a -> EM ()
+wellformedJump :: [Name] -> Jump a () -> EM ()
 wellformedJump _ (Goto _) = return ()
 wellformedJump ns (If e _ _) = 
   wellformedExp ns e
-wellformedJump _ Exit = return ()
+wellformedJump _ (Exit _) = return ()
 
-wellformedFrom :: [Name] -> ComeFrom a -> EM ()
+wellformedFrom :: [Name] -> ComeFrom a () -> EM ()
 wellformedFrom _  (From _) = return ()
 wellformedFrom ns (Fi e _ _) = 
   wellformedExp ns e
-wellformedFrom _  Entry = return ()
+wellformedFrom _  (Entry _) = return ()
 
 wellformedStep :: [Name] -> Step -> EM ()
 wellformedStep _ Skip = return ()

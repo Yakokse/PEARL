@@ -214,7 +214,7 @@ specMain specOpts =
      writeOutput v outputPath out
 
 -- todo: pipeline cleanup
-specMain2 :: SpecOptions -> Program' String -> Store -> IO String
+specMain2 :: SpecOptions -> Program' Label -> Store -> IO String
 specMain2 specOpts prog2 store = 
   let v = specVerbose specOpts
   in
@@ -222,13 +222,13 @@ specMain2 specOpts prog2 store =
      (res, l) <- fromLEM "specializing" $ specialize prog2 store "entry"
      trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
      let (decl, lifted) = res
-     let clean = changeLabel (serializeAnn id) lifted
+     let clean = mapCombine (serializeAnn id) lifted
      if skipPost specOpts
       then do trace v "- Skip post processing"
               return $ prettyProg id (decl, clean)
       else specmain3 specOpts (decl, lifted)
 
-specmain3 :: SpecOptions -> Program (Annotated String) -> IO String
+specmain3 :: SpecOptions -> Program Label (Maybe Store) -> IO String
 specmain3 specOpts prog' = 
   let v = specVerbose specOpts
   in
@@ -249,5 +249,5 @@ specmain3 specOpts prog' =
      showLength merged
      trace v "- Cleaning names"
      let numeratedStore = enumerateAnn merged
-     let clean = changeLabel (\(lab,s) -> lab ++ "_" ++ show s) numeratedStore
+     let clean = mapCombine (\lab s -> lab ++ "_" ++ show s) numeratedStore
      return $ prettyProg id (decl, clean)

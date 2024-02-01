@@ -18,12 +18,11 @@ data Value =
 
 type Store = Map.Map Name Value
 
-type Annotated l = (l, Maybe Store)
 
 data Level = Static | Dynamic
   deriving (Eq, Show, Read)
 
-getStore :: Annotated l -> Store
+getStore :: (l, Maybe Store) -> Store
 getStore = fromJust . snd
 
 trueV :: Value

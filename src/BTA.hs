@@ -7,26 +7,26 @@ import Control.Monad.State
 
 type ST a = State Division a
 
-makeCongruent :: Program a -> Division -> Division
+makeCongruent :: Program a () -> Division -> Division
 makeCongruent p = fixed (execState $ checkProg p)
   where 
     fixed f d' | d' == f d' = d'
                | otherwise = fixed f $ f d'
 
-checkProg :: Program a -> ST ()
+checkProg :: Program a () -> ST ()
 checkProg (decl, p) = mapM_ (checkBlock decl) p
 
-checkBlock :: VariableDecl -> Block a -> ST ()
+checkBlock :: VariableDecl -> Block a () -> ST ()
 checkBlock decl b = 
   do checkFrom $ from b
      mapM_ (checkStep decl) $ body b
      checkJump $ jump b
 
-checkFrom :: ComeFrom a -> ST ()
-checkFrom (Fi e _ _ ) = do _ <- checkExpr e; return ()
+checkFrom :: ComeFrom a () -> ST ()
+checkFrom (Fi e _ _) = do _ <- checkExpr e; return ()
 checkFrom _ = return ()
 
-checkJump :: Jump a -> ST ()
+checkJump :: Jump a () -> ST ()
 checkJump (If e _ _) = do _ <- checkExpr e; return ()
 checkJump _ = return ()
 

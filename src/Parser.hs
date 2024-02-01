@@ -11,10 +11,10 @@ parseStr p s = case runParser p () "" s of
   Left err -> Left $ show err
   Right res -> Right res
 
-parseProg :: String -> EM (Program Label)
+parseProg :: String -> EM (Program Label ())
 parseProg = parseStr pProg
 
-pProg :: Parser (Program Label)
+pProg :: Parser (Program Label ())
 pProg = (,) <$> (whitespace *> pDecl) <*> (many1 pBlock <* eof)
 
 pDecl :: Parser VariableDecl
@@ -23,24 +23,24 @@ pDecl =
                <*> option [] (word "with" *> pNames)
   where pNames = symbol "(" *> many pName <* symbol ")"
 
-pBlock :: Parser (Block Label)
+pBlock :: Parser (Block Label ())
 pBlock = Block <$> pLabel <*> pFrom <*> many pStep <*> pGoto
 
-pLabel :: Parser String
-pLabel = pName <* symbol ":"
+pLabel :: Parser (Label, ())
+pLabel = pLabelName <* symbol ":"
 
-pFrom :: Parser (ComeFrom Label)
+pFrom :: Parser (ComeFrom Label ())
 pFrom = choice [
-    word "entry" $> Entry
-  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pName) <*> (word "else" *> pName)
-  , From <$> (word "from" *> pName)
+    Entry () <$ word "entry" 
+  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName) 
+  , From <$> (word "from" *> pLabelName) 
   ]
 
-pGoto :: Parser (Jump Label)
+pGoto :: Parser (Jump Label ())
 pGoto = choice [
-    word "exit" $> Exit
-  , If <$> (word "if" *> pExpr) <*> (word "goto" *> pName) <*> (word "else" *> pName)
-  , Goto <$> (word "goto" *> pName)
+    Exit () <$ word "exit"
+  , If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
+  , Goto <$> (word "goto" *> pLabelName)
   ]
 
 pStep :: Parser Step
@@ -125,6 +125,9 @@ parseSpec = parseStr pFile
 
 pDeclaration :: Parser (Name, Value)
 pDeclaration = (,) <$> pName <*> (symbol "=" *> pConstant)
+
+pLabelName :: Parser (Label, ())
+pLabelName = (\n -> (n, ())) <$> pName 
 
 pName :: Parser String
 pName = 

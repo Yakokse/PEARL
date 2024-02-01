@@ -14,23 +14,50 @@ staticNonOutput decl =
       nonOutput = filter (`notElem` output' decl) onlyStatic
   in map fst nonOutput
 
-changeLabel :: (a -> b) -> [Block a] -> [Block b]
-changeLabel t = map (changeBlock t)
-  where 
-    changeBlock f b = Block
-      { name = f $ name b
-      , from = appFrom f $ from b
-      , body = body b
-      , jump = appJump f $ jump b
-      }
-    appFrom _ Entry = Entry
-    appFrom f (From l) = From (f l)
-    appFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
-    appJump _ Exit = Exit
-    appJump f (Goto l) = Goto (f l)
-    appJump f (If e l1 l2) = If e (f l1) (f l2)
+mapLabel :: (a -> b) -> [Block a c] -> [Block b c]
+mapLabel f = mapProgram (\l _ -> f l) id
 
-getVarsProg :: Program a -> [Name]
+mapStore :: (b -> c) -> [Block a b] -> [Block a c]
+mapStore = mapProgram const
+
+mapCombine :: (a -> b -> c) -> [Block a b] -> [Block c ()]
+mapCombine f = mapProgram f (const ())
+
+mapProgram :: (a -> b -> c) -> (b -> d) ->
+              [Block a b] -> [Block c d]
+mapProgram f g = map changeBlock
+  where 
+    changeBlock b = Block
+      { name = appName $ name b
+      , from = appFrom $ from b
+      , body = body b
+      , jump = appJump $ jump b
+      }
+    appName (l, s) = (f l s, g s)
+    appFrom (Entry s) = Entry (g s)
+    appFrom (From (l, s)) = From (f l s, g s)
+    appFrom (Fi e (l1, s1) (l2, s2)) = Fi e (f l1 s1, g s1) (f l2 s2, g s2)
+    appJump (Exit s) = Exit (g s)
+    appJump (Goto (l, s)) = Goto (f l s, g s)
+    appJump (If e (l1, s1) (l2, s2)) = If e (f l1 s1, g s1) (f l2 s2, g s2)
+
+mapBoth :: ((a, b) -> (c, b)) -> [Block a b] -> [Block c b]
+mapBoth f = map changeBlock
+  where 
+    changeBlock b = Block
+      { name = f $ name b
+      , from = appFrom $ from b
+      , body = body b
+      , jump = appJump $ jump b
+      }
+    appFrom (Entry s) = Entry s
+    appFrom (From l) = From (f l)
+    appFrom (Fi e l1 l2) = Fi e (f l1) (f l2)
+    appJump (Exit s) = Exit s
+    appJump (Goto l) = Goto (f l)
+    appJump (If e l1 l2) = If e (f l1) (f l2)
+
+getVarsProg :: Program a b -> [Name]
 getVarsProg (decl, _) = getVarsDecl decl
 
 getVarsDecl :: VariableDecl -> [Name]
@@ -38,28 +65,6 @@ getVarsDecl decl = input decl `union` output decl `union` temp decl
 
 getVarsDecl' :: VariableDecl' -> [(Name, Level)]
 getVarsDecl' decl = input' decl `union` output' decl `union` temp' decl
-
-
--- getVarsBlock :: Block a -> [Name]
--- getVarsBlock b = bodyVars `union` fromVars `union` gotoVars
---   where 
---     bodyVars = foldl (\acc e -> acc `union` getVarsStep  e) [] $ body b
---     fromVars = getVarsFrom . from $ b
---     gotoVars = getVarsJump . jump $ b
--- 
--- getVarsFrom :: ComeFrom a -> [Name]
--- getVarsFrom (Fi e _ _) = getVarsExp e
--- getVarsFrom _ = []
--- 
--- getVarsJump :: Jump a -> [Name]
--- getVarsJump (If e _ _) = getVarsExp e
--- getVarsJump _ = []
--- 
--- getVarsStep :: Step -> [Name]
--- getVarsStep (Update n _ e) = [n] `union` getVarsExp e
--- getVarsStep (Replacement q1 q2) = getVarsPat q1 `union` getVarsPat q2
--- getVarsStep (Assert e) = getVarsExp e
--- getVarsStep Skip = []
 
 getVarsPat :: Pattern -> [Name]
 getVarsPat (QConst _) = []
@@ -72,31 +77,22 @@ getVarsExp (Var n) = [n]
 getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
 getVarsExp (UOp _ e) = getVarsExp e
 
-
-getEntry :: [Block a] -> EM a
-getEntry p = 
-  case filter f p of
+getEntryBlock :: [Block a b] -> EM (Block a b)
+getEntryBlock p = 
+  case filter isEntry p of
     [] -> Left "No entry point found"
-    [b] -> Right (name b)
+    [b] -> Right b
     _ -> Left "Multiple entry points found"
-  where 
-    f b = case from b of Entry -> True; _ -> False
 
-getExitBlock :: [Block a] -> EM (Block a)
+getEntry :: [Block a b] -> EM (a,b)
+getEntry p = name <$> getEntryBlock p
+
+getExitBlock :: [Block a b] -> EM (Block a b)
 getExitBlock p = 
   case filter isExit p of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
-
-getEntryBlock :: [Block a] -> EM (Block a)
-getEntryBlock p = 
-  case filter f p of
-    [] -> Left "No entry point found"
-    [b] -> Right b
-    _ -> Left "Multiple entry points found"
-  where 
-    f b = case from b of Entry -> True; _ -> False
 
 getEntry' :: [Block' a] -> EM a
 getEntry' p = 
@@ -107,7 +103,7 @@ getEntry' p =
   where 
     f b = case from' b of Entry' -> True; _ -> False
 
-getBlock :: Eq a => [Block a] -> a -> Maybe (Block a)
+getBlock :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Maybe (Block a b)
 getBlock p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
@@ -119,7 +115,8 @@ getBlock' p l =
     [b] -> return b
     _   -> Nothing
 
-getBlockErr :: (Eq a, Show a) => [Block a] -> a -> EM (Block a)
+getBlockErr :: (Eq a, Eq b, Show a, Show b) => 
+               [Block a b] -> (a, b) -> EM (Block a b)
 getBlockErr p l = 
   case filter (\b -> name b == l) p of
     [b] -> return b
@@ -133,24 +130,27 @@ getBlockErr' p l =
     []  -> Left $ "Block not found: " ++ show l
     _   -> Left $ "Multiple blocks found named: " ++ show l 
 
-isExit :: Block a -> Bool
-isExit b = case jump b of Exit -> True; _ -> False
+isEntry :: Block a b -> Bool
+isEntry b = case from b of Entry _ -> True; _ -> False
 
-exitCount :: [Block a] -> Int
+isExit :: Block a b -> Bool
+isExit b = case jump b of Exit _ -> True; _ -> False
+
+exitCount :: [Block a b] -> Int
 exitCount = length . filter isExit
 
 isExit' :: Block' a -> Bool
 isExit' b = case jump' b of Exit' -> True; _ -> False
 
-fromLabels :: Block a -> [a]
-fromLabels Block{from = Entry} = []
+fromLabels :: Block a b -> [(a, b)]
+fromLabels Block{from = Entry _} = []
 fromLabels Block{from = From l} = [l]
 fromLabels Block{from = Fi _ l1 l2} = [l1, l2]
 
-jumpLabels :: Block a -> [a]
-jumpLabels Block{jump = Exit} = []
+jumpLabels :: Block a b -> [(a, b)]
+jumpLabels Block{jump = Exit _} = []
 jumpLabels Block{jump = Goto l} = [l]
 jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
 
-nameIn :: Eq a => a -> [Block a] -> Bool
+nameIn :: (Eq a, Eq b) => (a,b) -> [Block a b] -> Bool
 nameIn l = any (\b -> name b == l)

@@ -22,7 +22,7 @@ lift' = lift . raise
 initStats :: Stats
 initStats = Stats 0 0 0
 
-runProgram :: (Eq a, Show a) => Program a -> Store -> LEM (Store, Stats)
+runProgram :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
 runProgram (decl, prog) inpstore =
   do  entry <- raise $ getEntry prog
       store <- raise $ createStore decl inpstore
@@ -42,15 +42,15 @@ createStore decl store =
     in return $ nilStore `updateWithStore` store
     
 evalBlocks :: (Eq a, Show a) => 
-  [Block a] -> Store -> a -> Maybe a -> SLEM Store
+  [Block a ()] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
 evalBlocks prog store label origin =
   do block <- lift . raise $ getBlockErr prog label
      (label', store') <- evalBlock store block origin
      case label' of
        Nothing -> return store'
-       Just l  -> evalBlocks prog store' l (Just label)
+       Just l  -> evalBlocks prog store' (l, ()) (Just label)
 
-evalBlock :: (Eq a, Show a) => Store -> Block a -> Maybe a -> SLEM (Maybe a, Store)
+evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock s b l = 
   do lift . logM $ prettyAnn show (name b, s)
      evalFrom s (from b) l
@@ -58,25 +58,25 @@ evalBlock s b l =
      l' <- evalJump s' (jump b)
      return (l', s')
 
-evalFrom :: Eq a => Store -> ComeFrom a -> Maybe a -> SLEM ()
-evalFrom _ (From l) (Just l') =
+evalFrom :: Eq a => Store -> ComeFrom a ()-> Maybe (a, ()) -> SLEM ()
+evalFrom _ (From (l, ())) (Just (l', ())) =
   if l == l' then return ()
   else lift' $ Left "Unconditional from failed"
-evalFrom s (Fi e l1 l2) (Just l') =
+evalFrom s (Fi e (l1, ()) (l2, ())) (Just (l', ())) =
   do v <- lift' $ evalExpr s e
      let l = if truthy v then l1 else l2
      if l == l' then return ()
      else lift' $ Left "Assertion failed in Fi"
-evalFrom _ Entry Nothing = return ()
+evalFrom _ (Entry ()) Nothing = return ()
 evalFrom _ _ _ = lift' $ Left "Unexpected jump to entry, or wrong start"
 
-evalJump :: Store -> Jump a -> SLEM (Maybe a)
-evalJump _ (Goto l) = incJump >> return (Just l)
-evalJump s (If e l1 l2) = incJump >>
+evalJump :: Store -> Jump a () -> SLEM (Maybe a)
+evalJump _ (Goto (l, ())) = incJump >> return (Just l)
+evalJump s (If e (l1, ()) (l2, ())) = incJump >>
   do v <- lift' $ evalExpr s e
      return . Just $ 
       if truthy v then l1 else l2
-evalJump _ Exit = return Nothing
+evalJump _ (Exit ()) = return Nothing
 
 evalSteps :: Store -> [Step] -> SLEM Store
 evalSteps = foldM (\store step -> incStep >> evalStep store step)

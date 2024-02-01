@@ -2,26 +2,26 @@ module Inverter where
 import AST
 
 
-invertProg :: Program a -> Program a
+invertProg :: Program a b -> Program a b
 invertProg (decl, p) = (invDecl, map invertBlock p)
   where 
     invDecl = decl {input = output decl, output = input decl} 
 
-invertBlock :: Block a -> Block a
+invertBlock :: Block a b -> Block a b
 invertBlock Block {name = l, from = f, body = b, jump = j} = Block 
   { name = l, 
     from = invertJump j, 
     body = reverse $ map invertStep b,
     jump = invertFrom f}
 
-invertFrom :: ComeFrom a -> Jump a
-invertFrom Entry              = Exit
-invertFrom (From l)           = Goto l
+invertFrom :: ComeFrom a b -> Jump a b
+invertFrom (Entry s)          = Exit s
+invertFrom (From l)         = Goto l
 invertFrom (Fi e l1 l2) = If e l1 l2
 
-invertJump :: Jump a -> ComeFrom a
-invertJump Exit         = Entry
-invertJump (Goto l)     = From l
+invertJump :: Jump a b -> ComeFrom a b
+invertJump (Exit s)           = Entry s
+invertJump (Goto l)         = From l
 invertJump (If e l1 l2) = Fi e l1 l2
 
 invertStep :: Step -> Step
