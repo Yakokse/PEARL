@@ -30,8 +30,10 @@ library
       Division
       Execute
       Inverter
+      Normalize
       Operators
       Parser
+      Pointwise
       PostProcessing
       PrettyPrint
       Specialize

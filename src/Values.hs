@@ -1,7 +1,6 @@
 module Values where
 
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust)
 import Control.Monad
 
 type IntType = Word
@@ -26,8 +25,9 @@ type Store = Map.Map Name BTValue
 data Level = BTStatic | BTDynamic
   deriving (Eq, Show, Read)
 
-getStore :: (l, Maybe Store) -> Store
-getStore = fromJust . snd
+lub :: Level -> Level -> Level
+lub BTStatic BTStatic = BTStatic
+lub _ _ = BTDynamic
 
 trueV :: Value
 trueV = Atom "true"

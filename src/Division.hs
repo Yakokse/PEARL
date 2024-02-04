@@ -7,9 +7,9 @@ import qualified Data.Map.Strict as Map
  
 
 type Division = Map.Map Name Level
-type DivisionPW = Map.Map Label Division
+type DivisionPW l = Map.Map l Division
 
-isType :: Name -> Level-> Division -> Bool
+isType :: Name -> Level -> Division -> Bool
 isType n t d =
   case d Map.! n of 
     r | t == r -> True
@@ -18,8 +18,17 @@ isType n t d =
 getType :: Name -> Division -> Level
 getType n d = d Map.! n
 
+getDiv :: Ord a => a -> DivisionPW a -> Division
+getDiv a d = d Map.! a
+
 setType :: Name -> Level -> Division -> Division
 setType = Map.insert
+
+boundBy :: Name -> Level -> Division -> Division
+boundBy = Map.insertWith lub
+
+setDiv :: Ord a => a -> Division -> DivisionPW a -> DivisionPW a
+setDiv =  Map.insert
 
 setTypes :: [Name] -> [Level] -> Division -> Division
 setTypes ns ts bDiv = foldl (\d (n, t) -> setType n t d) bDiv pairs
@@ -36,6 +45,15 @@ defaultDivision = Map.empty
 
 divisionToList :: Division -> [(Name, Level)]
 divisionToList = Map.toAscList
+
+listToDiv :: [(Name, Level)] -> Division
+listToDiv = Map.fromList
+
+listToPWDiv :: Ord l => [(l, Division)] -> DivisionPW l
+listToPWDiv = Map.fromList
+
+lubDiv :: [Division] -> Division
+lubDiv = Map.unionsWith lub
 
 makeDiv :: Store -> VariableDecl -> EM Division
 makeDiv store decl = 

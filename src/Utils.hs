@@ -2,7 +2,10 @@ module Utils where
 
 import AST
 import Values
-import Data.List (union)
+import Data.List (union, nub)
+
+label :: Block a b -> a
+label = fst . name
 
 nonInput :: VariableDecl -> [Name]
 nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
@@ -87,6 +90,9 @@ getEntryBlock p =
 getEntry :: [Block a b] -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
 
+getEntryLabel :: [Block a b] -> a
+getEntryLabel = label . head . filter isEntry
+
 getExitBlock :: [Block a b] -> EM (Block a b)
 getExitBlock p = 
   case filter isExit p of
@@ -108,6 +114,9 @@ getBlock p l =
   case filter (\b -> name b == l) p of
     [b] -> return b
     _   -> Nothing
+
+getBlockUnsafe :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Block a b
+getBlockUnsafe p l = head $ filter (\b -> name b == l) p
 
 getBlock' :: Eq a => [Block' a] -> a -> Maybe (Block' a)
 getBlock' p l = 
@@ -154,3 +163,6 @@ jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
 
 nameIn :: (Eq a, Eq b) => (a,b) -> [Block a b] -> Bool
 nameIn l = any (\b -> name b == l)
+
+labels :: Eq a => [Block a b] -> [a]
+labels = nub . map (fst . name)

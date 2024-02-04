@@ -113,7 +113,7 @@ pConstant = symbol "'" *> pValue
 pValue :: Parser Value
 pValue = choice [
     Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
-  , word "nil" $> Nil
+  , Nil <$ word "nil"
   , Atom <$> pName
   , Num <$> pNum
   ]
