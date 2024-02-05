@@ -156,4 +156,3 @@ whitespace = many space *> optional (comment >> whitespace)
 comment :: Parser ()
 comment = void $ try (string "//") *> manyTill anyChar eol
     where eol = void newline <|> eof
-

@@ -101,3 +101,4 @@ emToLEM :: EM a -> LEM a
 emToLEM m = LEM $ case m of
   Left e -> (Left e, [e])
   Right s -> (Right s, [])
+  
