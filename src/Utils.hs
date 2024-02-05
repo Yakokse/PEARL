@@ -45,20 +45,25 @@ mapProgram f g = map changeBlock
     appJump (If e (l1, s1) (l2, s2)) = If e (f l1 s1, g s1) (f l2 s2, g s2)
 
 mapBoth :: ((a, b) -> (c, b)) -> [Block a b] -> [Block c b]
-mapBoth f = map changeBlock
-  where 
-    changeBlock b = Block
-      { name = f $ name b
-      , from = appFrom $ from b
-      , body = body b
-      , jump = appJump $ jump b
-      }
-    appFrom (Entry s) = Entry s
-    appFrom (From l) = From (f l)
-    appFrom (Fi e l1 l2) = Fi e (f l1) (f l2)
-    appJump (Exit s) = Exit s
-    appJump (Goto l) = Goto (f l)
-    appJump (If e l1 l2) = If e (f l1) (f l2)
+mapBoth f = map (mapBlock f)
+
+mapBlock :: ((a, b) -> (c, b)) -> Block a b -> Block c b
+mapBlock f b = Block
+  { name = f $ name b
+  , from = mapFrom f $ from b
+  , body = body b
+  , jump = mapJump f $ jump b
+  }
+
+mapFrom :: ((a, b) -> (c, b)) -> ComeFrom a b -> ComeFrom c b
+mapFrom _ (Entry s) = Entry s
+mapFrom f (From l) = From (f l)
+mapFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
+
+mapJump :: ((a, b) -> (c, b)) -> Jump a b -> Jump c b
+mapJump f (Exit s) = Exit s
+mapJump f (Goto l) = Goto (f l)
+mapJump f (If e l1 l2) = If e (f l1) (f l2)
 
 getVarsProg :: Program a b -> [Name]
 getVarsProg (decl, _) = getVarsDecl decl

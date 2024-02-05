@@ -1,25 +1,19 @@
 module Pointwise where
 
 import AST
-import Values
+import Values ( lub, EM, Label, Level(..), Name, Store )
 import Division
 import Utils
 import Data.Maybe (fromJust)
 
-pointwiseDiv :: Program Label () -> Store -> DivisionPW Label
-pointwiseDiv p s = makeCongruentPW p $ initPWDiv p s
+-- todo: Operate on normalized?
 
-initPWDiv :: Program Label () -> Store -> DivisionPW Label
+initPWDiv :: Program Label () -> Store -> EM (DivisionPW Label)
 initPWDiv (decl, prog) store = 
-  let ls = labels prog
-      ns = getVarsDecl decl
-      varType = map (\v -> if isStatic v
-                           then BTStatic
-                           else BTDynamic) ns
-      initDiv = listToDiv $ zip ns varType
-      pairs = map (\l -> (l, initDiv)) ls
-  in listToPWDiv pairs
-  where isStatic n = n `isIn` store || n `notElem` input decl
+  do d <- makeDiv store decl
+     let ls = labels prog
+         pairs = map (\l -> (l, d)) ls
+     return $ listToPWDiv pairs
 
 makeCongruentPW :: Ord a => Program a () -> DivisionPW a -> DivisionPW a
 makeCongruentPW (_, prog) d = workQueue prog d $ labels prog 
@@ -59,9 +53,3 @@ analyseExpr _ (Const _)    = BTStatic
 analyseExpr d (Var n)      = getType n d
 analyseExpr d (Op _ e1 e2) = analyseExpr d e1  `lub` analyseExpr d e2
 analyseExpr d (UOp _ e)    = analyseExpr d e
-
-isDynVar :: Division -> Name -> Bool
-isDynVar d n = 
-  case getType n d of
-      BTDynamic -> True
-      BTStatic -> False

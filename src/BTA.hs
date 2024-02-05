@@ -7,6 +7,13 @@ import Control.Monad.State
 
 type ST a = State Division a
 
+congruentUniformDiv :: Ord a => Program a () -> Division -> DivisionPW a
+congruentUniformDiv (decl, p) d =
+  let congruentDiv = makeCongruent (decl, p) d
+      ls = labels p
+      pairs = map (\l -> (l, congruentDiv)) ls
+  in listToPWDiv pairs
+
 makeCongruent :: Program a () -> Division -> Division
 makeCongruent p = fixed (execState $ checkProg p)
   where 

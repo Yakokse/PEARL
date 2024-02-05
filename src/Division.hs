@@ -71,3 +71,4 @@ makeDiv store decl =
     storelist = storeToList store
     names = map fst storelist
     isStatic n = n `isIn` store || n `notElem` input decl
+    
