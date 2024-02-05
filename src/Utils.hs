@@ -10,13 +10,6 @@ label = fst . name
 nonInput :: VariableDecl -> [Name]
 nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
 
-staticNonOutput :: VariableDecl' -> [Name]
-staticNonOutput decl =
-  let allVars = getVarsDecl' decl
-      onlyBTStatic = filter (\(_,l) -> l == BTStatic) allVars
-      nonOutput = filter (`notElem` output' decl) onlyBTStatic
-  in map fst nonOutput
-
 mapLabel :: (a -> b) -> [Block a c] -> [Block b c]
 mapLabel f = mapProgram (\l _ -> f l) id
 
@@ -61,7 +54,7 @@ mapFrom f (From l) = From (f l)
 mapFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
 
 mapJump :: ((a, b) -> (c, b)) -> Jump a b -> Jump c b
-mapJump f (Exit s) = Exit s
+mapJump _ (Exit s) = Exit s
 mapJump f (Goto l) = Goto (f l)
 mapJump f (If e l1 l2) = If e (f l1) (f l2)
 
@@ -70,9 +63,6 @@ getVarsProg (decl, _) = getVarsDecl decl
 
 getVarsDecl :: VariableDecl -> [Name]
 getVarsDecl decl = input decl `union` output decl `union` temp decl
-
-getVarsDecl' :: VariableDecl' -> [(Name, Level)]
-getVarsDecl' decl = input' decl `union` output' decl `union` temp' decl
 
 getVarsPat :: Pattern -> [Name]
 getVarsPat (QConst _) = []
@@ -97,6 +87,9 @@ getEntry p = name <$> getEntryBlock p
 
 getEntryLabel :: [Block a b] -> a
 getEntryLabel = label . head . filter isEntry
+
+getExitLabel :: [Block a b] -> a
+getExitLabel = label . head . filter isExit
 
 getExitBlock :: [Block a b] -> EM (Block a b)
 getExitBlock p = 

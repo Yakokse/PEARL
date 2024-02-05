@@ -1,7 +1,7 @@
 module Pointwise where
 
 import AST
-import Values ( lub, EM, Label, Level(..), Name, Store )
+import Values
 import Division
 import Utils
 import Data.Maybe (fromJust)

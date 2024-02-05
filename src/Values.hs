@@ -17,10 +17,10 @@ data Value =
   | Nil
   deriving (Eq, Show, Read, Ord) 
 
-data BTValue = Dynamic | Static Value
+data SpecValue = Dynamic | Static Value
   deriving (Eq, Show, Read, Ord)
 
-type Store = Map.Map Name BTValue
+type Store = Map.Map Name SpecValue
 
 data Level = BTStatic | BTDynamic
   deriving (Eq, Show, Read)
@@ -54,13 +54,13 @@ vars = Map.keys
 emptyStore :: Store
 emptyStore = Map.empty
 
-makeStore :: [(Name, BTValue)] -> Store
+makeStore :: [(Name, SpecValue)] -> Store
 makeStore = Map.fromList
 
-storeToList :: Store -> [(Name, BTValue)]
+storeToList :: Store -> [(Name, SpecValue)]
 storeToList = Map.toAscList
 
-update :: Name -> BTValue -> Store -> Store
+update :: Name -> SpecValue -> Store -> Store
 update = Map.insert
 
 updateWithStore :: Store -> Store -> Store

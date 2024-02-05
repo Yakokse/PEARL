@@ -3,25 +3,23 @@ module Annotate (annotateProg) where
 import AST
 import Division
 import Values
+import Utils
 
-annotateProg :: Division -> Program a () -> Program' a
-annotateProg d (decl, p)= (annotateDecl d decl, map (annotateBlock d) p)
+annotateProg :: Ord a => DivisionPW a -> Program a () -> Program' a
+annotateProg d (_, p)= map (annotateBlock d) p
 
-annotateDecl :: Division -> VariableDecl -> VariableDecl'
-annotateDecl d VariableDecl{input = i, output = o, temp = t} =
-  VariableDecl'{ input' = map annVar i
-               , output' = map annVar o
-               , temp' = map annVar t}
-  where annVar n = (n, getType n d)
-
-annotateBlock :: Division -> Block a () -> Block' a
-annotateBlock d b = 
+annotateBlock :: Ord a => DivisionPW a -> Block a () -> Block' a
+annotateBlock pwd b = 
   Block' 
-    { name' = fst $ name b
+    { name' = l
     , from' = annotateFrom d $ from b
     , body' = map (annotateStep d) $ body b
     , jump' = annotateGoto d $ jump b
     } 
+  where 
+    l = label b
+    d = getDiv l pwd
+
 annotateStep :: Division -> Step -> Step'
 annotateStep d (Update n rop e) = 
   case getType n d of

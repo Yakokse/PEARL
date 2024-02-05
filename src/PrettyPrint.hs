@@ -105,7 +105,7 @@ prettyUOp Hd = "hd"
 prettyUOp Tl = "tl"
 prettyUOp Not = "!"
 
-prettyBTVal :: BTValue -> String
+prettyBTVal :: SpecValue -> String
 prettyBTVal (Static v) = "S" ++ prettyVal v
 prettyBTVal Dynamic    = "Dyn"
 
@@ -116,14 +116,7 @@ prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ ")"
 prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String
-prettyProg' f (decl, p) = prettyDecl' decl ++ intercalate "\n" (concatMap (prettyBlock' f) p)
-
-prettyDecl' :: VariableDecl' -> String
-prettyDecl' d = "(" ++ unwords (annVars $ input' d) ++ ") -> (" ++ unwords (annVars $ output' d) ++ ")" ++ tempVars
- where 
-  tempVars = if null (temp' d) then "\n\n" else " with (" ++ unwords (annVars $ temp' d) ++ ")\n\n"
-  annVars = map (\(n,t) -> case t of BTDynamic -> '%':n; _ -> n)
-
+prettyProg' f p = intercalate "\n" (concatMap (prettyBlock' f) p)
 
 prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b = 

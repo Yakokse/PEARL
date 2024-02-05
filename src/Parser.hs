@@ -122,7 +122,7 @@ parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
   where pFile = makeStore <$> (whitespace *> many pDeclaration <* eof)
 
-pDeclaration :: Parser (Name, BTValue)
+pDeclaration :: Parser (Name, SpecValue)
 pDeclaration = (,) <$> (pName <* symbol "=") <*> (Static <$> pConstant)
 
 pLabelName :: Parser (Label, ())

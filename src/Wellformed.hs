@@ -94,14 +94,8 @@ isDefined n ns =
     else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
 
 wellformedProg' :: Division -> Program' a -> EM ()
-wellformedProg' d (decl, prog) = 
-  wellformedDecl' >> mapM_ wellformedBlock' prog
+wellformedProg' d = mapM_ wellformedBlock'
   where 
-    wellformedDecl' = 
-      let valid = all (\(n, t) -> t == getType n d) 
-      in if valid (input' decl) && valid (output' decl) && valid (temp' decl) 
-          then return ()
-          else Left "Declaration type failed."
     wellformedBlock' b = do
       wellformedFrom' d $ from' b
       mapM_ (wellformedStep' d) $ body' b
