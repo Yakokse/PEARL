@@ -6,20 +6,24 @@ import Division
 import Values
 import Utils
 
-annotateProg :: Ord a => DivisionPW a -> Program a () -> Program' a
+annotateProg :: Ord a => DivisionPW a -> NormProgram a -> Program' a
 annotateProg d (_, p)= map (annotateBlock d) p
 
-annotateBlock :: Ord a => DivisionPW a -> Block a () -> Block' a
+annotateBlock :: Ord a => DivisionPW a -> NormBlock a -> Block' a
 annotateBlock pwd b = 
   Block' 
     { name' = l
-    , from' = annotateFrom d $ from b
-    , body' = map (annotateStep d) $ body b
-    , jump' = annotateGoto d $ jump b
+    , initDiv = lubDiv $ map (`getDiv` pwd) parents
+    , from' = annotateFrom d $ nfrom b
+    , body' = [annotateStep d $ nstep b]
+    , jump' = annotateGoto d $ njump b
+    , endDiv = d
     } 
   where 
-    l = label b
+    l = nname b
     d = getDiv l pwd
+    parents = map fst $ fromLabels $ nfrom b
+    
 
 annotateStep :: Division -> Step -> Step'
 annotateStep d (Update n rop e) = 
