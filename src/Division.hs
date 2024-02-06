@@ -2,9 +2,9 @@ module Division where
 
 import Values
 import AST
-import Utils
 import qualified Data.Map.Strict as Map
- 
+import Data.List (union)
+
 
 type Division = Map.Map Name Level
 type DivisionPW l = Map.Map l Division
@@ -58,7 +58,7 @@ lubDiv = Map.unionsWith lub
 makeDiv :: Store -> VariableDecl -> EM Division
 makeDiv store decl = 
   do mapM_ onlyInput names
-     let allVars = getVarsDecl decl
+     let allVars = input decl `union` output decl `union` temp decl
          allTypes = map (\n -> if isStatic n 
                               then BTStatic 
                               else BTDynamic) 

@@ -7,27 +7,27 @@ import Control.Monad.State
 
 type ST a = State Division a
 
-congruentUniformDiv :: Ord a => Program a () -> Division -> DivisionPW a
+congruentUniformDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
 congruentUniformDiv (decl, p) d =
   let congruentDiv = makeCongruent (decl, p) d
-      ls = labels p
+      ls = map nname p
       pairs = map (\l -> (l, congruentDiv)) ls
   in listToPWDiv pairs
 
-makeCongruent :: Program a () -> Division -> Division
+makeCongruent :: NormProgram a -> Division -> Division
 makeCongruent p = fixed (execState $ checkProg p)
   where 
     fixed f d' | d' == f d' = d'
                | otherwise = fixed f $ f d'
 
-checkProg :: Program a () -> ST ()
+checkProg :: NormProgram a -> ST ()
 checkProg (decl, p) = mapM_ (checkBlock decl) p
 
-checkBlock :: VariableDecl -> Block a () -> ST ()
+checkBlock :: VariableDecl -> NormBlock a -> ST ()
 checkBlock decl b = 
-  do checkFrom $ from b
-     mapM_ (checkStep decl) $ body b
-     checkJump $ jump b
+  do checkFrom $ nfrom b
+     checkStep decl $ nstep b
+     checkJump $ njump b
 
 checkFrom :: ComeFrom a () -> ST ()
 checkFrom (Fi e _ _) = do _ <- checkExpr e; return ()

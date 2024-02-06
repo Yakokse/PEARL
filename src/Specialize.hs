@@ -13,6 +13,18 @@ type Point a = (a, Store)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
+-- How to handle getting the new store for each thing, probably best to shield at end
+-- Each block should probably keep its division, otherwise wouldnt be able to label/transfer correctly
+-- Block specialization to give the many blocks? 
+-- Always make the extra but leave with empty body if not needed
+-- Would require the smart path compression (safe with branching still)
+
+
+-- Result decl 
+-- IN {all input initially dynamic} 
+-- OUT {all output finally dynamic} 
+-- TEMP { all variables that are dynamic at some point but do not occur in in or out}
+
 specialize :: (Eq a, Show a) => Program' a -> Store -> a -> LEM (Program a (Maybe Store))
 specialize (decl, prog) s entry = 
   do b <- raise $ getEntry' prog

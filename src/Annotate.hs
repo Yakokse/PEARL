@@ -1,6 +1,7 @@
 module Annotate (annotateProg) where
 
 import AST
+import AST2
 import Division
 import Values
 import Utils

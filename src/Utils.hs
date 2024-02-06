@@ -1,6 +1,7 @@
 module Utils where
 
 import AST
+import AST2
 import Values
 import Data.List (union, nub)
 
@@ -113,6 +114,9 @@ getBlock p l =
     [b] -> return b
     _   -> Nothing
 
+getNBlock :: Eq a => [NormBlock a] -> a -> NormBlock a
+getNBlock p l = head $ filter (\b -> nname b == l) p
+
 getBlockUnsafe :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Block a b
 getBlockUnsafe p l = head $ filter (\b -> name b == l) p
 
@@ -149,15 +153,15 @@ exitCount = length . filter isExit
 isExit' :: Block' a -> Bool
 isExit' b = case jump' b of Exit' -> True; _ -> False
 
-fromLabels :: Block a b -> [(a, b)]
-fromLabels Block{from = Entry _} = []
-fromLabels Block{from = From l} = [l]
-fromLabels Block{from = Fi _ l1 l2} = [l1, l2]
+fromLabels :: ComeFrom a b -> [(a, b)]
+fromLabels (Entry _) = []
+fromLabels (From l) = [l]
+fromLabels (Fi _ l1 l2) = [l1, l2]
 
-jumpLabels :: Block a b -> [(a, b)]
-jumpLabels Block{jump = Exit _} = []
-jumpLabels Block{jump = Goto l} = [l]
-jumpLabels Block{jump = If _ l1 l2} = [l1, l2]
+jumpLabels :: Jump a b -> [(a, b)]
+jumpLabels (Exit _) = []
+jumpLabels (Goto l) = [l]
+jumpLabels (If _ l1 l2) = [l1, l2]
 
 nameIn :: (Eq a, Eq b) => (a,b) -> [Block a b] -> Bool
 nameIn l = any (\b -> name b == l)

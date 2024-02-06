@@ -1,6 +1,7 @@
 module PrettyPrint where
 
 import AST
+import AST2
 import Data.List (intercalate)
 import Values
 import Division

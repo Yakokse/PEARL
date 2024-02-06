@@ -3,43 +3,21 @@ module Normalize where
 import AST
 import Utils
 
-type NormProgram label = (VariableDecl, [NormBlock label])
-data NormBlock label = NormBlock 
-  { nname :: (label, Int) 
-  , nfrom :: ComeFrom (label, Int) ()
-  , nstep :: Step 
-  , njump :: Jump (label, Int) ()
-  }
+normalize :: Eq a => Program a () -> (a -> Int -> a) -> NormProgram a
+normalize (decl, prog) f = (decl, concatMap (normalizeBlock prog f) prog)
 
-denormalize :: (a -> Int -> a) -> NormProgram a -> Program a () 
-denormalize f (decl, np) = (decl, map denormBlock np)
-  where
-    f' ((a, i), ()) = (f a i, ())
-    denormBlock NormBlock{ nname = n
-                         , nfrom = k
-                         , nstep = s
-                         , njump = j} =
-      Block { name = (uncurry f n, ())
-            , from = mapFrom f' k
-            , body = [s]
-            , jump = mapJump f' j
-            }
-
-normalize :: Eq a => Program a () -> NormProgram a
-normalize (decl, prog) = (decl, concatMap (normalizeBlock prog) prog)
-
-normalizeBlock :: Eq a => [Block a ()] -> Block a () -> [NormBlock a]
-normalizeBlock prog Block{name = (l, ()), from = k, body = b, jump = j} = 
+normalizeBlock :: Eq a => [Block a ()] -> (a -> Int -> a) -> Block a () -> [NormBlock a]
+normalizeBlock prog f Block{name = (l, ()), from = k, body = b, jump = j} = 
   let b' = if null b then [Skip] else b
   in zipWith normalizeStep b' [1..] 
   where
     normalizeStep step n = 
-      let k' = if n == 1 then normalizeFrom prog k else From ((l, n-1), ())
-          j' = if n == length b then normalizeJump j else Goto ((l, n+1), ())
-      in NormBlock (l,n) k' step j'
+      let k' = if n == 1 then normalizeFrom prog f k else From (f l (n-1), ())
+          j' = if n == length b then normalizeJump f j else Goto (f l (n+1), ())
+      in NormBlock (f l n) k' step j'
 
-normalizeFrom :: (Eq a, Eq b) => [Block a b] -> ComeFrom a b -> ComeFrom (a, Int) b
-normalizeFrom prog k = 
+normalizeFrom :: (Eq a, Eq b) => [Block a b] -> (a -> Int -> a) -> ComeFrom a b -> ComeFrom a b
+normalizeFrom prog f k = 
   case k of
     Entry s -> Entry s
     From l -> From $ transformLab l
@@ -48,9 +26,9 @@ normalizeFrom prog k =
     length' l = if null l then 1 else length l
     transformLab (l, s) = 
       let b = getBlockUnsafe prog (l, s)
-      in ((l, length' $ body b), s)
+      in (f l (length' $ body b), s)
 
-normalizeJump :: Jump a b -> Jump (a, Int) b
-normalizeJump (Exit s) = Exit s
-normalizeJump (Goto (l,s)) = Goto ((l,1), s)
-normalizeJump (If e (l1, s1) (l2, s2)) = If e ((l1,1), s1) ((l2,1), s2)
+normalizeJump :: (a -> Int -> a) -> Jump a b -> Jump a b
+normalizeJump _ (Exit s) = Exit s
+normalizeJump f (Goto (l,s)) = Goto (f l 1, s)
+normalizeJump f (If e (l1, s1) (l2, s2)) = If e (f l1 1, s1) (f l2 1, s2)

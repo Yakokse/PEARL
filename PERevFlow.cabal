@@ -26,9 +26,11 @@ library
   exposed-modules:
       Annotate
       AST
+      AST2
       BTA
       Division
       Execute
+      Explicicator
       Inverter
       Normalize
       Operators

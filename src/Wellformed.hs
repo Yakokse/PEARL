@@ -1,6 +1,7 @@
 module Wellformed where
 
 import AST
+import AST2
 import Utils
 import Values
 import Division
@@ -31,20 +32,20 @@ wellformedDecl decl =
 
 wellformedBlock :: (Eq a, Show a) => Program a () -> [Name] -> Block a () -> EM ()
 wellformedBlock p ns b = 
-  do mapM_ checkFrom $ jumpLabels b
-     mapM_ checkGoto $ fromLabels b
+  do mapM_ checkFrom $ jumpLabels $ jump b
+     mapM_ checkGoto $ fromLabels $ from b
      mapM_ (wellformedStep ns) $ body b
      wellformedJump ns $ jump b
      wellformedFrom ns $ from b
   where 
     checkFrom l = do
       b' <- getBlockErr (snd p) l
-      if name b `elem` fromLabels b' 
+      if name b `elem` fromLabels (from b') 
         then return ()
         else Left $ show (name b) ++ " not mentioned in " ++ show l
     checkGoto l = do
       b' <- getBlockErr (snd p) l
-      if name b `elem` jumpLabels b' 
+      if name b `elem` jumpLabels (jump b') 
         then return ()
         else Left $ show (name b) ++ " not mentioned in " ++ show l
 

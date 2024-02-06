@@ -4,35 +4,35 @@ import AST
 import Values
 import Division
 import Utils
-import Data.Maybe (fromJust)
 
--- todo: Operate on normalized?
 
-initPWDiv :: Program Label () -> Store -> EM (DivisionPW Label)
+-- TODO: Distinguish between patterns
+
+initPWDiv :: NormProgram Label -> Store -> EM (DivisionPW Label)
 initPWDiv (decl, prog) store = 
   do d <- makeDiv store decl
-     let ls = labels prog
+     let ls = map nname prog
          pairs = map (\l -> (l, d)) ls
      return $ listToPWDiv pairs
 
-makeCongruentPW :: Ord a => Program a () -> DivisionPW a -> DivisionPW a
-makeCongruentPW (_, prog) d = workQueue prog d $ labels prog 
+makeCongruentPW :: Ord a => NormProgram a -> DivisionPW a -> DivisionPW a
+makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog 
 
-workQueue :: Ord a => [Block a ()] -> DivisionPW a -> [a] -> DivisionPW a
+workQueue :: Ord a => [NormBlock a] -> DivisionPW a -> [a] -> DivisionPW a
 workQueue _ pwdiv [] = pwdiv
 workQueue prog pwdiv (l:ls) = 
   let initDiv = getDiv l pwdiv
-      b = fromJust $ getBlock prog (l, ())
-      parentDivs = map (\(l', ()) -> getDiv l' pwdiv) $ fromLabels b
+      b = getNBlock prog l
+      parentDivs = map (\(l', ()) -> getDiv l' pwdiv) $ fromLabels $ nfrom b
       newDiv = lubDiv $ initDiv : parentDivs
       resultDiv = analyseBlock newDiv b
-      children = map fst $ jumpLabels b
+      children = map fst $ jumpLabels $ njump b
       lsNew = if resultDiv == initDiv then [] else children
       pwdivNew = setDiv l resultDiv pwdiv
   in workQueue prog pwdivNew $ ls ++ lsNew
 
-analyseBlock :: Division -> Block a () -> Division
-analyseBlock d b = foldl analyseStep d $ body b
+analyseBlock :: Division -> NormBlock a -> Division
+analyseBlock d b = analyseStep d $ nstep b
 
 analyseStep :: Division -> Step -> Division
 analyseStep d (Update n _ e) = boundBy n (analyseExpr d e) d
