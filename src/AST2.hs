@@ -6,7 +6,6 @@ import Division
 
 type Program' label = [Block' label]
 
-
 data Block' label = Block' 
   { name' :: label
   , initDiv :: Division

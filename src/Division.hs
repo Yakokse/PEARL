@@ -7,7 +7,7 @@ import Data.List (union)
 
 
 type Division = Map.Map Name Level
-type DivisionPW l = Map.Map l Division
+type DivisionPW l = Map.Map l (Division, Division)
 
 isType :: Name -> Level -> Division -> Bool
 isType n t d =
@@ -18,17 +18,17 @@ isType n t d =
 getType :: Name -> Division -> Level
 getType n d = d Map.! n
 
-getDiv :: Ord a => a -> DivisionPW a -> Division
-getDiv a d = d Map.! a
+getDivs :: Ord a => a -> DivisionPW a -> (Division, Division)
+getDivs a d = d Map.! a
 
 setType :: Name -> Level -> Division -> Division
 setType = Map.insert
 
-boundBy :: Name -> Level -> Division -> Division
-boundBy = Map.insertWith lub
+boundedBy :: Name -> Level -> Division -> Division
+boundedBy = Map.insertWith lub
 
-setDiv :: Ord a => a -> Division -> DivisionPW a -> DivisionPW a
-setDiv =  Map.insert
+setDiv :: Ord a => a -> (Division, Division) -> DivisionPW a -> DivisionPW a
+setDiv = Map.insert 
 
 setTypes :: [Name] -> [Level] -> Division -> Division
 setTypes ns ts bDiv = foldl (\d (n, t) -> setType n t d) bDiv pairs
@@ -49,11 +49,17 @@ divisionToList = Map.toAscList
 listToDiv :: [(Name, Level)] -> Division
 listToDiv = Map.fromList
 
-listToPWDiv :: Ord l => [(l, Division)] -> DivisionPW l
+listToPWDiv :: Ord l => [(l, (Division, Division))] -> DivisionPW l
 listToPWDiv = Map.fromList
 
 lubDiv :: [Division] -> Division
 lubDiv = Map.unionsWith lub
+
+makeStaticDiv :: VariableDecl -> Division
+makeStaticDiv decl = 
+  let ns = input decl `union` output decl `union` temp decl
+      pairs = map (\n -> (n, BTStatic)) ns
+  in listToDiv pairs
 
 makeDiv :: Store -> VariableDecl -> EM Division
 makeDiv store decl = 
@@ -71,4 +77,3 @@ makeDiv store decl =
     storelist = storeToList store
     names = map fst storelist
     isStatic n = n `isIn` store || n `notElem` input decl
-    

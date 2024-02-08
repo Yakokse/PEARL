@@ -4,7 +4,6 @@ import AST
 import AST2
 import Division
 import Values
-import Utils
 
 annotateProg :: Ord a => DivisionPW a -> NormProgram a -> Program' a
 annotateProg d (_, p)= map (annotateBlock d) p
@@ -12,35 +11,33 @@ annotateProg d (_, p)= map (annotateBlock d) p
 annotateBlock :: Ord a => DivisionPW a -> NormBlock a -> Block' a
 annotateBlock pwd b = 
   Block' 
-    { name' = l
-    , initDiv = lubDiv $ map (`getDiv` pwd) parents
-    , from' = annotateFrom d $ nfrom b
-    , body' = [annotateStep d $ nstep b]
-    , jump' = annotateGoto d $ njump b
-    , endDiv = d
+    { name' = nname b
+    , initDiv = d1
+    , from' = annotateFrom d1 $ nfrom b
+    , body' = [annotateStep d1 d2 $ nstep b]
+    , jump' = annotateGoto d2 $ njump b
+    , endDiv = d2
     } 
   where 
-    l = nname b
-    d = getDiv l pwd
-    parents = map fst $ fromLabels $ nfrom b
+    (d1, d2) = getDivs (nname b) pwd
     
 
-annotateStep :: Division -> Step -> Step'
-annotateStep d (Update n rop e) = 
-  case getType n d of
+annotateStep :: Division -> Division -> Step -> Step'
+annotateStep d1 _ (Update n rop e) = 
+  case getType n d1 of
     BTStatic -> 
-      case annotateExp d e of
+      case annotateExp d1 e of
         (e', BTStatic) -> Update' BTStatic n rop e'
         _ -> undefined
     BTDynamic -> 
-      Update' BTDynamic n rop $ lift (annotateExp d e)
-annotateStep d (Replacement q1 q2) = 
-  let btType = patternType d (QPair q1 q2)
+      Update' BTDynamic n rop $ lift (annotateExp d1 e)
+annotateStep d1 d2 (Replacement q1 q2) = 
+  let btType = patternType d1 (QPair q1 q2)
   in Replacement' btType q1 q2
-annotateStep d (Assert e) = 
-  let (e', btType) = annotateExp d e 
+annotateStep d1 _ (Assert e) = 
+  let (e', btType) = annotateExp d1 e 
   in Assert' btType e'
-annotateStep _ Skip = Skip' BTStatic               
+annotateStep _ _ Skip = Skip' BTStatic               
 
 annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
 annotateFrom _ (Entry ()) = Entry'

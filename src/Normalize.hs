@@ -3,8 +3,17 @@ module Normalize where
 import AST
 import Utils
 
-normalize :: Eq a => Program a () -> (a -> Int -> a) -> NormProgram a
-normalize (decl, prog) f = (decl, concatMap (normalizeBlock prog f) prog)
+normalize :: Eq a => a -> Program a () -> (a -> Int -> a) -> NormProgram a
+normalize entry (decl, prog) f = (decl, pad entry $ concatMap (normalizeBlock prog f) prog)
+
+pad :: Eq a => a -> [NormBlock a] -> [NormBlock a]
+pad entryLabel prog = 
+  let first = getNEntryBlock prog
+      l = nname first
+      rest = filter (\b -> nname b /= l) prog
+      first' = first{nfrom = From (entryLabel, ())}
+      padding = NormBlock entryLabel (Entry ()) Skip (Goto (l, ()))
+  in [padding, first'] ++ rest
 
 normalizeBlock :: Eq a => [Block a ()] -> (a -> Int -> a) -> Block a () -> [NormBlock a]
 normalizeBlock prog f Block{name = (l, ()), from = k, body = b, jump = j} = 

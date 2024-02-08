@@ -11,7 +11,7 @@ congruentUniformDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
 congruentUniformDiv (decl, p) d =
   let congruentDiv = makeCongruent (decl, p) d
       ls = map nname p
-      pairs = map (\l -> (l, congruentDiv)) ls
+      pairs = map (\l -> (l, (congruentDiv, congruentDiv))) ls
   in listToPWDiv pairs
 
 makeCongruent :: NormProgram a -> Division -> Division

@@ -3,7 +3,7 @@ module Utils where
 import AST
 import AST2
 import Values
-import Data.List (union, nub)
+import Data.List (union)
 
 label :: Block a b -> a
 label = fst . name
@@ -42,10 +42,9 @@ mapBoth :: ((a, b) -> (c, b)) -> [Block a b] -> [Block c b]
 mapBoth f = map (mapBlock f)
 
 mapBlock :: ((a, b) -> (c, b)) -> Block a b -> Block c b
-mapBlock f b = Block
+mapBlock f b = b
   { name = f $ name b
   , from = mapFrom f $ from b
-  , body = body b
   , jump = mapJump f $ jump b
   }
 
@@ -58,6 +57,26 @@ mapJump :: ((a, b) -> (c, b)) -> Jump a b -> Jump c b
 mapJump _ (Exit s) = Exit s
 mapJump f (Goto l) = Goto (f l)
 mapJump f (If e l1 l2) = If e (f l1) (f l2)
+
+mapProg' :: (a -> b) -> Program' a -> Program' b
+mapProg' f = map (mapBlock' f)
+
+mapBlock' :: (a -> b) -> Block' a -> Block' b
+mapBlock' f b = b
+  { name' = f $ name' b
+  , from' = mapFrom' f $ from' b
+  , jump' = mapJump' f $ jump' b
+  }
+
+mapFrom' :: (a -> b) -> ComeFrom' a -> ComeFrom' b
+mapFrom' _ Entry' = Entry'
+mapFrom' f (From' l) = From' (f l)
+mapFrom' f (Fi' l e l1 l2) = Fi' l e (f l1) (f l2)
+
+mapJump' :: (a -> b) -> Jump' a -> Jump' b
+mapJump' _ Exit' = Exit'
+mapJump' f (Goto' l) = Goto' (f l)
+mapJump' f (If' l e l1 l2) = If' l e (f l1) (f l2)
 
 getVarsProg :: Program a b -> [Name]
 getVarsProg (decl, _) = getVarsDecl decl
@@ -82,6 +101,9 @@ getEntryBlock p =
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
+
+getNEntryBlock :: [NormBlock a] -> NormBlock a
+getNEntryBlock p = head $ filter isNEntry p 
 
 getEntry :: [Block a b] -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
@@ -126,6 +148,9 @@ getBlock' p l =
     [b] -> return b
     _   -> Nothing
 
+getBlockUnsafe' :: Eq a => [Block' a] -> a -> Block' a
+getBlockUnsafe' p l = head $ filter (\b -> name' b == l) p
+
 getBlockErr :: (Eq a, Eq b, Show a, Show b) => 
                [Block a b] -> (a, b) -> EM (Block a b)
 getBlockErr p l = 
@@ -142,7 +167,13 @@ getBlockErr' p l =
     _   -> Left $ "Multiple blocks found named: " ++ show l 
 
 isEntry :: Block a b -> Bool
-isEntry b = case from b of Entry _ -> True; _ -> False
+isEntry = isJumpEntry . from
+
+isNEntry :: NormBlock a -> Bool
+isNEntry = isJumpEntry . nfrom
+
+isJumpEntry :: ComeFrom a b -> Bool
+isJumpEntry j = case j of Entry _ -> True; _ -> False
 
 isExit :: Block a b -> Bool
 isExit b = case jump b of Exit _ -> True; _ -> False
@@ -163,8 +194,21 @@ jumpLabels (Exit _) = []
 jumpLabels (Goto l) = [l]
 jumpLabels (If _ l1 l2) = [l1, l2]
 
+fromLabels' :: ComeFrom' a -> [a]
+fromLabels' Entry' = []
+fromLabels' (From' l) = [l]
+fromLabels' (Fi' _ _ l1 l2) = [l1, l2]
+
+jumpLabels' :: Jump' a -> [a]
+jumpLabels' Exit' = []
+jumpLabels' (Goto' l) = [l]
+jumpLabels' (If' _ _ l1 l2) = [l1, l2]
+
 nameIn :: (Eq a, Eq b) => (a,b) -> [Block a b] -> Bool
 nameIn l = any (\b -> name b == l)
 
-labels :: Eq a => [Block a b] -> [a]
-labels = nub . map (fst . name)
+labels :: [Block a b] -> [a]
+labels = map (fst . name)
+
+dup :: a -> (a, a)
+dup a = (a, a)

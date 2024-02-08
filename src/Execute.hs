@@ -43,12 +43,12 @@ createStore decl store =
     
 evalBlocks :: (Eq a, Show a) => 
   [Block a ()] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks prog store label origin =
-  do block <- lift . raise $ getBlockErr prog label
+evalBlocks prog store l origin =
+  do block <- lift . raise $ getBlockErr prog l
      (label', store') <- evalBlock store block origin
      case label' of
        Nothing -> return store'
-       Just l  -> evalBlocks prog store' (l, ()) (Just label)
+       Just l'  -> evalBlocks prog store' (l', ()) (Just l)
 
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock s b l = 
