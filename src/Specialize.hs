@@ -3,6 +3,7 @@ module Specialize where
 import Control.Applicative ((<|>))
 
 import AST
+import AST2
 import Values
 import Utils
 import Operators
@@ -18,7 +19,6 @@ type Seen a = Pending a
 -- Block specialization to give the many blocks? 
 -- Always make the extra but leave with empty body if not needed
 -- Would require the smart path compression (safe with branching still)
-
 
 -- Result decl 
 -- IN {all input initially dynamic} 

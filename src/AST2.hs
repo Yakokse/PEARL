@@ -6,6 +6,9 @@ import Division
 
 type Program' label = [Block' label]
 
+data Explicated label = Regular label | Explicator label [Name]
+  deriving (Eq, Show, Read)
+
 data Block' label = Block' 
   { name' :: label
   , initDiv :: Division
@@ -34,6 +37,8 @@ data Step' =
   | Assert' Level Expr'
   | Skip' Level
   deriving (Eq, Show, Read)
+
+-- TODO: Patterns
 
 data Expr' =
     Const' Level Value

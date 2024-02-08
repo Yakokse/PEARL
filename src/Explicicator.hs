@@ -7,9 +7,6 @@ import Values
 import Division
 import Data.Maybe (catMaybes)
 
-data Explicated label = Regular label | Explicator label [Name]
-  deriving (Eq, Show, Read)
-
 explicate :: Eq a => Program' a -> (a -> Int -> a) -> Program' (Explicated a)
 explicate p f = 
   let (renames', blocks') = unzip $ map (explicateBlock p f) p
