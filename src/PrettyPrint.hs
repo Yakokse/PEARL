@@ -70,7 +70,7 @@ prettyStep (Assert e) = "assert(" ++ prettyExpr e ++ ")"
 prettyStep (Replacement q1 q2) = prettyPat q1 ++ " <- " ++ prettyPat q2
 
 prettyPat :: Pattern -> String
-prettyPat (QConst v) = prettyVal v
+prettyPat (QConst v) = "'" ++ prettyVal v
 prettyPat (QVar n) = n
 prettyPat (QPair q1 q2) = "(" ++ prettyPat q1 ++ " . " ++ prettyPat q2 ++ ")"
 
@@ -160,9 +160,17 @@ prettyStep' (Skip' BTDynamic) = "%skip"
 prettyStep' (Skip' BTStatic) = "skip"
 prettyStep' (Assert' BTDynamic e) = "%assert(" ++ prettyExpr' e ++ ")"
 prettyStep' (Assert' BTStatic e) = "assert(" ++ prettyExpr' e ++ ")"
-prettyStep' (Replacement' BTDynamic q1 q2) = prettyPat q1 ++ " %<- " ++ prettyPat q2
-prettyStep' (Replacement' BTStatic q1 q2) = prettyPat q1 ++ " <- " ++ prettyPat q2
+prettyStep' (Replacement' BTDynamic q1 q2) = prettyPat' q1 ++ " %<- " ++ prettyPat' q2
+prettyStep' (Replacement' BTStatic q1 q2) = prettyPat' q1 ++ " <- " ++ prettyPat' q2
 
+prettyPat' :: Pattern' -> String
+prettyPat' (QConst' BTDynamic v) = "%'" ++ prettyVal v
+prettyPat' (QConst' BTStatic v) = "'" ++ prettyVal v
+prettyPat' (QVar' BTDynamic n) = "%" ++ n
+prettyPat' (QVar' BTStatic n) =  n
+prettyPat' (QPair' BTDynamic q1 q2) = "%(" ++ prettyPat' q1 ++ " %. " ++ prettyPat' q2 ++ ")"
+prettyPat' (QPair' BTStatic q1 q2) = "(" ++ prettyPat' q1 ++ " . " ++ prettyPat' q2 ++ ")"
+prettyPat' (QLift q) = "lift(" ++ prettyPat' q ++ ")"
 
 prettyExpr' :: Expr' -> String
 prettyExpr' (Const' BTDynamic i)   = "%'" ++ prettyVal i

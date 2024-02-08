@@ -33,12 +33,17 @@ data Jump' label =
 
 data Step' = 
     Update' Level Name RevOp Expr'
-  | Replacement' Level Pattern Pattern
+  | Replacement' Level Pattern' Pattern'
   | Assert' Level Expr'
   | Skip' Level
   deriving (Eq, Show, Read)
 
--- TODO: Patterns
+data Pattern' =
+    QConst' Level Value
+  | QVar' Level Name
+  | QPair' Level Pattern' Pattern'
+  | QLift Pattern'
+  deriving (Eq, Show, Read)
 
 data Expr' =
     Const' Level Value

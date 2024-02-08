@@ -40,17 +40,60 @@ analyseBlock d b = analyseStep d $ nstep b
 analyseStep :: Division -> Step -> (Division, Division)
 analyseStep d (Update n _ e) = dup $ boundedBy n (analyseExpr d e) d
 analyseStep d (Replacement q1 q2) = 
-  let t = analysePat d q1 `lub` analysePat d q2
-      ns = getVarsPat (QPair q1 q2)
-      todo = foldl (\d' n -> boundedBy n t d') d ns
-  in dup todo
+  let p2 = analysePat d q2
+      dMid = setTypes (getVarsPat q2) (repeat BTStatic) d
+      p1 = analysePat dMid q1
+      p = p1 `qlub` p2
+      ns1 = dynVars p q1
+      ns2 = dynVars p q2
+      d1 = foldl (\d' n -> boundedBy n BTDynamic d') dMid ns1
+      d2 = foldl (\d' n -> boundedBy n BTDynamic d') d ns2
+  in (d1, d2)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
 
-analysePat :: Division -> Pattern -> Level
-analysePat _ (QConst _) = BTStatic
-analysePat d (QVar n) = getType n d
-analysePat d (QPair q1 q2) = analysePat d q1 `lub` analysePat d q2 
+data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
+  deriving (Eq, Ord, Show)
+-- Pat plan: Make BTPattern value for RHS
+-- set all vars to static on lhs
+-- find BTPattern value for LHS
+-- LUB the two patterns, match rhs for initDiv, lhs for endDiv
+
+dynVars :: BTPattern -> Pattern -> [Name]
+dynVars QStatic _ = []
+dynVars QDynamic q = getVarsPat q
+dynVars (QCons q1 q2) (QPair p1 p2) = dynVars q1 p1 ++ dynVars q2 p2
+dynVars _ _ = [] 
+
+qlub :: BTPattern -> BTPattern -> BTPattern
+qlub QStatic p = collapsePat p
+qlub QDynamic _ = QDynamic
+qlub p QStatic = collapsePat p
+qlub _ QDynamic = QDynamic
+qlub (QCons p1 p2) (QCons p3 p4) = 
+  let p1' = p1 `qlub` p3
+      p2' = p2 `qlub` p4
+  in QCons p1' p2'
+
+collapsePat :: BTPattern -> BTPattern
+collapsePat = levelToPat . patToLevel
+
+levelToPat :: Level -> BTPattern
+levelToPat BTStatic = QStatic
+levelToPat BTDynamic = QDynamic
+
+patToLevel :: BTPattern -> Level
+patToLevel QStatic = BTStatic
+patToLevel QDynamic = BTDynamic
+patToLevel (QCons p1 p2) = patToLevel p1 `lub` patToLevel p2
+
+analysePat :: Division -> Pattern -> BTPattern
+analysePat _ (QConst _) = QStatic
+analysePat d (QVar n) = levelToPat $ getType n d
+analysePat d (QPair q1 q2) = 
+  let p1 = analysePat d q1 
+      p2 = analysePat d q2
+  in QCons p1 p2
 
 analyseExpr :: Division -> Expr -> Level
 analyseExpr _ (Const _)    = BTStatic

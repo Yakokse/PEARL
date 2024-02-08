@@ -122,26 +122,29 @@ wellformedStep' d (Update' l n _ e) =
       then return ()
       else Left "Update mismatch."
 wellformedStep' d (Replacement' l p1 p2) =
-  do ml' <- wellformedPat' d (QPair p1 p2)
-     case ml' of
-      Just l' | l == l' -> return ()
-      Nothing -> return ()
-      _ -> Left "Pattern mismatch."
+  do l1 <- wellformedPat' d p1
+     l2 <- wellformedPat' d p2
+     if l == l1 && l1 == l2
+      then return ()
+      else Left "Pattern mismatch."
 
--- Nothing represents either type, as constants are nondeterministic o.w.
-wellformedPat' :: Division -> Pattern -> EM (Maybe Level)
-wellformedPat' _ (QConst _) = return Nothing
-wellformedPat' d (QVar n) = return . Just $ getType n d
-wellformedPat' d (QPair q1 q2) = 
-  do ml1 <- wellformedPat' d q1
-     ml2 <- wellformedPat' d q2
-     case ml1 of
-      Nothing -> return ml2
-      Just t1 -> 
-        case ml2 of 
-          Just t2 | t1 /= t2 -> Left "Pattern mismatch"
-          _ -> return $ Just t1
-
+wellformedPat' :: Division -> Pattern' -> EM Level
+wellformedPat' _ (QConst' l _) = return l
+wellformedPat' d (QVar' l n) = 
+  if getType n d == l 
+    then return l
+    else Left $ "Variable mismatch: " ++ n
+wellformedPat' d (QPair' l q1 q2) = 
+  do l1 <- wellformedPat' d q1
+     l2 <- wellformedPat' d q2
+     if l == l1 && l == l2
+      then return l
+      else Left "Type mismatch in pair" 
+wellformedPat' d (QLift q) = 
+  do l <- wellformedPat' d q
+     if l == BTStatic
+      then return BTDynamic
+      else Left "Lift mismatch"
 
 wellformedJump' :: Division -> Jump' a -> EM ()
 wellformedJump' _ Exit'         = return ()
