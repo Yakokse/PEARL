@@ -38,8 +38,12 @@ calcR Add a b =
   do x <- getNum a; y <- getNum b; return . Num $ x + y
 calcR Sub a b = 
   do x <- getNum a; y <- getNum b; return . Num $ x - y
-calcR Xor a b =
-  if a == b then return Nil else do isNil a; return b
+calcR Xor a b
+  | a == b    = return Nil
+  | a == Nil  = return b
+  | b == Nil  = return a
+  | otherwise = Left "Xor on non-matching elements"
+  -- if a == b then return Nil else do isNil a; return b
 
 calcU :: UnOp -> Value -> EM Value
 calcU Hd v = do (hd, _) <- getPair v; return hd

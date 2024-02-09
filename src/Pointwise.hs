@@ -54,10 +54,6 @@ analyseStep d Skip = dup d
 
 data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
   deriving (Eq, Ord, Show)
--- Pat plan: Make BTPattern value for RHS
--- set all vars to static on lhs
--- find BTPattern value for LHS
--- LUB the two patterns, match rhs for initDiv, lhs for endDiv
 
 dynVars :: BTPattern -> Pattern -> [Name]
 dynVars QStatic _ = []

@@ -48,6 +48,9 @@ find n s =
     Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
+find' :: Name -> Store -> SpecValue
+find' = Map.findWithDefault Dynamic
+
 vars :: Store -> [Name]
 vars = Map.keys
 

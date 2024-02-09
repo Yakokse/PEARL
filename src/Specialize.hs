@@ -30,16 +30,16 @@ specialize (decl, prog) s entry =
   do b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
      res <- specProg entry (decl, prog) pending [] [] 
-     let decl' = specDecl decl
+     let decl' = decl -- specDecl decl
      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
-specDecl :: VariableDecl' -> VariableDecl
-specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
-  where 
-    validate = map fst . filter (\(_,t) -> t == BTDynamic)
-    inp = validate $ input' decl
-    out = validate $ output' decl
-    tmp = validate $ temp' decl
+-- specDecl :: VariableDecl' -> VariableDecl
+-- specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
+--   where 
+--     validate = map fst . filter (\(_,t) -> t == BTDynamic)
+--     inp = validate $ input' decl
+--     out = validate $ output' decl
+--     tmp = validate $ temp' decl
 
 specProg :: (Eq a, Show a) => a -> Program' a -> Pending a -> Seen a -> [Block a (Maybe Store)] 
                             -> LEM [Block a (Maybe Store)]
@@ -81,7 +81,7 @@ merge block prog
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specBlock :: Eq a => a -> VariableDecl' -> Store -> Block' a -> (a, Store) 
+specBlock :: Eq a => a -> VariableDecl -> Store -> Block' a -> (a, Store) 
                                  -> EM (Block a (Maybe Store), [Point a])
 specBlock entry decl s b origin = 
   do let l = (name' b, Just s)
@@ -118,9 +118,9 @@ annotate :: Eq a => a -> (a, Store) -> (a, Maybe Store)
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> VariableDecl' -> Jump' a -> EM (Jump a (Maybe Store), [Point a])
+specJump :: Store -> VariableDecl -> Jump' a -> EM (Jump a (Maybe Store), [Point a])
 specJump s decl Exit' = 
-  let checkable = staticNonOutput decl
+  let checkable = staticNonOutput decl s
       vals = map (`find` s) checkable
   in 
   do vs <- sequence vals
@@ -167,11 +167,103 @@ specStep s (Update' BTStatic n op e) =
      res <- calcR op lhs rhs
      let s' = update n (Static res) s
      return (s', [])
-specStep s (Replacement' BTDynamic q1 q2) = return (s, [Replacement q1 q2])
+specStep s (Replacement' BTDynamic q1 q2) = 
+  do (p, s'', mq2) <- specPatDeconstruct s q2
+     (s', mq1) <- specPatConstruct s'' q1 p
+     case (mq1, mq2) of
+      (Just q1', Just q2') -> return (s', [Replacement q1' q2'])
+      _ -> Left "Dynamic replacement did not produce pattern"
 specStep s (Replacement' BTStatic q1 q2) = 
-  do (s', v) <- deconstruct s q2
-     s'' <- construct s' v q1
-     return (s'', [])
+  do (p, s'', q2') <- specPatDeconstruct s q2
+     (s', q1') <- specPatConstruct s'' q1 p
+     case (q1', q2') of
+      (Nothing, Nothing) -> return (s', [])
+      q -> Left $ "Static replacement produced residual patterns: " ++ show q
+
+data PEPattern = PEStatic Value | PEDynamic | PECons PEPattern PEPattern
+
+specPatDeconstruct :: Store -> Pattern' -> EM (PEPattern, Store, Maybe Pattern)
+specPatDeconstruct s (QConst' BTDynamic c) = return (PEDynamic, s, return $ QConst c)
+specPatDeconstruct s (QConst' BTStatic c) = return (PEStatic c, s, Nothing)
+specPatDeconstruct s (QVar' BTDynamic n) = return (PEDynamic, s, return $ QVar n)
+specPatDeconstruct s (QVar' BTStatic n) = 
+  do v <- find n s
+     let s' = update n (Static Nil) s
+     return (PEStatic v, s', Nothing) 
+specPatDeconstruct s (QPair' BTDynamic q1 q2) = 
+  do (p1, s1, q1') <- specPatDeconstruct s q1 
+     (p2, s2, q2') <- specPatDeconstruct s1 q2
+     return (combinePEPats p1 p2, s2, combinePats q1' q2')
+specPatDeconstruct s (QPair' BTStatic q1 q2) = 
+  do (p1, s1, q1') <- specPatDeconstruct s q1 
+     (p2, s2, q2') <- specPatDeconstruct s1 q2
+     case (p1, p2, q1', q2') of
+      (PEStatic _, PEStatic _, Nothing, Nothing) -> 
+        return (combinePEPats p1 p2, s2, Nothing)
+      _ -> Left "Pattern BT-type issue in static pair"
+specPatDeconstruct s (QLift q) = 
+  do (p1, s1, q1) <- specPatDeconstruct s q
+     case (p1, q1) of
+      (PEStatic v, Nothing) -> return (PEStatic v, s1, Nothing)
+      _ -> Left "Pattern BT-Type issue in lift"
+
+specPatConstruct :: Store -> Pattern' -> PEPattern -> EM (Store, Maybe Pattern)
+specPatConstruct s (QConst' BTDynamic c) p = 
+  do allDynPEPat p
+     return (s, Just $ QConst c)
+specPatConstruct s (QConst' BTStatic c) p = 
+  do v <- valFromPEPat p
+     if c == v 
+      then return (s, Nothing) 
+      else Left "Failed to match static constant"
+specPatConstruct s (QVar' BTDynamic n) p = 
+  do allDynPEPat p
+     return (s, Just $ QVar n)
+specPatConstruct s (QVar' BTStatic n) p = 
+  do v <- valFromPEPat p
+     v' <- find n s
+     res <- calcR Xor v v'
+     return (update n (Static res) s, Nothing)
+    --  if v' == Nil
+    --   then return (update n (Static v) s, Nothing)
+    --   else Left "Non-nil variable on LHS of replacement"
+specPatConstruct s (QPair' _ q1 q2) p = 
+  do (p1, p2) <- splitPEPat p
+     (s'', q1') <- specPatConstruct s q1 p1
+     (s', q2') <- specPatConstruct s'' q2 p2
+     return (s', combinePats q1' q2')
+specPatConstruct s (QLift q) p = 
+  specPatConstruct s q p
+
+splitPEPat :: PEPattern -> EM (PEPattern, PEPattern)
+splitPEPat PEDynamic = return (PEDynamic, PEDynamic)
+splitPEPat (PEStatic (Pair v1 v2)) = return (PEStatic v1, PEStatic v2)
+splitPEPat (PECons p1 p2) = return (p1, p2)
+splitPEPat _ = Left "Failed to deconstruct value further"
+
+
+valFromPEPat :: PEPattern -> EM Value
+valFromPEPat (PEStatic v) = return v
+valFromPEPat PEDynamic = Left "Attempt to extract value from dynamic pattern"
+valFromPEPat (PECons p1 p2) = 
+  do v1 <- valFromPEPat p1
+     v2 <- valFromPEPat p2
+     return $ Pair v1 v2
+
+allDynPEPat :: PEPattern -> EM ()
+allDynPEPat (PEStatic _) = Left "Static element in a dynamic pattern"
+allDynPEPat PEDynamic = return ()
+allDynPEPat (PECons p1 p2) = do allDynPEPat p1; allDynPEPat p2
+
+combinePEPats :: PEPattern -> PEPattern -> PEPattern
+combinePEPats (PEStatic v1) (PEStatic v2) = PEStatic (Pair v1 v2)
+combinePEPats PEDynamic PEDynamic = PEDynamic
+combinePEPats p1 p2 = PECons p1 p2
+
+combinePats :: Maybe Pattern -> Maybe Pattern -> Maybe Pattern
+combinePats Nothing p = p
+combinePats p Nothing = p
+combinePats (Just q1) (Just q2) = Just $ QPair q1 q2
 
 type PEValue = Either Value Expr
 specExpr :: Store -> Expr' -> EM PEValue
