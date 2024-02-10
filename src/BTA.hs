@@ -1,4 +1,4 @@
-module BTA where
+module BTA (congruentUniformDiv, makeCongruent) where
 import AST
 import Values
 import Division

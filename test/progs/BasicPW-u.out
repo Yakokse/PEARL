@@ -1,0 +1,8 @@
+(a b) -> (a b)
+
+init_1:
+	entry
+	a += '1
+	a += b
+	a += '1
+	exit

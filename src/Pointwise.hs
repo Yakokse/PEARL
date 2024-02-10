@@ -1,23 +1,22 @@
-module Pointwise where
+module Pointwise (initPWDiv, makeCongruentPW) where
 
 import AST
 import Values
 import Division
 import Utils
 
-
-initPWDiv :: NormProgram Label -> Store -> EM (DivisionPW Label)
-initPWDiv (decl, prog) store = 
-  do d <- makeDiv store decl
-     let lStart = nname $ getNEntryBlock prog
-         ls = map nname prog
-         dstatic = makeStaticDiv decl
-         actualDiv l = (l, if l == lStart then dup d else dup dstatic)
-         pairs = map actualDiv ls
-     return $ listToPWDiv pairs
+initPWDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
+initPWDiv (decl, prog) d = 
+  let lStart = nname $ getNEntryBlock prog
+      ls = map nname prog
+      dstatic = makeStaticDiv decl
+      actualDiv l = (l, if l == lStart then (d, dstatic) else dup dstatic)
+      pairs = map actualDiv ls
+  in listToPWDiv pairs
 
 makeCongruentPW :: Ord a => NormProgram a -> DivisionPW a -> DivisionPW a
 makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog 
+
 
 workQueue :: Ord a => [NormBlock a] -> DivisionPW a -> [a] -> DivisionPW a
 workQueue _ pwdiv [] = pwdiv

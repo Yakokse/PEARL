@@ -48,6 +48,13 @@ find n s =
     Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
+findDyn ::  Name -> Store -> EM Value
+findDyn n s = 
+  case Map.lookup n s of 
+    Just (Static v) -> return v
+    Just _ -> return Nil
+    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+
 find' :: Name -> Store -> SpecValue
 find' = Map.findWithDefault Dynamic
 

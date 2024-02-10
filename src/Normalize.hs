@@ -1,4 +1,4 @@
-module Normalize where
+module Normalize (normalize) where
 
 import AST
 import Utils
@@ -17,12 +17,12 @@ pad entryLabel prog =
 
 normalizeBlock :: Eq a => [Block a ()] -> (a -> Int -> a) -> Block a () -> [NormBlock a]
 normalizeBlock prog f Block{name = (l, ()), from = k, body = b, jump = j} = 
-  let b' = if null b then [Skip] else b
-  in zipWith normalizeStep b' [1..] 
+  zipWith normalizeStep b' [1..] 
   where
+    b' = if null b then [Skip] else b
     normalizeStep step n = 
       let k' = if n == 1 then normalizeFrom prog f k else From (f l (n-1), ())
-          j' = if n == length b then normalizeJump f j else Goto (f l (n+1), ())
+          j' = if n == length b' then normalizeJump f j else Goto (f l (n+1), ())
       in NormBlock (f l n) k' step j'
 
 normalizeFrom :: (Eq a, Eq b) => [Block a b] -> (a -> Int -> a) -> ComeFrom a b -> ComeFrom a b

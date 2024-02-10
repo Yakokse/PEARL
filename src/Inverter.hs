@@ -1,4 +1,4 @@
-module Inverter where
+module Inverter (invertProg) where
 import AST
 
 

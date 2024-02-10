@@ -1,4 +1,4 @@
-module Explicicator where
+module Explicicator (explicate) where
 
 import AST
 import AST2

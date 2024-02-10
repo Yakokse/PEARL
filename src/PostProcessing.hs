@@ -7,7 +7,7 @@ import qualified Data.Set as Set
 
 import Values
 import Operators
-import Data.Maybe (maybeToList, fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 
 -- TODO: Merge all explicicators, check for multiexit
 
@@ -98,7 +98,7 @@ removeDeadBlocks p =
     traceProg (b:bs) res 
       | b `elem` res = traceProg bs res
       | otherwise = 
-        let new = concatMap (maybeToList . getBlock p) $ fromLabels $ from b
+        let new = mapMaybe (getBlock p) $ fromLabels $ from b
         in traceProg (new ++ bs) (b:res)
 
 changeConditionals :: (Eq a, Eq b) => [Block a b] -> [Block a b]

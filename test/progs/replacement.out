@@ -1,0 +1,6 @@
+(b) -> (a)
+
+init_1:
+	entry
+	a <- b
+	exit

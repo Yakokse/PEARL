@@ -8,9 +8,11 @@ import Values
 import Parser
 
 import BTA
+import Pointwise
 import Division
 import AST
 import AST2
+import Normalize
 import Utils
 import Annotate
 import Specialize
@@ -53,25 +55,20 @@ specParser = Specialize <$> (SpecOptions
           <$> argument str (metavar "<Input RL file>")
           <*> argument str (metavar "<Output path>")
           <*> argument str (metavar "<Spec file>")
-          <*> option auto (long "uniformBTA"
+          <*> switch (long "uniformBTA"
                            <> short 'u'
-                           <> value False
                            <> help "Perform uniform BTA rather than pointwise")
-          <*> option auto (long "skipSpec"
+          <*> switch (long "skipSpec"
                            <> short 's'
-                           <> value False
                            <> help "Stop after BTA, printing the RL2 program")
-          <*> option auto (long "skipPost"
+          <*> switch (long "skipPost"
                            <> short 'p'
-                           <> value False
                            <> help "Stop before post-processing, printing the initial residual program")
-          <*> option auto (long "verbose"
+          <*> flag True False (long "verbose"
                            <> short 'v'
-                           <> value True
                            <> help "Show messages and info for each phase")
-          <*> option auto (long "trace"
+          <*> switch (long "trace"
                            <> short 't'
-                           <> value False
                            <> help "Show trace of specialization (Not recommended)")
           )
 
@@ -112,7 +109,8 @@ optParser = hsubparser
 optsParser :: ParserInfo Options
 optsParser = info (optParser <**> helper)
   ( fullDesc
-  <> progDesc "Various operations on RL programs (spec/invert/interpret)" )
+  <> progDesc "Various operations on RL programs (spec/invert/interpret)" 
+  <> header "hello - a test for optparse-applicative")
 
 trace :: Bool -> String -> IO ()
 trace b s = when b $ putStrLn s
@@ -197,39 +195,53 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
               $ wellformedProg prog
      initStore <- parseFile "division and specilization data" 
                     v parseSpec specPath
+     trace v "- Normalizing input program."
+     let nprog = normalize "init" prog (\l i -> l ++ "_" ++ show i)
      trace v "- Creating initial binding."
-     initDiv <- fromEM "binding" $ makeDiv initStore decl
-     trace v $ prettyDiv initDiv
-     trace v "- Performing BTA"
-     let congruentDiv = makeCongruent prog initDiv
-     trace v $ prettyDiv congruentDiv
+     d <- fromEM "binding" $ makeDiv initStore decl
+     trace v $ prettyDiv d
+     trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
+     let btaFunc = if uniform then btaUniform else pwUniform
+     let congruentDiv = btaFunc nprog d
+     -- trace v $ prettyDiv congruentDiv
+     let dynStore = makeStore . map (\n -> (n, Dynamic)) $ getVarsDecl decl
      let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
-     let store = nilStore `updateWithStore` initStore
+     let store = dynStore `updateWithStore` nilStore `updateWithStore` initStore
      trace v "- Annotating program"
-     let prog2 = annotateProg congruentDiv prog
-     _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
-                 (wellformedProg' congruentDiv prog2)
+     let prog2 = annotateProg congruentDiv nprog
+     -- _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
+     --             (wellformedProg' congruentDiv prog2)
      out <- if skipSpecPhase specOpts 
               then do trace v "- Skip specialization";
                       return $ prettyProg' id prog2 
-              else specMain2 specOpts prog2 store
+              else specMain2 specOpts decl prog2 store
      writeOutput v outputPath out
 
+btaUniform, pwUniform :: NormProgram Label -> Division -> DivisionPW Label
+btaUniform p d = 
+  let ud = makeCongruent p d
+  in congruentUniformDiv p ud
+
+pwUniform p d = 
+  let initd = initPWDiv p d
+  in makeCongruentPW p initd
+
 -- todo: pipeline cleanup
-specMain2 :: SpecOptions -> Program' Label -> Store -> IO String
-specMain2 specOpts prog2 store = 
+specMain2 :: SpecOptions -> VariableDecl -> Program' Label -> Store -> IO String
+specMain2 specOpts decl prog2 store = 
   let v = specVerbose specOpts
   in
   do trace v "- Specializing"
-     (res, l) <- fromLEM "specializing" $ specialize prog2 store "entry"
+     (res, l) <- fromLEM "specializing" $ specialize decl prog2 store "entry"
      trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
-     let (decl, lifted) = res
+     let (resdecl, lifted) = res
      let clean = mapCombine (serializeAnn id) lifted
      if skipPost specOpts
       then do trace v "- Skip post processing"
-              return $ prettyProg id (decl, clean)
-      else specmain3 specOpts (decl, lifted)
+              return $ prettyProg id (resdecl, clean)
+      else specmain3 specOpts (resdecl, lifted)
 
+-- todo: print static output
 specmain3 :: SpecOptions -> Program Label (Maybe Store) -> IO String
 specmain3 specOpts prog' = 
   let v = specVerbose specOpts
@@ -242,7 +254,7 @@ specmain3 specOpts prog' =
      (folded, l) <- fromLEM "Folding" $ constFold prog
      trace v $ "Expressions reduced: " ++ show (length l)
      trace v "- Removing dead blocks"
-     let liveProg = removeDeadBlocks folded
+     let liveProg = folded --removeDeadBlocks folded
      showLength liveProg
      trace v "- Adding assertions"
      let withAssertions = changeConditionals liveProg

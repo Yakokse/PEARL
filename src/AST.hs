@@ -82,4 +82,5 @@ data NormBlock label = NormBlock
   , nstep :: Step 
   , njump :: Jump label ()
   }
+  deriving (Eq, Show, Read)
 

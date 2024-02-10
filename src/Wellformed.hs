@@ -1,4 +1,4 @@
-module Wellformed where
+module Wellformed (wellformedProg, wellformedProg') where
 
 import AST
 import AST2
@@ -94,6 +94,7 @@ isDefined n ns =
     then return () 
     else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
 
+-- TODO: Use PW Division 
 wellformedProg' :: Division -> Program' a -> EM ()
 wellformedProg' d = mapM_ wellformedBlock'
   where 

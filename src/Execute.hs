@@ -1,4 +1,4 @@
-module Execute where
+module Execute (runProgram) where
 
 import AST
 import Operators
