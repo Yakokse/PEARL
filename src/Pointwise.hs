@@ -6,8 +6,6 @@ import Division
 import Utils
 
 
--- TODO: Distinguish between patterns
-
 initPWDiv :: NormProgram Label -> Store -> EM (DivisionPW Label)
 initPWDiv (decl, prog) store = 
   do d <- makeDiv store decl
@@ -39,15 +37,15 @@ analyseBlock d b = analyseStep d $ nstep b
 
 analyseStep :: Division -> Step -> (Division, Division)
 analyseStep d (Update n _ e) = dup $ boundedBy n (analyseExpr d e) d
-analyseStep d (Replacement q1 q2) = 
-  let p2 = analysePat d q2
-      dMid = setTypes (getVarsPat q2) (repeat BTStatic) d
-      p1 = analysePat dMid q1
+analyseStep d (Replacement left right) = 
+  let p2 = analysePat d right
+      dMid = setTypes (getVarsPat right) (repeat BTStatic) d
+      p1 = analysePat dMid left
       p = p1 `qlub` p2
-      ns1 = dynVars p q1
-      ns2 = dynVars p q2
-      d1 = foldl (\d' n -> boundedBy n BTDynamic d') dMid ns1
-      d2 = foldl (\d' n -> boundedBy n BTDynamic d') d ns2
+      nsLeft = dynVars p left
+      nsRight = dynVars p right
+      d1 = foldl (\d' n -> boundedBy n BTDynamic d') d nsRight
+      d2 = foldl (\d' n -> boundedBy n BTDynamic d') dMid nsLeft
   in (d1, d2)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
@@ -63,8 +61,8 @@ dynVars _ _ = []
 
 qlub :: BTPattern -> BTPattern -> BTPattern
 qlub QStatic p = collapsePat p
-qlub QDynamic _ = QDynamic
 qlub p QStatic = collapsePat p
+qlub QDynamic _ = QDynamic
 qlub _ QDynamic = QDynamic
 qlub (QCons p1 p2) (QCons p3 p4) = 
   let p1' = p1 `qlub` p3

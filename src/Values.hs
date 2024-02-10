@@ -72,6 +72,9 @@ updateWithStore s1 s2 = Map.union s2 s1
 without :: Store -> Name -> Store
 without s n = Map.delete n s
 
+mapStore :: (Name -> SpecValue -> SpecValue) -> Store -> Store
+mapStore = Map.mapWithKey
+
 isIn :: Name -> Store -> Bool
 isIn = Map.member
 

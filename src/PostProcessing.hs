@@ -9,6 +9,8 @@ import Values
 import Operators
 import Data.Maybe (maybeToList, fromMaybe)
 
+-- TODO: Merge all explicicators, check for multiexit
+
 constFoldE :: Expr -> LEM Expr 
 constFoldE (Const v) = return $ Const v
 constFoldE (Var n)   = return $ Var n
@@ -162,4 +164,4 @@ enumerateAnn p =
         case elemIndex s stores of
           Just i -> i+1
           Nothing -> 0
-  in mapStore enum p
+  in mapProgStore enum p

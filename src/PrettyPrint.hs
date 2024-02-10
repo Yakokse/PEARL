@@ -170,7 +170,6 @@ prettyPat' (QVar' BTDynamic n) = "%" ++ n
 prettyPat' (QVar' BTStatic n) =  n
 prettyPat' (QPair' BTDynamic q1 q2) = "%(" ++ prettyPat' q1 ++ " %. " ++ prettyPat' q2 ++ ")"
 prettyPat' (QPair' BTStatic q1 q2) = "(" ++ prettyPat' q1 ++ " . " ++ prettyPat' q2 ++ ")"
-prettyPat' (QLift q) = "lift(" ++ prettyPat' q ++ ")"
 
 prettyExpr' :: Expr' -> String
 prettyExpr' (Const' BTDynamic i)   = "%'" ++ prettyVal i

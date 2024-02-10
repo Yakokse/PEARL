@@ -10,6 +10,7 @@ import Parser
 import BTA
 import Division
 import AST
+import AST2
 import Utils
 import Annotate
 import Specialize
@@ -27,6 +28,7 @@ data SpecOptions = SpecOptions
   { specInpFile   :: String
   , specOutFile   :: String
   , specFile      :: String
+  , uniformBTA    :: Bool
   , skipSpecPhase :: Bool
   , skipPost      :: Bool
   , specVerbose   :: Bool
@@ -51,6 +53,10 @@ specParser = Specialize <$> (SpecOptions
           <$> argument str (metavar "<Input RL file>")
           <*> argument str (metavar "<Output path>")
           <*> argument str (metavar "<Spec file>")
+          <*> option auto (long "uniformBTA"
+                           <> short 'u'
+                           <> value False
+                           <> help "Perform uniform BTA rather than pointwise")
           <*> option auto (long "skipSpec"
                            <> short 's'
                            <> value False
@@ -182,6 +188,7 @@ intMain InterpretOptions { intFile = filePath
 specMain :: SpecOptions -> IO ()
 specMain specOpts@SpecOptions { specInpFile = inputPath 
                               , specOutFile = outputPath
+                              , uniformBTA  = uniform
                               , specFile    = specPath
                               , specVerbose = v} = 
   do prog <- parseFile "program" v parseProg inputPath

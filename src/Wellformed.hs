@@ -137,14 +137,9 @@ wellformedPat' d (QVar' l n) =
 wellformedPat' d (QPair' l q1 q2) = 
   do l1 <- wellformedPat' d q1
      l2 <- wellformedPat' d q2
-     if l == l1 && l == l2
+     if l == BTDynamic || (l1 == l2 && l2 == BTStatic)
       then return l
       else Left "Type mismatch in pair" 
-wellformedPat' d (QLift q) = 
-  do l <- wellformedPat' d q
-     if l == BTStatic
-      then return BTDynamic
-      else Left "Lift mismatch"
 
 wellformedJump' :: Division -> Jump' a -> EM ()
 wellformedJump' _ Exit'         = return ()

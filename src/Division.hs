@@ -10,10 +10,7 @@ type Division = Map.Map Name Level
 type DivisionPW l = Map.Map l (Division, Division)
 
 isType :: Name -> Level -> Division -> Bool
-isType n t d =
-  case d Map.! n of 
-    r | t == r -> True
-    _ -> False
+isType n t d = getType n d == t
 
 getType :: Name -> Division -> Level
 getType n d = d Map.! n

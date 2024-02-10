@@ -22,8 +22,8 @@ staticNonOutput d s =
 mapLabel :: (a -> b) -> [Block a c] -> [Block b c]
 mapLabel f = mapProgram (\l _ -> f l) id
 
-mapStore :: (b -> c) -> [Block a b] -> [Block a c]
-mapStore = mapProgram const
+mapProgStore :: (b -> c) -> [Block a b] -> [Block a c]
+mapProgStore = mapProgram const
 
 mapCombine :: (a -> b -> c) -> [Block a b] -> [Block c ()]
 mapCombine f = mapProgram f (const ())
@@ -137,6 +137,22 @@ getEntry' p =
     _ -> Left "Multiple entry points found"
   where 
     f b = case from' b of Entry' -> True; _ -> False
+
+getEntryBlock' :: [Block' a] -> EM (Block' a)
+getEntryBlock' p = 
+  case filter f p of
+    [] -> Left "No entry point found"
+    [b] -> Right b
+    _ -> Left "Multiple entry points found"
+  where 
+    f b = case from' b of Entry' -> True; _ -> False
+
+getExitBlock' :: [Block' a] -> EM (Block' a)
+getExitBlock' p = 
+  case filter isExit' p of
+    [] -> Left "No exit point found"
+    [b] -> Right b
+    _ -> Left "Multiple exit points found"
 
 getBlock :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Maybe (Block a b)
 getBlock p l = 
