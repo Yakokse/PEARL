@@ -1,7 +1,5 @@
 module Main (main) where
 
-import System.Exit (die)
-import Control.Monad (when)
 import Options.Applicative
 
 import Values
@@ -22,6 +20,10 @@ import PrettyPrint
 import Wellformed
 import Inverter
 import Execute
+import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
+import System.Exit (die)
+import Control.Monad (when)
 
 data Options = Specialize SpecOptions 
              | Invert InvertOptions 
@@ -140,7 +142,6 @@ writeOutput verbose path content =
      writeFile path content 
 
 -- TODO: Improve SPEC format
--- TODO: Final message
 main :: IO ()
 main = do
   options <- execParser optsParser
@@ -200,7 +201,7 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      let nprog = normalize "init" prog (\l i -> l ++ "_" ++ show i)
      trace v "- Creating initial binding."
      d <- fromEM "binding" $ makeDiv initStore decl
-     trace v $ prettyDiv d
+     --trace v $ prettyDiv d
      trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
      let btaFunc = if uniform then btaUniform else pwUniform
      let congruentDiv = btaFunc nprog d
@@ -211,8 +212,8 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv nprog
      let explicated = explicate prog2 (\l i -> l ++ "_" ++ show i)
-     -- _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
-     --             (wellformedProg' congruentDiv prog2)
+     _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
+                 (wellformedProg' congruentDiv prog2)
      out <- if skipSpecPhase specOpts 
               then do trace v "- Skip specialization";
                       return $ prettyProg' (serializeExpl id) explicated
@@ -241,33 +242,49 @@ specMain2 specOpts decl prog2 store =
       then do trace v "- Skip post processing"
               let clean = mapCombine (serializeAnn (serializeExpl id)) lifted 
               return $ prettyProg id (resdecl, clean)
-      else specmain3 specOpts (resdecl, lifted)
+      else specmain3 specOpts decl (resdecl, lifted)
 
--- todo: print static output
-specmain3 :: SpecOptions -> Program (Explicated Label) (Maybe Store) -> IO String
-specmain3 specOpts prog' = 
+specmain3 :: SpecOptions -> VariableDecl -> Program (Explicated Label) (Maybe Store) -> IO String
+specmain3 specOpts origdecl prog' = 
   let v = specVerbose specOpts
   in
   do let (decl, prog) = prog'
      trace v "- POST PROCESSING"
      let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
      showLength prog
-     trace v "- Merging explicitors"
-     let merged' = mergeExplicators (\l i -> l ++ "_" ++ show i) prog
-     showLength merged'
-     let merged = mapLabel (serializeExpl id) merged'
      trace v "- Folding constants"
-     (folded, l) <- fromLEM "Folding" $ constFold merged
-     trace v $ "Expressions reduced: " ++ show (length l)
+     (folded, out) <- fromLEM "Folding" $ constFold prog
+     trace v $ "Expressions reduced: " ++ show (length out)
      trace v "- Removing dead blocks"
-     let liveProg = folded --removeDeadBlocks folded
+     let liveProg = removeDeadBlocks folded
      showLength liveProg
-     trace v "- Adding assertions"
+     trace v "- Adding assertions / Making blocks wellformed"
      let withAssertions = changeConditionals liveProg
+     let cleanStores = mapProgStore (fromMaybe emptyStore) withAssertions
+     trace v "- Merging explicitors"
+     let merged' = mergeExplicators (\l i -> l ++ "_" ++ show i) cleanStores
+     let merged = mapLabel (serializeExpl id) merged'
+     showLength merged
+     trace v "- Merging exits"
+     let ((decl', singleExit), staticVals) = 
+            mergeExits origdecl (\l i -> l ++ "_" ++ show i) (decl, merged)
+     showLength singleExit
      trace v "- Compressing paths"
-     compressed <- fromEM "Path compression" $ compressPaths withAssertions
+     compressed <- fromEM "Path compression" $ compressPaths singleExit
      showLength compressed
      trace v "- Cleaning names"
      let numeratedStore = enumerateAnn compressed
-     let clean = mapCombine (\lab s -> lab ++ "_" ++ show s) numeratedStore
-     return $ prettyProg id (decl, clean)
+     let clean = mapCombine (\l s -> l ++ "_" ++ show s) numeratedStore
+     printStaticOutput origdecl staticVals
+     return $ prettyProg id (decl', clean)
+
+printStaticOutput :: VariableDecl -> [(Name, SpecValue)] -> IO ()
+printStaticOutput decl tpls =
+  do trace True "-- FINAL STATIC OUTPUT --"
+     let outvals = filter (\(n, v) -> n `elem` output decl && v /= Dynamic) tpls
+     let strings = map (\(n,v) -> n ++ " = " ++ showSpecVal v) outvals
+     putStrLn $ intercalate "\n" strings
+     trace True "-------------------------"
+  where 
+    showSpecVal (Static v) = prettyVal v
+    showSpecVal Dynamic = undefined

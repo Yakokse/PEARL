@@ -93,7 +93,6 @@ specBlock entry decl s b origin =
      (j, pending) <- specJump s' decl (jump' b) (endDiv b)
      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
--- TODO: Handle invalid jumps at Spec time or run time, use the annotation?
 specFrom :: Eq a => a -> Store -> ComeFrom' a -> (a, Store) 
                  -> EM (ComeFrom a (Maybe Store))
 specFrom _ _ (From' l) origin 

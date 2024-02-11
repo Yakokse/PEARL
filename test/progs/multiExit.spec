@@ -1,2 +1,2 @@
 // None needed
-elim1 = 'nil
+elim = 'nil

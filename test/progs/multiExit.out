@@ -1,25 +1,27 @@
-(dyn) -> (elim1 elim2 dyn)
+(dyn) -> (dyn elim)
 
 init_1:
 	entry
-	if dyn
-		goto fst_1
-		else snd_1
+	if (dyn = '5)
+		goto fst_1_2
+		else snd_1_2
 
-fst_1:
+fst_1_2:
 	from init_1
-	elim1 ^= 'a
-	elim2 ^= 'a
-	goto stop_1
+	assert((dyn = '5))
+	dyn += '1
+	elim ^= '1
+	goto stop_1_exit1_exit2_3
 
-stop_1:
-	fi dyn
-		from fst_1
-		else snd_1
+stop_1_exit1_exit2_3:
+	fi (elim = '1)
+		from fst_1_2
+		else snd_1_2
 	exit
 
-snd_1:
+snd_1_2:
 	from init_1
-	elim1 ^= 'a
-	elim2 ^= 'b
-	goto stop_1
+	assert(!((dyn = '5)))
+	dyn += '2
+	elim ^= '2
+	goto stop_1_exit1_exit2_3

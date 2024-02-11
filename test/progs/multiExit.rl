@@ -4,13 +4,13 @@ init: entry
       if dyn = '5 goto fst else snd
 
 fst: from init
-     elim1 += '1
+     elim += '1
      goto stop
 
 snd: from init
-     elim1 += '2
+     elim += '2
      goto stop
 
 stop: fi dyn = '5 from fst else snd
-      dyn += elim1
+      dyn += elim
       exit

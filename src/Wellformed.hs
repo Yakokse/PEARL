@@ -94,7 +94,6 @@ isDefined n ns =
     then return () 
     else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
 
--- TODO: Use PW Division 
 wellformedProg' :: Ord a => DivisionPW a -> Program' a -> EM ()
 wellformedProg' pwd = mapM_ wellformedBlock'
   where 
