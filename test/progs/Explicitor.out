@@ -1,0 +1,44 @@
+(dyn) -> (stat dyn)
+
+init_3:
+	entry
+	if dyn
+		goto init_1_1_expl_3
+		else statpath_1_3
+
+init_1_1_expl_3:
+	from init_3
+	stat ^= '0
+	stat += dyn
+	goto end_1_2
+
+end_1_2:
+	fi dyn
+		from init_1_1_expl_3
+		else left_1_3
+	stat += '3
+	exit
+
+statpath_1_3:
+	from init_3
+	if dyn
+		goto left_1_3
+		else right_1_3
+
+left_1_3:
+	from statpath_1_3
+	assert(dyn)
+	stat ^= '3
+	goto merge_1_1_1_2_expl_1
+
+merge_1_1_1_2_expl_1:
+	fi (stat = '3)
+		from left_1_3
+		else right_1_3
+	goto end_1_2
+
+right_1_3:
+	from statpath_1_3
+	assert(!(dyn))
+	stat ^= '9
+	goto merge_1_1_1_2_expl_1

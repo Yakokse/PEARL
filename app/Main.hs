@@ -13,6 +13,7 @@ import Division
 import AST
 import AST2
 import Normalize
+import Explicicator
 import Utils
 import Annotate
 import Specialize
@@ -209,12 +210,13 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      let store = dynStore `updateWithStore` nilStore `updateWithStore` initStore
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv nprog
+     let explicated = explicate prog2 (\l i -> l ++ "_" ++ show i)
      -- _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
      --             (wellformedProg' congruentDiv prog2)
      out <- if skipSpecPhase specOpts 
               then do trace v "- Skip specialization";
-                      return $ prettyProg' id prog2 
-              else specMain2 specOpts decl prog2 store
+                      return $ prettyProg' (serializeExpl id) explicated
+              else specMain2 specOpts decl explicated store
      writeOutput v outputPath out
 
 btaUniform, pwUniform :: NormProgram Label -> Division -> DivisionPW Label
@@ -227,22 +229,22 @@ pwUniform p d =
   in makeCongruentPW p initd
 
 -- todo: pipeline cleanup
-specMain2 :: SpecOptions -> VariableDecl -> Program' Label -> Store -> IO String
+specMain2 :: SpecOptions -> VariableDecl -> Program' (Explicated Label) -> Store -> IO String
 specMain2 specOpts decl prog2 store = 
   let v = specVerbose specOpts
   in
   do trace v "- Specializing"
-     (res, l) <- fromLEM "specializing" $ specialize decl prog2 store "entry"
+     (res, l) <- fromLEM "specializing" $ specialize decl prog2 store (Regular "entry")
      trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
      let (resdecl, lifted) = res
-     let clean = mapCombine (serializeAnn id) lifted
      if skipPost specOpts
       then do trace v "- Skip post processing"
+              let clean = mapCombine (serializeAnn (serializeExpl id)) lifted 
               return $ prettyProg id (resdecl, clean)
       else specmain3 specOpts (resdecl, lifted)
 
 -- todo: print static output
-specmain3 :: SpecOptions -> Program Label (Maybe Store) -> IO String
+specmain3 :: SpecOptions -> Program (Explicated Label) (Maybe Store) -> IO String
 specmain3 specOpts prog' = 
   let v = specVerbose specOpts
   in
@@ -250,8 +252,12 @@ specmain3 specOpts prog' =
      trace v "- POST PROCESSING"
      let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
      showLength prog
+     trace v "- Merging explicitors"
+     let merged' = mergeExplicators (\l i -> l ++ "_" ++ show i) prog
+     showLength merged'
+     let merged = mapLabel (serializeExpl id) merged'
      trace v "- Folding constants"
-     (folded, l) <- fromLEM "Folding" $ constFold prog
+     (folded, l) <- fromLEM "Folding" $ constFold merged
      trace v $ "Expressions reduced: " ++ show (length l)
      trace v "- Removing dead blocks"
      let liveProg = folded --removeDeadBlocks folded
@@ -259,9 +265,9 @@ specmain3 specOpts prog' =
      trace v "- Adding assertions"
      let withAssertions = changeConditionals liveProg
      trace v "- Compressing paths"
-     merged <- fromEM "Path compression" $ compressPaths withAssertions
-     showLength merged
+     compressed <- fromEM "Path compression" $ compressPaths withAssertions
+     showLength compressed
      trace v "- Cleaning names"
-     let numeratedStore = enumerateAnn merged
+     let numeratedStore = enumerateAnn compressed
      let clean = mapCombine (\lab s -> lab ++ "_" ++ show s) numeratedStore
      return $ prettyProg id (decl, clean)

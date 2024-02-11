@@ -13,6 +13,10 @@ prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . divisionToL
   where prettyLvl BTStatic = "BTStatic"
         prettyLvl BTDynamic = "BTDynamic"
 
+serializeExpl :: Print a -> Explicated a -> String
+serializeExpl f (Regular l) = f l
+serializeExpl f (Explicator l _) = f l ++ "_expl"
+
 serializeAnn :: Print a -> a -> Maybe Store -> String
 serializeAnn f l Nothing = f l
 serializeAnn f l (Just s) = f l ++ serializeStore s 

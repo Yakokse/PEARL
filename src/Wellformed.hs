@@ -95,13 +95,14 @@ isDefined n ns =
     else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
 
 -- TODO: Use PW Division 
-wellformedProg' :: Division -> Program' a -> EM ()
-wellformedProg' d = mapM_ wellformedBlock'
+wellformedProg' :: Ord a => DivisionPW a -> Program' a -> EM ()
+wellformedProg' pwd = mapM_ wellformedBlock'
   where 
     wellformedBlock' b = do
-      wellformedFrom' d $ from' b
-      mapM_ (wellformedStep' d) $ body' b
-      wellformedJump' d $ jump' b
+      let (d1, d2) = getDivs (name' b) pwd
+      wellformedFrom' d1 $ from' b
+      mapM_ (wellformedStep' d1 d2) $ body' b
+      wellformedJump' d2 $ jump' b
 
 wellformedFrom' :: Division -> ComeFrom' a -> EM ()
 wellformedFrom' _ Entry'         = return ()
@@ -111,20 +112,20 @@ wellformedFrom' d (Fi' l e _ _) =
      if l == l' then return ()
      else Left "From mismatch."
 
-wellformedStep' :: Division -> Step' -> EM ()
-wellformedStep' _ (Skip' _) = return ()
-wellformedStep' d (Assert' l e) = 
+wellformedStep' :: Division -> Division -> Step' -> EM ()
+wellformedStep' _ _ (Skip' _) = return ()
+wellformedStep' d _ (Assert' l e) = 
   do l' <- wellformedExp' d e
      if l == l' then return ()
      else Left "Assert mismatch" 
-wellformedStep' d (Update' l n _ e) =
+wellformedStep' d _ (Update' l n _ e) =
   do l' <- wellformedExp' d e
      if l == l' && l == getType n d
       then return ()
       else Left "Update mismatch."
-wellformedStep' d (Replacement' l p1 p2) =
-  do l1 <- wellformedPat' d p1
-     l2 <- wellformedPat' d p2
+wellformedStep' d1 d2 (Replacement' l p1 p2) =
+  do l1 <- wellformedPat' d2 p1
+     l2 <- wellformedPat' d1 p2
      if l == l1 && l1 == l2
       then return ()
       else Left "Pattern mismatch."

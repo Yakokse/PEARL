@@ -58,6 +58,12 @@ findDyn n s =
 find' :: Name -> Store -> SpecValue
 find' = Map.findWithDefault Dynamic
 
+findErr ::  Store -> Name -> Value
+findErr s n =
+  case Map.lookup n s of 
+    Just (Static v) -> v
+    _ -> error "static variable not found during lookup"
+
 vars :: Store -> [Name]
 vars = Map.keys
 

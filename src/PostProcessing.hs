@@ -1,13 +1,15 @@
 module PostProcessing where
 import AST
+import AST2 
 import Utils
-import Data.List (elemIndex)
+import qualified Data.List as L
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import Values
 import Operators
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe, fromJust)
+
 
 -- TODO: Merge all explicicators, check for multiexit
 
@@ -73,20 +75,59 @@ constFold p = concat <$> mapM constFoldB p
         (Left err, _) -> 
           logM ("Error during constant propagation: " ++ err) >> return []
 
--- liftStore :: Program (Annotated a) -> Program (Annotated a)
--- liftStore (decl, p) = (decl, map appendStore p)
---   where 
---     appendStore b 
---       | not $ isExit b = b
---       | otherwise = b {
---           body = body b ++ inline (getStore $ name b)
---       }
---     isOut n = n `elem` output decl
---     inline = foldr (\(n,v) acc -> 
---                       if isOut n
---                         then Update n Xor (Const v) : acc
---                         else acc) 
---                     [] . storeToList
+
+mergeExplicators :: Ord a => (a -> Int -> a) -> [Block (Explicated a) (Maybe Store)] -> [Block (Explicated a)(Maybe Store)] 
+mergeExplicators annotateExpl p = 
+  let (expl, rest) = L.partition (\b -> case fst $ name b of 
+                                      Regular _ -> False; _ -> True) p
+      explLabel = getLabel . fst . name
+      explGroups' = L.groupBy (\b1 b2 -> explLabel b1 == explLabel b2) $ 
+                    L.sortBy (\b1 b2 -> explLabel b1 `compare` explLabel b2) expl
+      origins = map (name . head) explGroups'
+      dests = map (head . jumpLabels . jump . head) explGroups'
+      nss = map (getVars . fst) origins
+      explGroups = map (\es -> zipWith (\e i -> (e, i, i)) es [1..] ) explGroups'
+      (finals, _, _, _, extras) = L.unzip5 $ zipWith mergeGroup nss explGroups
+      corrections = zipWith3 (\d o b -> (d, o, name b)) dests origins finals
+  in map (correctBlock corrections) rest ++ finals ++ concat extras
+    where 
+      getLabel n = case n of 
+                       Regular l -> l 
+                       Explicator l _ -> l
+      getVars n = case n of 
+                       Regular _ -> []
+                       Explicator _ ns -> ns
+      getStore = fromJust . snd . name
+      fst3 (a, _, _) = a
+      correctBlock corrections b@Block {name = l, jump = j} =
+        case L.find (\(l',_, _) -> l == l') corrections of 
+          Just (_, orig, new) -> b{jump = mapJump (correctJump orig new) j}
+          Nothing -> b
+      correctJump orig new l = if l == orig then new else l
+      mergeGroup _ [] = undefined
+      mergeGroup _ [(b, lb, ub)] = (b, lb, ub, [getStore b], [])
+      mergeGroup ns es = 
+        let len = length es `div` 2
+            (b1, lb1, ub1, ss1, bs1) = mergeGroup ns $ take len es
+            (b2, lb2, ub2, ss2, bs2) = mergeGroup ns $ drop len es
+            (lb, ub) = (min lb1 lb2, max ub1 ub2)
+            (l, _) = name $ fst3 $ head es
+            l' = annotateExpl (annotateExpl (getLabel l) lb) ub
+            newName = (Explicator l' ns, Nothing)
+            newJump = Goto newName
+            b1' = b1 { jump = newJump}
+            b2' = b2 { jump = newJump}
+            vals = map (\store -> map (findErr store) ns) ss1
+            comps = map (zipWith (\n v -> Op Equal (Var n) (Const v)) ns) vals
+            conjs = map (foldl1 (Op And)) comps
+            expr = foldl1 (Op Or) conjs
+            newBlock = Block 
+              { name = newName
+              , from = Fi expr (name b1) (name b2)
+              , body = []
+              , jump = jump b1 
+              }
+        in (newBlock, lb, ub, ss1++ss2, b1':b2':bs1++bs2)
 
 removeDeadBlocks :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 removeDeadBlocks p = 
@@ -161,7 +202,7 @@ enumerateAnn :: Ord b => [Block a b] -> [Block a Int]
 enumerateAnn p = 
   let stores = Set.toList . Set.fromList $ map (snd . name) p
       enum s = 
-        case elemIndex s stores of
+        case L.elemIndex s stores of
           Just i -> i+1
           Nothing -> 0
   in mapProgStore enum p
