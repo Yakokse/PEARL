@@ -7,12 +7,14 @@ import Values
 import Division
 import Data.Maybe (catMaybes)
 
+-- add explicators for a given RL2 program
 explicate :: Eq a => Program' a -> (a -> Int -> a) -> Program' (Explicated a)
 explicate p f = 
   let (renames', blocks') = unzip $ map (explicateBlock p f) p
       (renames, blocks) = (concat renames', concat blocks')
   in fixComeFroms renames blocks
 
+-- fix come-froms for blocks where an explicator was inserted before it
 fixComeFroms :: Eq a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
                      -> Program' (Explicated a)
 fixComeFroms [] bs = bs
@@ -26,6 +28,9 @@ fixComeFroms ((l, (target, replace)) : ls) bs =
     fixFrom (From' l') = From' (fixLabel l')
     fixFrom (Fi' e t l1 l2) = Fi' e t (fixLabel l1) (fixLabel l2)
 
+-- "Explicate" a single block
+-- returning the block along with possible explicators
+-- + some extra information for relabelling
 explicateBlock :: Eq a => Program' a -> (a -> Int -> a) -> Block' a 
                        -> ([(Explicated a, (Explicated a, Explicated a))], [Block' (Explicated a)])
 explicateBlock p f b@Block'{name' = src, jump' = j, endDiv = d2} = 
@@ -43,6 +48,8 @@ explicateBlock p f b@Block'{name' = src, jump' = j, endDiv = d2} =
     renameOrigJump _ (Just expl) = name' expl
     renameInfo x = (head . jumpLabels' $ jump' x, (head . fromLabels' $ from' x, name' x))
 
+-- For a given jump, give the list of variables that need to be generalized
+-- in each label
 toBeExplicated :: Eq a => Program' a -> Division -> Jump' a -> Jump' [Name]
 toBeExplicated p d j = 
   let nextdivs = mapJump' (divisionToList . initDiv . getBlockUnsafe' p ) j
@@ -58,6 +65,7 @@ toBeExplicated p d j =
                             )) notMatching
   in explicators
 
+-- create an explicator block for generalizing variables
 createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a 
                          -> (a, [Name]) -> Int -> (a, Maybe (Block' (Explicated a)))
 createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
@@ -71,11 +79,13 @@ createExplicator p f src (dest, ns) idx = (dest, return (Block'
   }))
     where initVar n = Update' BTDynamic n Xor (Lift (Var' BTStatic n))
 
+-- annotate jump labels and distinguish between paths
 mapJumpInt :: (a -> Int -> b) -> Jump' a -> Jump' b
 mapJumpInt _ Exit' = Exit'
 mapJumpInt f (Goto' l) = Goto' (f l 1)
 mapJumpInt f (If' l e l1 l2) = If' l e (f l1 1) (f l2 2)
 
+-- combine labels of two jumps with a function
 combineJumpWith :: (a -> b -> c) -> Jump' a -> Jump' b -> Jump' c
 combineJumpWith _ Exit' Exit' = Exit'
 combineJumpWith f (Goto' l1) (Goto' l2) = Goto' (f l1 l2)

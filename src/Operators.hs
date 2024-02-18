@@ -3,6 +3,7 @@ module Operators where
 import AST
 import Values
 
+-- definition of binary operators
 calc :: BinOp -> Value -> Value -> EM Value
 calc (ROp r) a b = calcR r a b
 calc Mul     a b = 
@@ -33,6 +34,7 @@ calc Index   a b =
       do (_, tl) <- getPair vs
          index tl (n-1)
 
+-- definition of reversible binary operators
 calcR :: RevOp -> Value -> Value -> EM Value
 calcR Add a b = 
   do x <- getNum a; y <- getNum b; return . Num $ x + y
@@ -45,23 +47,28 @@ calcR Xor a b
   | otherwise = Left "Xor on non-matching elements"
   -- if a == b then return Nil else do isNil a; return b
 
+-- definition of unary operators
 calcU :: UnOp -> Value -> EM Value
 calcU Hd v = do (hd, _) <- getPair v; return hd
 calcU Tl v = do (_, tl) <- getPair v; return tl
 calcU Not v = return . boolify . not . truthy $ v
 
+-- Make a value into an int
 getNum :: Value -> EM IntType
 getNum (Num i) = return i
 getNum _ = Left "Expected an integer." 
 
+-- make a value into an atom
 getAtom :: Value -> EM String
 getAtom (Atom a) = return a
 getAtom _ = Left "Expected an atom." 
 
+-- make a value into two values
 getPair :: Value -> EM (Value, Value)
 getPair (Pair v1 v2) = return (v1, v2)
 getPair _ = Left "Expected a pair." 
 
+-- assert that a value is nil
 isNil :: Value -> EM ()
 isNil Nil = return ()
 isNil _ = Left "Expected value to be nil."

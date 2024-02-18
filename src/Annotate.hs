@@ -5,9 +5,11 @@ import AST2
 import Division
 import Values
 
+-- Annotate a normalized program
 annotateProg :: Ord a => DivisionPW a -> NormProgram a -> Program' a
 annotateProg d (_, p)= map (annotateBlock d) p
 
+-- Annotate a normalized block
 annotateBlock :: Ord a => DivisionPW a -> NormBlock a -> Block' a
 annotateBlock pwd b = 
   Block' 
@@ -15,13 +17,13 @@ annotateBlock pwd b =
     , initDiv = d1
     , from' = annotateFrom d1 $ nfrom b
     , body' = [annotateStep d1 d2 $ nstep b]
-    , jump' = annotateGoto d2 $ njump b
+    , jump' = annotateJump d2 $ njump b
     , endDiv = d2
     } 
   where 
     (d1, d2) = getDivs (nname b) pwd
     
-
+-- Annotate a step
 annotateStep :: Division -> Division -> Step -> Step'
 annotateStep d1 _ (Update n rop e) = 
   case getType n d1 of
@@ -39,6 +41,7 @@ annotateStep d1 _ (Assert e) =
   in Assert' btType e'
 annotateStep _ _ Skip = Skip' BTStatic               
 
+-- Annotate a come-from
 annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
 annotateFrom _ (Entry ()) = Entry'
 annotateFrom _ (From (l, ())) = From' l
@@ -46,24 +49,15 @@ annotateFrom d (Fi e (l1, ()) (l2, ())) =
   let (e', btType) = annotateExp d e 
   in Fi' btType e' l1 l2
 
-annotateGoto :: Division -> Jump a () -> Jump' a
-annotateGoto _ (Exit ()) = Exit'
-annotateGoto _ (Goto (l, ())) = Goto' l
-annotateGoto d (If e (l1, ()) (l2, ())) =
+-- Annotate a jump
+annotateJump :: Division -> Jump a () -> Jump' a
+annotateJump _ (Exit ()) = Exit'
+annotateJump _ (Goto (l, ())) = Goto' l
+annotateJump d (If e (l1, ()) (l2, ())) =
   let (e', btType) = annotateExp d e 
   in If' btType e' l1 l2
 
--- annotatePat :: Division -> Pattern -> (Pattern', Level)
--- annotatePat _ (QConst v) = (QConst' BTStatic v, BTStatic)
--- annotatePat d (QVar n) = 
---   let btType = getType n d 
---   in (QVar' btType n, btType)  
--- annotatePat d (QPair q1 q2) = 
---   let (q1', t1) = annotatePat d q1
---       (q2', t2) = annotatePat d q2 
---       t = t1 `lub` t2
---   in (QPair' t q1' q2', t)
-
+-- Annotate patterns with precision
 annotatePats :: (Pattern, Division) -> (Pattern, Division) -> (Pattern', Pattern', Level)
 annotatePats (QPair q1 q2, d1) (QPair q3 q4, d2) = 
   let (q1', q3', t1) = annotatePats (q1, d1) (q3, d2)
@@ -74,21 +68,24 @@ annotatePats (q1, d1) (q2, d2)
   | isDynPat q1 d1 || isDynPat q2 d2 = (annotateDynamic q1, annotateDynamic q2, BTDynamic)
   | otherwise = (annotateStatic q1, annotateStatic q2, BTStatic)
   where 
+    -- Annotate whole pattern as dynamic
     annotateDynamic (QConst v) = QConst' BTDynamic v
     annotateDynamic (QVar n) = QVar' BTDynamic n
     annotateDynamic (QPair l r) = 
       QPair' BTDynamic (annotateDynamic l) (annotateDynamic r)
+    -- Annotate whole pattern as static
     annotateStatic (QConst v) = QConst' BTStatic v
     annotateStatic (QVar n) = QVar' BTStatic n
     annotateStatic (QPair l r) = 
       QPair' BTStatic (annotateStatic l) (annotateStatic r)
 
-
+-- Is the pattern at least partially dynamic
 isDynPat :: Pattern -> Division -> Bool
 isDynPat (QConst _) _ = False
 isDynPat (QVar n) d = isType n BTDynamic d
 isDynPat (QPair q1 q2) d = isDynPat q1 d || isDynPat q2 d
 
+-- Annotate an expression
 annotateExp :: Division -> Expr -> (Expr', Level)
 annotateExp _ (Const i) = (Const' BTStatic i, BTStatic)
 annotateExp d (Var n) = 
@@ -104,6 +101,7 @@ annotateExp d (UOp op e) =
   let (e', btType) = annotateExp d e 
   in (UOp' btType op e', btType)
 
+-- Lift static expressions
 lift :: (Expr', Level) -> Expr'
 lift (e, BTStatic) = Lift e
 lift (e, BTDynamic) = e

@@ -9,6 +9,8 @@ import Values
 import Operators
 import Data.Maybe (fromMaybe, mapMaybe)
 
+-- Constant folding of an expression
+-- Logging included
 constFoldE :: Expr -> LEM Expr 
 constFoldE (Const v) = return $ Const v
 constFoldE (Var n)   = return $ Var n
@@ -34,6 +36,8 @@ constFoldE (Op op e1 e2) = do
       logM "'Or' reduced." >> return (if truthy v then Const trueV else e1')
     _ -> return $ Op op e1' e2'
 
+-- Do constant folding in a program, removing blocks that fail assertions
+-- Logging included
 constFold :: [Block a b] -> LEM [Block a b]
 constFold p = concat <$> mapM constFoldB p
   where 
@@ -72,6 +76,7 @@ constFold p = concat <$> mapM constFoldB p
           logM ("Error during constant propagation: " ++ err) >> return []
 
 
+-- Merge all explicator blocks
 mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) Store] -> [Block (Explicated a) Store] 
 mergeExplicators annotateExpl p = 
   let (expl, rest) = L.partition (\b -> case fst $ name b of 
@@ -104,11 +109,12 @@ mergeExplicators annotateExpl p =
           Nothing -> b
       correctJump orig new l = if l == orig then new else l    
 
+-- Merge all residual exits into a single one and
+-- generalize the static output variables that differ between exits
 mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a Store -> (Program a Store, [(Name, SpecValue)])
 mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) = 
   let (exits, rest) = L.partition isExit p
       stores = map (storeToList . getExitStore) exits
-      -- TODO: one tmp is static nil, other is dynamic?
       ns = map fst $ head stores
       vals = map (map snd) stores
       tpls = zip ns $ L.transpose vals
@@ -131,6 +137,7 @@ mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp =
     annotateExit' b = annotateExit $ label b
     mergeBlocks' = mergeBlocks annotateExit' getExitStore
 
+-- Generalized block merging 
 mergeBlocks :: (Block a Store -> Int -> Int -> a) -> (Block a Store -> Store) -> [Name] -> [(Block a Store, Int, Int)] 
                 -> (Block a Store, Int, Int, [Store], [Block a Store])
 mergeBlocks _ _ _ [] = undefined
@@ -158,6 +165,7 @@ mergeBlocks annotateLab getStore ns es =
         }
   in (newBlock, lb, ub, ss1++ss2, b1':b2':bs1++bs2)
 
+-- Remove all blocks that can never reach an exit
 removeDeadBlocks :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 removeDeadBlocks p = 
   let bs = filter isExit p
@@ -171,6 +179,7 @@ removeDeadBlocks p =
         let new = mapMaybe (getBlock p) $ fromLabels $ from b
         in traceProg (new ++ bs) (b:res)
 
+-- Fix malformed jumps and come-froms
 changeConditionals :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 changeConditionals prog = map changeCond prog
   where
@@ -191,6 +200,7 @@ changeConditionals prog = map changeCond prog
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
 
+-- Compress blocks that chain together
 compressPaths :: (Ord a, Ord b) => [Block a b] -> EM [Block a b]
 compressPaths p = 
   do entry <- getEntryBlock p
@@ -227,6 +237,7 @@ compressPaths p =
                   Just _ -> ([b], [l])
                   Nothing -> ([b], [])
 
+-- Transform the store annotations into integers.
 enumerateAnn :: Ord b => [Block a b] -> [Block a Int]
 enumerateAnn p = 
   let stores = L.nub $ map (snd . name) p

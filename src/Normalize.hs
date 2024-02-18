@@ -3,9 +3,12 @@ module Normalize (normalize) where
 import AST
 import Utils
 
+-- normalize a program
 normalize :: Eq a => a -> Program a () -> (a -> Int -> a) -> NormProgram a
 normalize entry (decl, prog) f = (decl, pad entry $ concatMap (normalizeBlock prog f) prog)
 
+-- add an extra nop block in the beginning of a program
+-- for room for explicator in beginning of program
 pad :: Eq a => a -> [NormBlock a] -> [NormBlock a]
 pad entryLabel prog = 
   let first = getNEntryBlock prog
@@ -15,6 +18,7 @@ pad entryLabel prog =
       padding = NormBlock entryLabel (Entry ()) Skip (Goto (l, ()))
   in [padding, first'] ++ rest
 
+-- normalize a block, transforming each step into its own block
 normalizeBlock :: Eq a => [Block a ()] -> (a -> Int -> a) -> Block a () -> [NormBlock a]
 normalizeBlock prog f Block{name = (l, ()), from = k, body = b, jump = j} = 
   zipWith normalizeStep b' [1..] 
@@ -25,6 +29,7 @@ normalizeBlock prog f Block{name = (l, ()), from = k, body = b, jump = j} =
           j' = if n == length b' then normalizeJump f j else Goto (f l (n+1), ())
       in NormBlock (f l n) k' step j'
 
+-- point come-from labels to the correct normalized block
 normalizeFrom :: (Eq a, Eq b) => [Block a b] -> (a -> Int -> a) -> ComeFrom a b -> ComeFrom a b
 normalizeFrom prog f k = 
   case k of
@@ -37,6 +42,7 @@ normalizeFrom prog f k =
       let b = getBlockUnsafe prog (l, s)
       in (f l (length' $ body b), s)
 
+-- point jump labels to correct normalized block
 normalizeJump :: (a -> Int -> a) -> Jump a b -> Jump a b
 normalizeJump _ (Exit s) = Exit s
 normalizeJump f (Goto (l,s)) = Goto (f l 1, s)

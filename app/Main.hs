@@ -231,10 +231,7 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      writeOutput v outputPath out
 
 btaUniform, btaPW :: NormProgram Label -> Division -> DivisionPW Label
-btaUniform p d = 
-  let ud = makeCongruent p d
-  in congruentUniformDiv p ud
-
+btaUniform = congruentUniformDiv
 btaPW p d = 
   let initd = initPWDiv p d
   in makeCongruentPW p initd
