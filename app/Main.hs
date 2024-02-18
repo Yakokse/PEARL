@@ -251,30 +251,37 @@ specMain2 specOpts decl prog2 store =
               return $ prettyProg id (resdecl, clean)
       else specmain3 specOpts decl (resdecl, resbody)
 
+-- Merge explicators before removing dead blocks/jump fixing
 specmain3 :: SpecOptions -> VariableDecl -> Program (Explicated Label) (Maybe Store) -> IO String
 specmain3 specOpts origdecl prog' = 
   let v = specVerbose specOpts
   in
-  do let (decl, prog) = prog'
-     trace v "- POST PROCESSING"
-     let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
+  do trace v "- POST PROCESSING"
+     (prog, staticVals) <- specPostProcess v origdecl prog'
+     printStaticOutput origdecl staticVals
+     return $ prettyProg id prog
+
+specPostProcess :: Bool -> VariableDecl -> Program (Explicated Label) (Maybe Store)
+                -> IO (Program Label (), [(Name, SpecValue)])
+specPostProcess v origdecl (decl, prog) = 
+  do let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
      showLength prog
      trace v "- Folding constants"
      (folded, out) <- fromLEM "Folding" $ constFold prog
      trace v $ "Expressions reduced: " ++ show (length out)
-     trace v "- Removing dead blocks"
-     let liveProg = removeDeadBlocks folded
-     showLength liveProg
-     trace v "- Adding assertions / Making blocks wellformed"
-     let withAssertions = changeConditionals liveProg
-     let cleanStores = mapProgStore (fromMaybe emptyStore) withAssertions
      trace v "- Merging explicitors"
+     let cleanStores = mapProgStore (fromMaybe emptyStore) folded
      let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
      let merged = mapLabel (serializeExpl id) merged'
      showLength merged
+     trace v "- Removing dead blocks"
+     let liveProg = removeDeadBlocks merged
+     showLength liveProg
+     trace v "- Adding assertions / Making blocks wellformed"
+     let withAssertions = changeConditionals liveProg
      trace v "- Merging exits"
      let ((decl', singleExit), staticVals) = 
-            mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, merged)
+            mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, withAssertions)
      showLength singleExit
      trace v "- Compressing paths"
      compressed <- fromEM "Path compression" $ compressPaths singleExit
@@ -282,8 +289,7 @@ specmain3 specOpts origdecl prog' =
      trace v "- Cleaning names"
      let numeratedStore = enumerateAnn compressed
      let clean = mapCombine (\l s -> l ++ "_" ++ show s) numeratedStore
-     printStaticOutput origdecl staticVals
-     return $ prettyProg id (decl', clean)
+     return ((decl', clean), staticVals)
 
 printStaticOutput :: VariableDecl -> [(Name, SpecValue)] -> IO ()
 printStaticOutput decl tpls =
@@ -337,20 +343,9 @@ benchMain BenchOptions { benchFile     = inputPath
     specialize' mode d p s = 
       do trace v $ "Specializing " ++ mode
          fromLEM "specializing" $ specialize d p s (Regular "entry")
-    postprocess mode origdecl (specdecl, p) = 
+    postprocess mode origdecl prog = 
       do trace v $ "Postprocessing " ++ mode
-         (folded, _) <- fromLEM "Folding" $ constFold p
-         let live = removeDeadBlocks folded
-         let withAssertions = changeConditionals live
-         let cleanStores = mapProgStore (fromMaybe emptyStore) withAssertions
-         let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
-         let merged = mapLabel (serializeExpl id) merged'
-         let ((decl', singleExit), staticVals) = 
-                mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (specdecl, merged)
-         compressed <- fromEM "Path compression" $ compressPaths singleExit
-         let numeratedStore = enumerateAnn compressed
-         let clean = mapCombine (\l s -> l ++ "_" ++ show s) numeratedStore
-         return ((decl', clean), staticVals)
+         specPostProcess False origdecl prog
 
 
 makeSpecStore :: VariableDecl -> Store -> Store

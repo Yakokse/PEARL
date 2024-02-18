@@ -84,12 +84,13 @@ mergeExplicators annotateExpl p =
       explLabel = getLabel . fst . name
       explGroups' = L.groupBy (\b1 b2 -> explLabel b1 == explLabel b2) $ 
                     L.sortBy (\b1 b2 -> explLabel b1 `compare` explLabel b2) expl
-      origins = map (name . head) explGroups'
+      originss = map (map name) explGroups'
+      origins = map head originss
       dests = map (head . jumpLabels . jump . head) explGroups'
       nss = map (getVars . fst) origins
       explGroups = map (\es -> zipWith (\e i -> (e, i, i)) es [1..] ) explGroups'
       (finals, _, _, _, extras) = L.unzip5 $ zipWith mergeGroup nss explGroups
-      corrections = zipWith3 (\d o b -> (d, o, name b)) dests origins finals
+      corrections = zipWith3 (\d o b -> (d, o, name b)) dests originss finals
   in map (correctBlock corrections) rest ++ finals ++ concat extras
     where 
       getLabel n = case n of 
@@ -103,11 +104,11 @@ mergeExplicators annotateExpl p =
         let l =  label b
         in Explicator (annotateExpl (getLabel l) lb ub) (getVars l)
       mergeGroup = mergeBlocks annotateBlock getStore
-      correctBlock corrections b@Block {name = l, jump = j} =
+      correctBlock corrections b@Block {name = l, from = k} =
         case L.find (\(l',_, _) -> l == l') corrections of 
-          Just (_, orig, new) -> b{jump = mapJump (correctJump orig new) j}
+          Just (_, origs, new) -> b{from = mapFrom (correctFroms origs new) k}
           Nothing -> b
-      correctJump orig new l = if l == orig then new else l    
+      correctFroms origs new l = if l `elem` origs then new else l    
 
 -- Merge all residual exits into a single one and
 -- generalize the static output variables that differ between exits
