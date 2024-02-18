@@ -1,349 +1,360 @@
-(n) -> (nums exit_control_var) with (tmp)
+(n raise) -> (nums seed) with (tmp)
 
-init_9:
+init_1:
 	entry
-	(n . nums) <- (n . nums)
+	nums ^= 'nil
+	nums ^= raise
 	if (n = '0)
-		goto stop_9
-		else loop_9
+		goto init_1_1_expl_2
+		else init_1_2_expl_2
 
-loop_9:
+init_1_1_expl_2:
+	from init_1
+	tmp ^= 'nil
+	goto stop_1_3
+
+stop_1_3:
 	fi nums
-		from loop_4
-		else init_9
+		from loop_1_18
+		else init_1_1_expl_2
+	n ^= '0
+	seed ^= '(1.(0.(0.(1.nil))))
+	goto stop_1_x14_15_4
+
+stop_1_x14_15_4:
+	fi (seed = '(0.(1.(0.(0.nil)))))
+		from stop_1_18
+		else stop_1_3
+	goto stop_1_x12_15_4
+
+stop_1_x12_15_4:
+	fi ((seed = '(0.(0.(0.(1.nil))))) || (seed = '(0.(0.(1.(0.nil))))))
+		from stop_1_x12_13_4
+		else stop_1_x14_15_4
+	goto stop_1_x8_15_4
+
+stop_1_x8_15_4:
+	fi ((((seed = '(1.(1.(1.(1.nil))))) || (seed = '(1.(1.(1.(0.nil)))))) || (seed = '(1.(1.(0.(0.nil)))))) || (seed = '(1.(0.(0.(0.nil))))))
+		from stop_1_x8_11_4
+		else stop_1_x12_15_4
+	goto stop_1_x1_15_4
+
+stop_1_x1_15_4:
+	fi (((((((seed = '(0.(0.(1.(1.nil))))) || (seed = '(0.(1.(1.(0.nil)))))) || (seed = '(1.(1.(0.(1.nil)))))) || (seed = '(1.(0.(1.(0.nil)))))) || (seed = '(0.(1.(0.(1.nil)))))) || (seed = '(1.(0.(1.(1.nil)))))) || (seed = '(0.(1.(1.(1.nil))))))
+		from stop_1_x1_7_4
+		else stop_1_x8_15_4
+	exit
+
+init_1_2_expl_2:
+	from init_1
+	tmp ^= 'nil
+	goto loop_1_3
+
+loop_1_3:
+	fi nums
+		from loop_1_18
+		else init_1_2_expl_2
 	tmp ^= '(1.(0.(0.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_3
-		else loop_3
+		goto stop_1_5
+		else loop_1_5
 
-loop_3:
-	from loop_9
+stop_1_5:
+	from loop_1_3
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(0.(1.(1.nil))))
+	goto stop_1_x1_3_4
+
+stop_1_x1_3_4:
+	fi (seed = '(0.(0.(1.(1.nil)))))
+		from stop_1_5
+		else stop_1_x2_3_4
+	goto stop_1_x1_7_4
+
+stop_1_x1_7_4:
+	fi (((seed = '(0.(0.(1.(1.nil))))) || (seed = '(0.(1.(1.(0.nil)))))) || (seed = '(1.(1.(0.(1.nil))))))
+		from stop_1_x1_3_4
+		else stop_1_x4_7_4
+	goto stop_1_x1_15_4
+
+loop_1_5:
+	from loop_1_3
 	assert(nums)
 	tmp ^= '(0.(0.(1.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_6
-		else loop_6
+		goto stop_1_6
+		else loop_1_6
 
-loop_6:
-	from loop_3
+stop_1_6:
+	from loop_1_5
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(1.(1.(0.nil))))
+	goto stop_1_x2_3_4
+
+stop_1_x2_3_4:
+	fi (seed = '(0.(1.(1.(0.nil)))))
+		from stop_1_6
+		else stop_1_7
+	goto stop_1_x1_3_4
+
+loop_1_6:
+	from loop_1_5
 	assert(nums)
 	tmp ^= '(0.(1.(1.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_13
-		else loop_13
+		goto stop_1_7
+		else loop_1_7
 
-loop_13:
-	from loop_6
+stop_1_7:
+	from loop_1_6
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(1.(0.(1.nil))))
+	goto stop_1_x2_3_4
+
+loop_1_7:
+	from loop_1_6
 	assert(nums)
 	tmp ^= '(1.(1.(0.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_10
-		else loop_10
+		goto stop_1_8
+		else loop_1_8
 
-loop_10:
-	from loop_13
+stop_1_8:
+	from loop_1_7
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(0.(1.(0.nil))))
+	goto stop_1_x4_5_4
+
+stop_1_x4_5_4:
+	fi (seed = '(1.(0.(1.(0.nil)))))
+		from stop_1_8
+		else stop_1_9
+	goto stop_1_x4_7_4
+
+stop_1_x4_7_4:
+	fi ((seed = '(1.(0.(1.(0.nil))))) || (seed = '(0.(1.(0.(1.nil))))))
+		from stop_1_x4_5_4
+		else stop_1_x6_7_4
+	goto stop_1_x1_7_4
+
+loop_1_8:
+	from loop_1_7
 	assert(nums)
 	tmp ^= '(1.(0.(1.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_5
-		else loop_5
+		goto stop_1_9
+		else loop_1_9
 
-loop_5:
-	from loop_10
+stop_1_9:
+	from loop_1_8
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(1.(0.(1.nil))))
+	goto stop_1_x4_5_4
+
+loop_1_9:
+	from loop_1_8
 	assert(nums)
 	tmp ^= '(0.(1.(0.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_11
-		else loop_11
+		goto stop_1_10
+		else loop_1_10
 
-loop_11:
-	from loop_5
+stop_1_10:
+	from loop_1_9
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(0.(1.(1.nil))))
+	goto stop_1_x6_7_4
+
+stop_1_x6_7_4:
+	fi (seed = '(1.(0.(1.(1.nil)))))
+		from stop_1_10
+		else stop_1_11
+	goto stop_1_x4_7_4
+
+loop_1_10:
+	from loop_1_9
 	assert(nums)
 	tmp ^= '(1.(0.(1.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_7
-		else loop_7
+		goto stop_1_11
+		else loop_1_11
 
-loop_7:
-	from loop_11
+stop_1_11:
+	from loop_1_10
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(1.(1.(1.nil))))
+	goto stop_1_x6_7_4
+
+loop_1_11:
+	from loop_1_10
 	assert(nums)
 	tmp ^= '(0.(1.(1.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_15
-		else loop_15
+		goto stop_1_12
+		else loop_1_12
 
-loop_15:
-	from loop_7
+stop_1_12:
+	from loop_1_11
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(1.(1.(1.nil))))
+	goto stop_1_x8_9_4
+
+stop_1_x8_9_4:
+	fi (seed = '(1.(1.(1.(1.nil)))))
+		from stop_1_12
+		else stop_1_13
+	goto stop_1_x8_11_4
+
+stop_1_x8_11_4:
+	fi ((seed = '(1.(1.(1.(1.nil))))) || (seed = '(1.(1.(1.(0.nil))))))
+		from stop_1_x8_9_4
+		else stop_1_x10_11_4
+	goto stop_1_x8_15_4
+
+loop_1_12:
+	from loop_1_11
 	assert(nums)
 	tmp ^= '(1.(1.(1.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_14
-		else loop_14
+		goto stop_1_13
+		else loop_1_13
 
-loop_14:
-	from loop_15
+stop_1_13:
+	from loop_1_12
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(1.(1.(0.nil))))
+	goto stop_1_x8_9_4
+
+loop_1_13:
+	from loop_1_12
 	assert(nums)
 	tmp ^= '(1.(1.(1.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_12
-		else loop_12
+		goto stop_1_14
+		else loop_1_14
 
-loop_12:
-	from loop_14
+stop_1_14:
+	from loop_1_13
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(1.(0.(0.nil))))
+	goto stop_1_x10_11_4
+
+stop_1_x10_11_4:
+	fi (seed = '(1.(1.(0.(0.nil)))))
+		from stop_1_14
+		else stop_1_15
+	goto stop_1_x8_11_4
+
+loop_1_14:
+	from loop_1_13
 	assert(nums)
 	tmp ^= '(1.(1.(0.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_8
-		else loop_8
+		goto stop_1_15
+		else loop_1_15
 
-loop_8:
-	from loop_12
+stop_1_15:
+	from loop_1_14
+	assert(nums)
+	n ^= '0
+	seed ^= '(1.(0.(0.(0.nil))))
+	goto stop_1_x10_11_4
+
+loop_1_15:
+	from loop_1_14
 	assert(nums)
 	tmp ^= '(1.(0.(0.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_1
-		else loop_1
+		goto stop_1_16
+		else loop_1_16
 
-loop_1:
-	from loop_8
+stop_1_16:
+	from loop_1_15
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(0.(0.(1.nil))))
+	goto stop_1_x12_13_4
+
+stop_1_x12_13_4:
+	fi (seed = '(0.(0.(0.(1.nil)))))
+		from stop_1_16
+		else stop_1_17
+	goto stop_1_x12_15_4
+
+loop_1_16:
+	from loop_1_15
 	assert(nums)
 	tmp ^= '(0.(0.(0.(1.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_2
-		else loop_2
+		goto stop_1_17
+		else loop_1_17
 
-loop_2:
-	from loop_1
+stop_1_17:
+	from loop_1_16
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(0.(1.(0.nil))))
+	goto stop_1_x12_13_4
+
+loop_1_17:
+	from loop_1_16
 	assert(nums)
 	tmp ^= '(0.(0.(1.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_4
-		else loop_4
+		goto stop_1_18
+		else loop_1_18
 
-loop_4:
-	from loop_2
+stop_1_18:
+	from loop_1_17
+	assert(nums)
+	n ^= '0
+	seed ^= '(0.(1.(0.(0.nil))))
+	goto stop_1_x14_15_4
+
+loop_1_18:
+	from loop_1_17
 	assert(nums)
 	tmp ^= '(0.(1.(0.(0.nil))))
 	nums <- (tmp . nums)
 	n -= '1
 	if (n = '0)
-		goto stop_9
-		else loop_9
-
-exit_merge_0_6:
-	fi (exit_control_var < '3)
-		from exit_merge_0_2
-		else exit_merge_3_6
-	goto exit_merge_0_14
-
-exit_merge_7_14:
-	fi (exit_control_var < '11)
-		from exit_merge_7_10
-		else exit_merge_11_14
-	goto exit_merge_0_14
-
-exit_merge_0_2:
-	fi (exit_control_var < '1)
-		from stop_9
-		else exit_merge_1_2
-	goto exit_merge_0_6
-
-exit_merge_3_6:
-	fi (exit_control_var < '5)
-		from exit_merge_3_4
-		else exit_merge_5_6
-	goto exit_merge_0_6
-
-stop_9:
-	fi nums
-		from loop_4
-		else init_9
-	n ^= '0
-	exit_control_var ^= '0
-	goto exit_merge_0_2
-
-exit_merge_1_2:
-	fi (exit_control_var < '2)
-		from stop_3
-		else stop_6
-	goto exit_merge_0_2
-
-stop_3:
-	from loop_9
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '1
-	goto exit_merge_1_2
-
-stop_6:
-	from loop_3
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '2
-	goto exit_merge_1_2
-
-exit_merge_3_4:
-	fi (exit_control_var < '4)
-		from stop_13
-		else stop_10
-	goto exit_merge_3_6
-
-exit_merge_5_6:
-	fi (exit_control_var < '6)
-		from stop_5
-		else stop_11
-	goto exit_merge_3_6
-
-stop_13:
-	from loop_6
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '3
-	goto exit_merge_3_4
-
-stop_10:
-	from loop_13
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '4
-	goto exit_merge_3_4
-
-stop_5:
-	from loop_10
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '5
-	goto exit_merge_5_6
-
-stop_11:
-	from loop_5
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '6
-	goto exit_merge_5_6
-
-exit_merge_7_10:
-	fi (exit_control_var < '9)
-		from exit_merge_7_8
-		else exit_merge_9_10
-	goto exit_merge_7_14
-
-exit_merge_11_14:
-	fi (exit_control_var < '13)
-		from exit_merge_11_12
-		else exit_merge_13_14
-	goto exit_merge_7_14
-
-exit_merge_7_8:
-	fi (exit_control_var < '8)
-		from stop_7
-		else stop_15
-	goto exit_merge_7_10
-
-exit_merge_9_10:
-	fi (exit_control_var < '10)
-		from stop_14
-		else stop_12
-	goto exit_merge_7_10
-
-stop_7:
-	from loop_11
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '7
-	goto exit_merge_7_8
-
-stop_15:
-	from loop_7
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '8
-	goto exit_merge_7_8
-
-stop_14:
-	from loop_15
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '9
-	goto exit_merge_9_10
-
-stop_12:
-	from loop_14
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '10
-	goto exit_merge_9_10
-
-exit_merge_11_12:
-	fi (exit_control_var < '12)
-		from stop_8
-		else stop_1
-	goto exit_merge_11_14
-
-exit_merge_13_14:
-	fi (exit_control_var < '14)
-		from stop_2
-		else stop_4
-	goto exit_merge_11_14
-
-stop_8:
-	from loop_12
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '11
-	goto exit_merge_11_12
-
-stop_1:
-	from loop_8
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '12
-	goto exit_merge_11_12
-
-stop_2:
-	from loop_1
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '13
-	goto exit_merge_13_14
-
-stop_4:
-	from loop_2
-	assert(nums)
-	n ^= '0
-	exit_control_var ^= '14
-	goto exit_merge_13_14
-
-exit_merge_0_14:
-	fi (exit_control_var < '7)
-		from exit_merge_0_6
-		else exit_merge_7_14
-	exit
+		goto stop_1_3
+		else loop_1_3

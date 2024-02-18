@@ -5,11 +5,20 @@ import AST2
 import Data.List (intercalate)
 import Values
 import Division
-
 type Print a = a -> String
+
+prettyStats :: Stats -> String
+prettyStats Stats{steps = s, jumps = j} =
+  "Total Steps: " ++ show s ++ ", Total Jumps: " ++ show j ++ ", Combined Total: " ++ show total
+    where total = s + j * 2
 
 prettyDiv :: Division -> String
 prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . divisionToList
+  where prettyLvl BTStatic = "BTStatic"
+        prettyLvl BTDynamic = "BTDynamic"
+
+prettyDiv' :: Division -> String
+prettyDiv' = intercalate ", " . map (\(n,t) -> n ++ ": " ++ prettyLvl t) . divisionToList
   where prettyLvl BTStatic = "BTStatic"
         prettyLvl BTDynamic = "BTDynamic"
 
@@ -125,11 +134,12 @@ prettyProg' f p = intercalate "\n" (concatMap (prettyBlock' f) p)
 
 prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b = 
-  (f (name' b) ++ ":") : 
+  (f (name' b) ++ ": " ++ prettyDiv' (initDiv b)) : 
   map ('\t' :) 
     (prettyFrom' f (from' b) 
     ++ map prettyStep' (body' b) 
-    ++ prettyJump' f (jump' b)) ++ [""]
+    ++ prettyJump' f (jump' b)
+    ++ [prettyDiv' (endDiv b)]) ++ [""]
 
 prettyFrom' :: Print a -> ComeFrom' a -> [String]
 prettyFrom' f (From' l)  = ["%from " ++ f l]

@@ -1,4 +1,4 @@
-module Execute (runProgram) where
+module Execute (runProgram, runProgram') where
 
 import AST
 import Operators
@@ -7,12 +7,6 @@ import Utils
 import PrettyPrint
 
 import Control.Monad.State
-
-data Stats = Stats
-  { steps :: Int
-  , jumps :: Int
-  , assertions :: Int
-  } deriving Show
 
 type SLEM = StateT Stats LEM
 
@@ -26,8 +20,17 @@ runProgram :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
 runProgram (decl, prog) inpstore =
   do  entry <- raise $ getEntry prog
       store <- raise $ createStore decl inpstore
-      let res = evalBlocks prog store entry Nothing
+      let res = evalBlocks prog (output decl) store entry Nothing
       runStateT res initStats
+
+runProgram' :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
+runProgram' (decl, prog) store =
+  do  entry <- raise $ getEntry prog
+      let res = evalBlocks prog (output decl) runStore entry Nothing
+      runStateT res initStats
+  where 
+    nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
+    runStore = store `updateWithStore` nilStore
 
 createStore :: VariableDecl -> Store -> EM Store
 createStore decl store =
@@ -42,13 +45,13 @@ createStore decl store =
     in return $ nilStore `updateWithStore` store
     
 evalBlocks :: (Eq a, Show a) => 
-  [Block a ()] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks prog store l origin =
+  [Block a ()] -> [Name] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
+evalBlocks prog outputs store l origin =
   do block <- lift . raise $ getBlockErr prog l
      (label', store') <- evalBlock store block origin
      case label' of
-       Nothing -> return store'
-       Just l'  -> evalBlocks prog store' (l', ()) (Just l)
+       Nothing -> return $ store' `onlyIn` outputs
+       Just l'  -> evalBlocks prog outputs store' (l', ()) (Just l)
 
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock s b l = 
@@ -87,7 +90,7 @@ evalStep s (Assert e) =
   do incAssert
      v <- lift'$ evalExpr s e
      if truthy v then return s
-     else lift' $ Left "failed assertion"
+     else lift' $ Left  $ "failed assertion: " ++ show e
 evalStep s (Replacement q1 q2) =
   do (s1, v) <- lift' $ deconstruct s q2
      lift'$ construct s1 v q1

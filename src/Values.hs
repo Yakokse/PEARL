@@ -9,6 +9,11 @@ type ErrMsg = String
 type EM = Either ErrMsg 
 type Label = String
 
+data Stats = Stats
+  { steps :: Int
+  , jumps :: Int
+  , assertions :: Int
+  } deriving Show
 
 data Value = 
     Atom String
@@ -84,6 +89,12 @@ updateWithStore s1 s2 = Map.union s2 s1
 
 without :: Store -> Name -> Store
 without s n = Map.delete n s
+
+withouts :: Store -> [Name] -> Store
+withouts s ns = Map.filterWithKey (\k _ -> k `notElem` ns) s
+
+onlyIn :: Store -> [Name] -> Store
+onlyIn s ns = Map.filterWithKey (\k _ -> k `elem` ns) s
 
 mapStore :: (Name -> SpecValue -> SpecValue) -> Store -> Store
 mapStore = Map.mapWithKey

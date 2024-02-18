@@ -72,7 +72,7 @@ constFold p = concat <$> mapM constFoldB p
           logM ("Error during constant propagation: " ++ err) >> return []
 
 
-mergeExplicators :: Ord a => (a -> Int -> a) -> [Block (Explicated a) Store] -> [Block (Explicated a) Store] 
+mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) Store] -> [Block (Explicated a) Store] 
 mergeExplicators annotateExpl p = 
   let (expl, rest) = L.partition (\b -> case fst $ name b of 
                                       Regular _ -> False; _ -> True) p
@@ -94,53 +94,32 @@ mergeExplicators annotateExpl p =
                        Regular _ -> []
                        Explicator _ ns -> ns
       getStore = snd . name
-      fst3 (a, _, _) = a
+      annotateBlock b lb ub = 
+        let l =  label b
+        in Explicator (annotateExpl (getLabel l) lb ub) (getVars l)
+      mergeGroup = mergeBlocks annotateBlock getStore
       correctBlock corrections b@Block {name = l, jump = j} =
         case L.find (\(l',_, _) -> l == l') corrections of 
           Just (_, orig, new) -> b{jump = mapJump (correctJump orig new) j}
           Nothing -> b
-      correctJump orig new l = if l == orig then new else l
-      mergeGroup _ [] = undefined
-      mergeGroup _ [(b, lb, ub)] = (b, lb, ub, [getStore b], [])
-      mergeGroup ns es = 
-        let len = length es `div` 2
-            (b1, lb1, ub1, ss1, bs1) = mergeGroup ns $ take len es
-            (b2, lb2, ub2, ss2, bs2) = mergeGroup ns $ drop len es
-            (lb, ub) = (min lb1 lb2, max ub1 ub2)
-            (l, _) = name $ fst3 $ head es
-            l' = annotateExpl (annotateExpl (getLabel l) lb) ub
-            newName = (Explicator l' ns, emptyStore)
-            newJump = Goto newName
-            b1' = b1 { jump = newJump}
-            b2' = b2 { jump = newJump}
-            vals = map (\store -> map (findErr store) ns) ss1
-            comps = map (zipWith (\n v -> Op Equal (Var n) (Const v)) ns) vals
-            conjs = map (foldl1 (Op And)) comps
-            expr = foldl1 (Op Or) conjs
-            newBlock = Block 
-              { name = newName
-              , from = Fi expr (name b1) (name b2)
-              , body = []
-              , jump = jump b1 
-              }
-        in (newBlock, lb, ub, ss1++ss2, b1':b2':bs1++bs2)
+      correctJump orig new l = if l == orig then new else l    
 
-mergeExits :: VariableDecl -> (a -> Int -> a) -> Program a Store -> (Program a Store, [(Name, SpecValue)])
+mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a Store -> (Program a Store, [(Name, SpecValue)])
 mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) = 
   let (exits, rest) = L.partition isExit p
       stores = map (storeToList . getExitStore) exits
+      -- TODO: one tmp is static nil, other is dynamic?
       ns = map fst $ head stores
       vals = map (map snd) stores
       tpls = zip ns $ L.transpose vals
       toFix =  map fst $ filter (\(_,vs) -> any (head vs /=) vs) tpls
       initialized = map (initFix toFix) exits
       explGroups = zipWith (\b i -> (b, i, i)) initialized [1..] 
-      (exit, _, _, _, extras) = mergeBlocks toFix explGroups
+      (exit, _, _, _, extras) = mergeBlocks' toFix explGroups
       newDecl = VariableDecl inp (out ++ toFix) (filter (`notElem` toFix) tmp)
       finalState = filter (\(n,_) -> n `notElem` toFix && n `elem` output origdecl) $ head stores
   in ((newDecl, rest ++ extras ++ [exit] ), finalState)
   where
-    fst3 (a, _, _) = a
     getExitStore b = 
       case jump b of
         Exit s -> s
@@ -149,30 +128,35 @@ mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp =
       let getVal = findErr (getExitStore b)
           initSteps = map (\n -> Update n Xor (Const (getVal n))) toFix
       in b{body = body b ++ initSteps}
-    mergeBlocks _ [] = undefined
-    mergeBlocks _ [(b, lb, ub)] = (b, lb, ub, [getExitStore b], [])
-    mergeBlocks ns es = 
-      let len = length es `div` 2
-          (b1, lb1, ub1, ss1, bs1) = mergeBlocks ns $ take len es
-          (b2, lb2, ub2, ss2, bs2) = mergeBlocks ns $ drop len es
-          (lb, ub) = (min lb1 lb2, max ub1 ub2)
-          (l, _) = name $ fst3 $ head es
-          l' = annotateExit (annotateExit l lb) ub
-          newName = (l', emptyStore)
-          newJump = Goto newName
-          b1' = b1 { jump = newJump}
-          b2' = b2 { jump = newJump}
-          vals = map (\store -> map (findErr store) ns) ss1
-          comps = map (zipWith (\n v -> Op Equal (Var n) (Const v)) ns) vals
-          conjs = map (foldl1 (Op And)) comps
-          expr = foldl1 (Op Or) conjs
-          newBlock = Block 
-            { name = newName
-            , from = Fi expr (name b1) (name b2)
-            , body = []
-            , jump = Exit emptyStore
-            }
-      in (newBlock, lb, ub, ss1++ss2, b1':b2':bs1++bs2)
+    annotateExit' b = annotateExit $ label b
+    mergeBlocks' = mergeBlocks annotateExit' getExitStore
+
+mergeBlocks :: (Block a Store -> Int -> Int -> a) -> (Block a Store -> Store) -> [Name] -> [(Block a Store, Int, Int)] 
+                -> (Block a Store, Int, Int, [Store], [Block a Store])
+mergeBlocks _ _ _ [] = undefined
+mergeBlocks _ getStore _ [(b, lb, ub)] = (b, lb, ub, [getStore b], [])
+mergeBlocks annotateLab getStore ns es = 
+  let len = length es `div` 2
+      (b1, lb1, ub1, ss1, bs1) = mergeBlocks annotateLab getStore ns $ take len es
+      (b2, lb2, ub2, ss2, bs2) = mergeBlocks annotateLab getStore ns $ drop len es
+      (lb, ub) = (min lb1 lb2, max ub1 ub2)
+      (b, _, _) =  head es
+      l' = annotateLab b lb ub
+      newName = (l', emptyStore)
+      newJump = Goto newName
+      b1' = b1 { jump = newJump}
+      b2' = b2 { jump = newJump}
+      vals = map (\store -> map (findErr store) ns) ss1
+      comps = map (zipWith (\n v -> Op Equal (Var n) (Const v)) ns) vals
+      conjs = map (foldl1 (Op And)) comps
+      expr = foldl1 (Op Or) conjs
+      newBlock = Block 
+        { name = newName
+        , from = Fi expr (name b1) (name b2)
+        , body = []
+        , jump = jump b1
+        }
+  in (newBlock, lb, ub, ss1++ss2, b1':b2':bs1++bs2)
 
 removeDeadBlocks :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 removeDeadBlocks p = 

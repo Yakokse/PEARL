@@ -28,6 +28,7 @@ import Control.Monad (when)
 data Options = Specialize SpecOptions 
              | Invert InvertOptions 
              | Interpret InterpretOptions
+             | Bench BenchOptions
 
 data SpecOptions = SpecOptions 
   { specInpFile   :: String
@@ -52,6 +53,14 @@ data InterpretOptions = InterpretOptions
   , intTrace     :: Bool
   , intVerbose   :: Bool
   }
+
+data BenchOptions = BenchOptions
+  { benchFile :: String
+  , benchSpecFile :: String
+  , dynamicVars :: [Name]
+  , benchVerbose :: Bool
+  }
+
 
 specParser :: Parser Options
 specParser = Specialize <$> (SpecOptions
@@ -79,10 +88,9 @@ inverterParser :: Parser Options
 inverterParser = Invert <$> (InvertOptions
               <$> argument str (metavar "<Input RL file>")
               <*> argument str (metavar "<Output path>")
-              <*> option auto (long "verbose"
-                               <> short 'v'
-                               <> value True
-                               <> help "Show messages and info for each phase")
+              <*> flag True False (long "verbose"
+                           <> short 'v'
+                           <> help "Show messages and info for each phase")
               )
 
 interpretParser :: Parser Options
@@ -93,11 +101,24 @@ interpretParser = Interpret <$> (InterpretOptions
                                 <> short 't'
                                 <> value True
                                 <> help "Show trace of execution")
-               <*> option auto (long "verbose"
-                                <> short 'v'
-                                <> value True
-                                <> help "Show messages and info for each phase")                              
+               <*> flag True False (long "verbose"
+                           <> short 'v'
+                           <> help "Show messages and info for each phase")                              
               )
+
+benchParser :: Parser Options
+benchParser = Bench <$> (BenchOptions
+           <$> argument str (metavar "<Input RL file>")
+           <*> argument str (metavar "<Spec file>")
+           <*> option auto ( long "dynvars"
+                             <> short 'd'
+                             <> metavar "LIST"
+                             <> value []
+                             <> help "Dynamic variables")
+           <*> flag True False (long "verbose"
+                           <> short 'v'
+                           <> help "Show messages and info for each phase")
+           )
 
 optParser :: Parser Options
 optParser = hsubparser
@@ -107,6 +128,8 @@ optParser = hsubparser
                 (progDesc "Invert an RL program"))
              <> command "interpret" (info interpretParser
                 (progDesc "Interpret an RL program"))
+             <> command "bench" (info benchParser
+                (progDesc "Run various benchmarks on an RL program"))
               )
 
 optsParser :: ParserInfo Options
@@ -146,9 +169,10 @@ main :: IO ()
 main = do
   options <- execParser optsParser
   case options of
-    Specialize opts -> specMain opts
-    Invert     opts -> invMain  opts
-    Interpret  opts -> intMain  opts
+    Specialize opts -> specMain  opts
+    Invert     opts -> invMain   opts
+    Interpret  opts -> intMain   opts
+    Bench      opts -> benchMain opts
   putStrLn "Program completed succesfully!"
 
 invMain :: InvertOptions -> IO ()
@@ -183,7 +207,7 @@ intMain InterpretOptions { intFile = filePath
      let outstr = map (\(n, val) -> n ++ ": " ++ prettyBTVal val) outvals
      putStrLn (unlines outstr)
      trace v "Execution statistics: "
-     print stats -- TODO: Pretty print this
+     putStrLn $ prettyStats stats
 
 specMain :: SpecOptions -> IO ()
 specMain specOpts@SpecOptions { specInpFile = inputPath 
@@ -203,29 +227,27 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      d <- fromEM "binding" $ makeDiv initStore decl
      --trace v $ prettyDiv d
      trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
-     let btaFunc = if uniform then btaUniform else pwUniform
+     let btaFunc = if uniform then btaUniform else btaPW
      let congruentDiv = btaFunc nprog d
      -- trace v $ prettyDiv congruentDiv
-     let dynStore = makeStore . map (\n -> (n, Dynamic)) $ getVarsDecl decl
-     let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
-     let store = dynStore `updateWithStore` nilStore `updateWithStore` initStore
+     let store = makeSpecStore decl initStore
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv nprog
-     let explicated = explicate prog2 (\l i -> l ++ "_" ++ show i)
      _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
                  (wellformedProg' congruentDiv prog2)
+     let explicated = explicate prog2 (\l i -> l ++ "_" ++ show i)
      out <- if skipSpecPhase specOpts 
               then do trace v "- Skip specialization";
                       return $ prettyProg' (serializeExpl id) explicated
               else specMain2 specOpts decl explicated store
      writeOutput v outputPath out
 
-btaUniform, pwUniform :: NormProgram Label -> Division -> DivisionPW Label
+btaUniform, btaPW :: NormProgram Label -> Division -> DivisionPW Label
 btaUniform p d = 
   let ud = makeCongruent p d
   in congruentUniformDiv p ud
 
-pwUniform p d = 
+btaPW p d = 
   let initd = initPWDiv p d
   in makeCongruentPW p initd
 
@@ -237,12 +259,12 @@ specMain2 specOpts decl prog2 store =
   do trace v "- Specializing"
      (res, l) <- fromLEM "specializing" $ specialize decl prog2 store (Regular "entry")
      trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
-     let (resdecl, lifted) = res
+     let (resdecl, resbody) = res
      if skipPost specOpts
       then do trace v "- Skip post processing"
-              let clean = mapCombine (serializeAnn (serializeExpl id)) lifted 
+              let clean = mapCombine (serializeAnn (serializeExpl id)) resbody 
               return $ prettyProg id (resdecl, clean)
-      else specmain3 specOpts decl (resdecl, lifted)
+      else specmain3 specOpts decl (resdecl, resbody)
 
 specmain3 :: SpecOptions -> VariableDecl -> Program (Explicated Label) (Maybe Store) -> IO String
 specmain3 specOpts origdecl prog' = 
@@ -262,12 +284,12 @@ specmain3 specOpts origdecl prog' =
      let withAssertions = changeConditionals liveProg
      let cleanStores = mapProgStore (fromMaybe emptyStore) withAssertions
      trace v "- Merging explicitors"
-     let merged' = mergeExplicators (\l i -> l ++ "_" ++ show i) cleanStores
+     let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
      let merged = mapLabel (serializeExpl id) merged'
      showLength merged
      trace v "- Merging exits"
      let ((decl', singleExit), staticVals) = 
-            mergeExits origdecl (\l i -> l ++ "_" ++ show i) (decl, merged)
+            mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, merged)
      showLength singleExit
      trace v "- Compressing paths"
      compressed <- fromEM "Path compression" $ compressPaths singleExit
@@ -288,3 +310,70 @@ printStaticOutput decl tpls =
   where 
     showSpecVal (Static v) = prettyVal v
     showSpecVal Dynamic = undefined
+
+benchMain :: BenchOptions -> IO ()
+benchMain BenchOptions { benchFile     = inputPath
+                       , benchSpecFile = specPath
+                       , dynamicVars   = dyn
+                       , benchVerbose  = v } = 
+  do prog <- parseFile "program" False parseProg inputPath
+     fromEM "wellformedness of input prog" $ wellformedProg prog
+     trace v "Initial interpretation"
+     completeStore <- parseFile "input" False parseSpec specPath
+     ((outInt, statsInt), _) <- fromLEM "execution" $ runProgram prog completeStore
+     trace v "Preprocessing"
+     let decl = fst prog
+     let initStore = completeStore `withouts` dyn
+     d <- fromEM "binding" $ makeDiv initStore decl
+     let specStore = makeSpecStore decl initStore
+     let nprog = normalize' prog
+     let uniformDiv = btaUniform nprog d
+     let pwDiv      = btaPW nprog d
+     let uniProg2 = annotateProg uniformDiv nprog
+     let pwProg2  = annotateProg pwDiv nprog
+     wellformed2 uniformDiv uniProg2
+     wellformed2 pwDiv      pwProg2
+     let uniProg2expl = explicate' uniProg2
+     let pwProg2expl  = explicate' pwProg2
+     (resUni, _) <- specialize' "UNI" decl uniProg2expl specStore
+     (resPW, _)  <- specialize' "PW"  decl pwProg2expl specStore
+     (progUni, outUniS) <- postprocess "UNI" decl resUni
+     (progPW, outPWS)   <- postprocess "PW"  decl resPW
+     ((outUniD, statsUni), _) <- run "UNI" progUni completeStore
+     ((outPWD, statsPW), _)   <- run "PW"  progPW completeStore
+     putStrLn $ "-- Source program\n" ++ prettyStats statsInt
+     putStrLn $ "-- Uniform PE\n" ++ prettyStats statsUni
+     putStrLn $ "-- Pointwise PE\n" ++ prettyStats statsPW
+  where 
+    run mode p s = 
+      do trace v $ "Interpreting " ++ mode
+         fromLEM "execution" $ runProgram' p s
+    normalize' p = normalize "init" p (\l i -> l ++ "_" ++ show i) 
+    explicate' p = explicate p (\l i -> l ++ "_" ++ show i)
+    wellformed2 cdiv p = fromEM "wellformedness of RL2 prog" 
+                 (wellformedProg' cdiv p)
+    specialize' mode d p s = 
+      do trace v $ "Specializing " ++ mode
+         fromLEM "specializing" $ specialize d p s (Regular "entry")
+    postprocess mode origdecl (specdecl, p) = 
+      do trace v $ "Postprocessing " ++ mode
+         (folded, _) <- fromLEM "Folding" $ constFold p
+         let live = removeDeadBlocks folded
+         let withAssertions = changeConditionals live
+         let cleanStores = mapProgStore (fromMaybe emptyStore) withAssertions
+         let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
+         let merged = mapLabel (serializeExpl id) merged'
+         let ((decl', singleExit), staticVals) = 
+                mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (specdecl, merged)
+         compressed <- fromEM "Path compression" $ compressPaths singleExit
+         let numeratedStore = enumerateAnn compressed
+         let clean = mapCombine (\l s -> l ++ "_" ++ show s) numeratedStore
+         return ((decl', clean), staticVals)
+
+
+makeSpecStore :: VariableDecl -> Store -> Store
+makeSpecStore decl s =
+  let dynStore = makeStore . map (\n -> (n, Dynamic)) $ getVarsDecl decl
+      nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
+      store = dynStore `updateWithStore` nilStore `updateWithStore` s
+  in store

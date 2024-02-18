@@ -16,19 +16,13 @@ type Seen a = Pending a
 
 specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> Store -> a -> LEM (Program a (Maybe Store))
 specialize decl prog s entry = 
-  do b <- raise $ getEntry' prog
+  do 
+     b <- raise $ getEntry' prog
      let pending = [((b,s), (entry, emptyStore))]
      res <- specProg entry decl prog pending [] [] 
      decl' <- raise $ specDecl decl prog -- specDecl decl
      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
--- specDecl :: VariableDecl' -> VariableDecl
--- specDecl decl = VariableDecl { input = inp, output = out, temp = tmp }
---   where 
---     validate = map fst . filter (\(_,t) -> t == BTDynamic)
---     inp = validate $ input' decl
---     out = validate $ output' decl
---     tmp = validate $ temp' decl
 specDecl :: VariableDecl -> Program' a -> EM VariableDecl
 specDecl decl p = 
   do inBlock <- getEntryBlock' p
@@ -126,6 +120,7 @@ specJump s decl Exit' d =
   let s' = updateStore s d
       checkable = staticNonOutput decl s'
       vals = map (`find` s') checkable
+--      cleanStore = s' `onlyIn` output decl
   in 
   do vs <- sequence vals
      let pairs = zip checkable vs
@@ -220,6 +215,7 @@ specPatConstruct s (QPair' BTStatic q1 q2) =
       _ -> Left "Pattern BT-type issue in static pair"
 
 
+-- Nill/dyn handling
 -- static constants can become dynamic from other side of matching
 -- we need the pattern from BTA for true annotation
 specPatDeconstruct :: Store -> Pattern' -> PEPattern -> EM (Store, Maybe Pattern)

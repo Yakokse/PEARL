@@ -41,10 +41,8 @@ analyseStep d (Replacement left right) =
       dMid = setTypes (getVarsPat right) (repeat BTStatic) d
       p1 = analysePat dMid left
       p = p1 `qlub` p2
-      nsLeft = dynVars p left
-      nsRight = dynVars p right
-      d1 = foldl (\d' n -> boundedBy n BTDynamic d') d nsRight
-      d2 = foldl (\d' n -> boundedBy n BTDynamic d') dMid nsLeft
+      d1 = updateTypes p right d
+      d2 = updateTypes p left d
   in (d1, d2)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
@@ -52,11 +50,15 @@ analyseStep d Skip = dup d
 data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
   deriving (Eq, Ord, Show)
 
-dynVars :: BTPattern -> Pattern -> [Name]
-dynVars QStatic _ = []
-dynVars QDynamic q = getVarsPat q
-dynVars (QCons q1 q2) (QPair p1 p2) = dynVars q1 p1 ++ dynVars q2 p2
-dynVars _ _ = [] 
+updateTypes :: BTPattern -> Pattern -> Division -> Division
+updateTypes QStatic p d = 
+  foldl (\d' n -> setType n BTStatic d') d $ getVarsPat p
+updateTypes QDynamic p d =
+  foldl (\d' n -> setType n BTDynamic d') d $ getVarsPat p
+updateTypes (QCons q1 q2) (QPair p1 p2) d =
+  updateTypes q2 p2 $ updateTypes q1 p1 d
+updateTypes q (QVar n) d = setType n (patToLevel q) d
+updateTypes _ (QConst _) d = d
 
 qlub :: BTPattern -> BTPattern -> BTPattern
 qlub QStatic p = collapsePat p
