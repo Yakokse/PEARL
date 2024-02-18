@@ -23,7 +23,7 @@ import Execute
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import System.Exit (die)
-import Control.Monad (when)
+import Control.Monad (when, unless)
 
 data Options = Specialize SpecOptions 
              | Invert InvertOptions 
@@ -246,20 +246,15 @@ specMain2 specOpts decl prog2 store =
      trace (specTrace specOpts) $ "Trace: (label: State)\n" ++ unlines l
      let (resdecl, resbody) = res
      if skipPost specOpts
-      then do trace v "- Skip post processing"
-              let clean = mapCombine (serializeAnn (serializeExpl id)) resbody 
-              return $ prettyProg id (resdecl, clean)
-      else specmain3 specOpts decl (resdecl, resbody)
-
--- Merge explicators before removing dead blocks/jump fixing
-specmain3 :: SpecOptions -> VariableDecl -> Program (Explicated Label) (Maybe Store) -> IO String
-specmain3 specOpts origdecl prog' = 
-  let v = specVerbose specOpts
-  in
-  do trace v "- POST PROCESSING"
-     (prog, staticVals) <- specPostProcess v origdecl prog'
-     printStaticOutput origdecl staticVals
-     return $ prettyProg id prog
+     then do 
+        trace v "- Skip post processing"
+        let clean = mapCombine (serializeAnn (serializeExpl id)) resbody 
+        return $ prettyProg id (resdecl, clean)
+     else do 
+        trace v "- POST PROCESSING"
+        (prog, staticVals) <- specPostProcess v decl res
+        printStaticOutput decl staticVals
+        return $ prettyProg id prog
 
 specPostProcess :: Bool -> VariableDecl -> Program (Explicated Label) (Maybe Store)
                 -> IO (Program Label (), [(Name, SpecValue)])
@@ -317,18 +312,24 @@ benchMain BenchOptions { benchFile     = inputPath
      d <- fromEM "binding" $ makeDiv initStore decl
      let specStore = makeSpecStore decl initStore
      let nprog = normalize' prog
-     uniProg2 <- preprocess "UNI" btaUniform nprog d
-     pwProg2  <- preprocess "PW" btaPW nprog d
-     (resUni, _) <- specialize' "UNI" decl uniProg2 specStore
-     (resPW, _)  <- specialize' "PW"  decl pwProg2 specStore
-     (progUni, outUniS) <- postprocess "UNI" decl resUni
-     (progPW, outPWS)   <- postprocess "PW"  decl resPW
-     ((outUniD, statsUni), _) <- run "UNI" progUni completeStore
-     ((outPWD, statsPW), _)   <- run "PW"  progPW completeStore
-     putStrLn $ "-- Source program\n" ++ prettyStats statsInt
+     let pipeline' = pipeline  nprog d decl specStore completeStore outInt
+     (resUni, statsUni) <- pipeline' "UNI" btaUniform
+     (resPW, statsPW) <- pipeline' "PW" btaPW
+     putStrLn $ "-- Source program\n" ++ prettyStats statsInt 
+     putStrLn $ prettySize prog
      putStrLn $ "-- Uniform PE\n" ++ prettyStats statsUni
+     putStrLn $ prettySize resUni
      putStrLn $ "-- Pointwise PE\n" ++ prettyStats statsPW
+     putStrLn $ prettySize resPW
   where 
+    pipeline nprog d decl specstore runstore origOut mode bta =
+      do prog2 <- preprocess mode bta nprog d
+         res <- specialize' mode decl prog2 specstore
+         (prog, outStatic) <- postprocess mode decl res
+         (outRes, stats) <- run mode prog runstore
+         let combinedOut = updateWithStore (makeStore outStatic) outRes
+         verifyOutput mode origOut combinedOut
+         return (prog, stats)
     preprocess mode bta nprog d =
       do trace v $ "Preprocessing " ++ mode
          let cdiv = bta nprog d
@@ -338,15 +339,22 @@ benchMain BenchOptions { benchFile     = inputPath
          return expl 
     run mode p s = 
       do trace v $ "Interpreting " ++ mode
-         fromLEM "execution" $ runProgram' p s
+         (res, _) <- fromLEM "execution" $ runProgram' p s
+         return res
     normalize' p = normalize "init" p (\l i -> l ++ "_" ++ show i) 
     specialize' mode d p s = 
       do trace v $ "Specializing " ++ mode
-         fromLEM "specializing" $ specialize d p s (Regular "entry")
+         (prog, _) <- fromLEM "specializing" $ specialize d p s (Regular "entry")
+         return prog
     postprocess mode origdecl prog = 
       do trace v $ "Postprocessing " ++ mode
          specPostProcess False origdecl prog
-
+    verifyOutput mode regularOut specOut = 
+      do trace v $ "Checking output " ++ mode
+         unless (all (\(n, val) -> val == find' n specOut) (storeToList regularOut)) 
+            $ die "The regular and specialized output do not match"
+    prettySize (_, prog) = "Total Blocks: " ++ show (length prog)
+                        ++ ", Total Lines: " ++ show (sum $ map (length . body) prog) 
 
 makeSpecStore :: VariableDecl -> Store -> Store
 makeSpecStore decl s =

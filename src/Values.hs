@@ -87,6 +87,9 @@ update = Map.insert
 updateWithStore :: Store -> Store -> Store
 updateWithStore s1 s2 = Map.union s2 s1
 
+disjoint :: Store -> Store -> Bool
+disjoint = Map.disjoint
+
 without :: Store -> Name -> Store
 without s n = Map.delete n s
 
