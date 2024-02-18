@@ -50,7 +50,6 @@ data InvertOptions = InvertOptions
 data InterpretOptions = InterpretOptions
   { intFile      :: String
   , intInputFile :: String
-  , intTrace     :: Bool
   , intVerbose   :: Bool
   }
 
@@ -97,10 +96,6 @@ interpretParser :: Parser Options
 interpretParser = Interpret <$> (InterpretOptions
                <$> argument str (metavar "<Input RL file>")
                <*> argument str (metavar "<Spec file>")
-               <*> option auto (long "trace"
-                                <> short 't'
-                                <> value True
-                                <> help "Show trace of execution")
                <*> flag True False (long "verbose"
                            <> short 'v'
                            <> help "Show messages and info for each phase")                              
@@ -110,15 +105,13 @@ benchParser :: Parser Options
 benchParser = Bench <$> (BenchOptions
            <$> argument str (metavar "<Input RL file>")
            <*> argument str (metavar "<Spec file>")
-           <*> option auto ( long "dynvars"
-                             <> short 'd'
-                             <> metavar "LIST"
-                             <> value []
-                             <> help "Dynamic variables")
+           <*> argument strp (metavar "<List of dynamic input vars>")
            <*> flag True False (long "verbose"
                            <> short 'v'
                            <> help "Show messages and info for each phase")
            )
+  where
+    strp = eitherReader $ return . words
 
 optParser :: Parser Options
 optParser = hsubparser
@@ -135,8 +128,8 @@ optParser = hsubparser
 optsParser :: ParserInfo Options
 optsParser = info (optParser <**> helper)
   ( fullDesc
-  <> progDesc "Various operations on RL programs (spec/invert/interpret)" 
-  <> header "hello - a test for optparse-applicative")
+  <> progDesc "Various operations on RL programs (spec/invert/interpret)"
+  )
 
 trace :: Bool -> String -> IO ()
 trace b s = when b $ putStrLn s
@@ -164,7 +157,6 @@ writeOutput verbose path content =
   do trace verbose $ "Writing to " ++ path 
      writeFile path content 
 
--- TODO: Improve SPEC format
 main :: IO ()
 main = do
   options <- execParser optsParser
@@ -189,8 +181,6 @@ invMain InvertOptions { invInpFile = inputPath
      let out = prettyProg id invProg
      writeOutput v outputPath out 
 
-
--- TODO: Execution trace
 intMain :: InterpretOptions -> IO ()
 intMain InterpretOptions { intFile = filePath
                          , intInputFile = inputPath
@@ -225,11 +215,9 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      let nprog = normalize "init" prog (\l i -> l ++ "_" ++ show i)
      trace v "- Creating initial binding."
      d <- fromEM "binding" $ makeDiv initStore decl
-     --trace v $ prettyDiv d
      trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
      let btaFunc = if uniform then btaUniform else btaPW
      let congruentDiv = btaFunc nprog d
-     -- trace v $ prettyDiv congruentDiv
      let store = makeSpecStore decl initStore
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv nprog
@@ -321,22 +309,15 @@ benchMain BenchOptions { benchFile     = inputPath
      trace v "Initial interpretation"
      completeStore <- parseFile "input" False parseSpec specPath
      ((outInt, statsInt), _) <- fromLEM "execution" $ runProgram prog completeStore
-     trace v "Preprocessing"
      let decl = fst prog
      let initStore = completeStore `withouts` dyn
      d <- fromEM "binding" $ makeDiv initStore decl
      let specStore = makeSpecStore decl initStore
      let nprog = normalize' prog
-     let uniformDiv = btaUniform nprog d
-     let pwDiv      = btaPW nprog d
-     let uniProg2 = annotateProg uniformDiv nprog
-     let pwProg2  = annotateProg pwDiv nprog
-     wellformed2 uniformDiv uniProg2
-     wellformed2 pwDiv      pwProg2
-     let uniProg2expl = explicate' uniProg2
-     let pwProg2expl  = explicate' pwProg2
-     (resUni, _) <- specialize' "UNI" decl uniProg2expl specStore
-     (resPW, _)  <- specialize' "PW"  decl pwProg2expl specStore
+     uniProg2 <- preprocess "UNI" btaUniform nprog d
+     pwProg2  <- preprocess "PW" btaPW nprog d
+     (resUni, _) <- specialize' "UNI" decl uniProg2 specStore
+     (resPW, _)  <- specialize' "PW"  decl pwProg2 specStore
      (progUni, outUniS) <- postprocess "UNI" decl resUni
      (progPW, outPWS)   <- postprocess "PW"  decl resPW
      ((outUniD, statsUni), _) <- run "UNI" progUni completeStore
@@ -345,13 +326,17 @@ benchMain BenchOptions { benchFile     = inputPath
      putStrLn $ "-- Uniform PE\n" ++ prettyStats statsUni
      putStrLn $ "-- Pointwise PE\n" ++ prettyStats statsPW
   where 
+    preprocess mode bta nprog d =
+      do trace v $ "Preprocessing " ++ mode
+         let cdiv = bta nprog d
+         let p2 = annotateProg cdiv nprog
+         fromEM "wellformedness of RL2 prog" (wellformedProg' cdiv p2)
+         let expl = explicate p2 (\l i -> l ++ "_" ++ show i)
+         return expl 
     run mode p s = 
       do trace v $ "Interpreting " ++ mode
          fromLEM "execution" $ runProgram' p s
     normalize' p = normalize "init" p (\l i -> l ++ "_" ++ show i) 
-    explicate' p = explicate p (\l i -> l ++ "_" ++ show i)
-    wellformed2 cdiv p = fromEM "wellformedness of RL2 prog" 
-                 (wellformedProg' cdiv p)
     specialize' mode d p s = 
       do trace v $ "Specializing " ++ mode
          fromLEM "specializing" $ specialize d p s (Regular "entry")
