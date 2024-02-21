@@ -2,12 +2,16 @@ module Impl.Parser where
 
 import AST
 import Values
-import Text.ParserCombinators.Parsec
+import Text.Parsec
+import Text.Parsec.Expr
 import Data.Functor (($>), void)
+
+
+type Parser = Parsec String ()
 
 -- apply a parser to a string
 parseStr :: Parser a -> String -> EM a
-parseStr p s = case runParser p () "" s of
+parseStr p s = case parse (p <* eof) "" s of
   Left err -> Left $ show err
   Right res -> Right res
 
@@ -17,7 +21,7 @@ parseProg = parseStr pProg
 
 -- parse a program
 pProg :: Parser (Program Label ())
-pProg = (,) <$> (whitespace *> pDecl) <*> (many1 pBlock <* eof)
+pProg = (,) <$> (whitespace *> pDecl) <*> many1 pBlock
 
 -- parse a variable declaration
 pDecl :: Parser VariableDecl
@@ -35,88 +39,82 @@ pBlock = Block <$> (pLabelName <* symbol ":")
 
 -- parse a come-from
 pFrom :: Parser (ComeFrom Label ())
-pFrom = choice [
-    Entry () <$ word "entry" 
+pFrom = choice 
+  [ Entry () <$ word "entry" 
   , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName) 
   , From <$> (word "from" *> pLabelName) 
-  ]
+  ] <?> "Expecting a from"
 
 -- parse a jump
 pJump :: Parser (Jump Label ())
-pJump = choice [
-    Exit () <$ word "exit"
+pJump = choice 
+  [ Exit () <$ word "exit"
   , If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
   , Goto <$> (word "goto" *> pLabelName)
-  ]
+  ] <?> "Expecting a jump"
 
 -- parse a step
 pStep :: Parser Step
-pStep = choice [
-    word "skip" $> Skip
+pStep = choice 
+  [ word "skip" $> Skip
   , Assert <$> (word "assert" *> symbol "(" *> pExpr <* symbol ")")
   , try pUpdate
   , Replacement <$> pPattern <*> (symbol "<-" *> pPattern)
-  ]
+  ] <?> "Expecting a step"
 
 -- parse a reversible update
 pUpdate :: Parser Step
 pUpdate = 
   Update <$> pName <*> pOp <*> pExpr
   where 
-    pOp = choice [symbol "+=" $> Add, symbol "-=" $> Sub, symbol "^=" $> Xor]
+    pOp = choice [ symbol "+=" $> Add
+                 , symbol "-=" $> Sub
+                 , symbol "^=" $> Xor] <?> "Expecting reversible update"
 
 -- parse a pattern for a reversible replacement
 pPattern :: Parser Pattern
-pPattern = choice [
-    QVar <$> pName
+pPattern = choice 
+  [ QVar <$> pName
   , QConst <$> pConstant
   , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
-  ]
+  ] <?> "Expecting pattern"
 
--- parse an expression with proper associativity and precedence
 pExpr :: Parser Expr
-pExpr = chainl1 pComparison pRelOp
-  where 
-    pComparison = chainl1 pEquation pComp
-    pEquation = chainl1 pTerm pAddOp
-    pTerm = chainl1 pFactor pMulOp
-    pRelOp = choice [ symbol "&&" $> Op And
-                    , symbol "||" $> Op Or]
-    pComp  = choice [ symbol "<" $> Op Less
-                    , symbol ">" $> Op Greater
-                    , symbol "=" $> Op Equal]
-    pAddOp = choice [ symbol "+" $> Op (ROp Add)
-                    , symbol "-" $> Op (ROp Sub)
-                    , symbol "^" $> Op (ROp Xor)]
-    pMulOp = choice [ symbol "*" $> Op Mul
-                    , symbol "/" $> Op Div
-                    , symbol "#" $> Op Index]
-    pFactor = choice [ UOp Hd <$> (word "hd" *> pFactor)
-                     , UOp Tl <$> (word "tl" *> pFactor)
-                     , UOp Not <$> (symbol "!" *> pFactor)
-                     , Const <$> pConstant
-                     , Var <$> pName
-                     , (symbol "(" *> pExpr >>= maybeCons) <* symbol ")"
-                     ]
-    maybeCons e = option e $ Op Cons e <$> (symbol "." *> pExpr)
+pExpr = buildExpressionParser table term
+         <?> "expression"
+ where 
+  atom = (Const <$> pConstant) <|> (Var <$> pName)
+  parens = between (symbol "(") (symbol ")")
+  term    =  parens pExpr
+          <|> atom
+          <?> "simple expression"
+  table = 
+    [ [prefixW "hd" Hd, prefixW "tl" Tl, prefixS "!" Not]
+    , [binary "*" Mul, binary "/" Div, binary "#" Index] 
+    , [binary "+" (ROp Add), binary "-" (ROp Sub), binary "^" (ROp Xor)] 
+    , [binary "<" Less, binary ">" Greater, binary "=" Equal]
+    , [binary "&&" And, binary "||" Or]
+    , [binary "." Cons]
+    ]
+  binary  op f = Infix (do symbol op; return (Op f)) AssocLeft
+  prefixW op f = Prefix $ do word op;   return (UOp f)
+  prefixS op f = Prefix $ do symbol op; return (UOp f)
 
 -- parse a constant literal
 pConstant :: Parser Value
 pConstant = symbol "'" *> pValue
-
--- parse a given value
-pValue :: Parser Value
-pValue = choice [
-    Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
-  , Nil <$ word "nil"
-  , Atom <$> pName
-  , Num <$> pNum
-  ]
+ where
+  pValue = choice 
+    [ Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
+    , Nil <$ word "nil"
+    , Atom <$> pName
+    , Num <$> pNum
+    ] <?> "Expecting a value"
 
 -- parse a string as a specialization specification
 parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
-  where pFile = makeStore <$> (whitespace *> many pDeclaration <* eof)
+  where pFile = makeStore <$> (whitespace *> many pDeclaration)
 
 -- parse a single declaration in a specification
 pDeclaration :: Parser (Name, SpecValue)
