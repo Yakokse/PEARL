@@ -5,7 +5,7 @@ import AST2
 import Utils
 import Values
 import Division
-import Data.Set ( fromList, size )
+import qualified Data.Set as S
 
 wellformedProg :: (Eq a, Show a) => Program a () -> EM ()
 wellformedProg (decl, p) = 
@@ -13,7 +13,7 @@ wellformedProg (decl, p) =
      _ <- getEntryBlock p
      _ <- getExitBlock p
      let allVars = getVarsDecl decl
-     mapM_ (wellformedBlock (decl, p) allVars) p
+     mapM_ (wellformedBlock p allVars) p
 
 wellformedDecl :: VariableDecl -> EM ()
 wellformedDecl decl = 
@@ -26,11 +26,11 @@ wellformedDecl decl =
     inp = input decl
     out = output decl
     tmp = temp decl
-    repeatedVars vs = length vs /= size (fromList vs)
+    repeatedVars vs = length vs /= S.size (S.fromList vs)
     notTemp = all (`notElem` tmp)
     
 
-wellformedBlock :: (Eq a, Show a) => Program a () -> [Name] -> Block a () -> EM ()
+wellformedBlock :: (Eq a, Show a) => [Block a ()] -> [Name] -> Block a () -> EM ()
 wellformedBlock p ns b = 
   do mapM_ checkFrom $ jumpLabels $ jump b
      mapM_ checkGoto $ fromLabels $ from b
@@ -39,12 +39,12 @@ wellformedBlock p ns b =
      wellformedFrom ns $ from b
   where 
     checkFrom l = do
-      b' <- getBlockErr (snd p) l
+      b' <- getBlockErr p l
       if name b `elem` fromLabels (from b') 
         then return ()
         else Left $ show (name b) ++ " not mentioned in " ++ show l
     checkGoto l = do
-      b' <- getBlockErr (snd p) l
+      b' <- getBlockErr p l
       if name b `elem` jumpLabels (jump b') 
         then return ()
         else Left $ show (name b) ++ " not mentioned in " ++ show l
@@ -75,8 +75,10 @@ wellformedPat :: [Name] -> Pattern -> EM ()
 wellformedPat _ (QConst _) = return ()
 wellformedPat ns (QVar n) = isDefined n ns
 wellformedPat ns (QPair q1 q2) =
-  do wellformedPat ns q1
-     wellformedPat ns q2
+  if S.fromList (getVarsPat q1) `S.disjoint` S.fromList (getVarsPat q2)
+  then do wellformedPat ns q1
+          wellformedPat ns q2
+  else Left "Non-linear pattern"
 
 wellformedExp :: [Name] -> Expr -> EM ()
 wellformedExp _ (Const _) = return ()
