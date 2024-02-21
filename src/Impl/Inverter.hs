@@ -3,9 +3,10 @@ import AST
 
 -- invert a program
 invertProg :: Program a b -> Program a b
-invertProg (decl, p) = (invDecl, map invertBlock p)
-  where 
-    invDecl = decl {input = output decl, output = input decl} 
+invertProg (decl, p) = (invertDecl decl, map invertBlock p)
+   
+invertDecl :: VariableDecl -> VariableDecl
+invertDecl decl = decl {input = output decl, output = input decl} 
 
 -- invert a block
 invertBlock :: Block a b -> Block a b

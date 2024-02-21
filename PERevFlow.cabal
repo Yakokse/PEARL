@@ -91,6 +91,7 @@ test-suite PERevFlow-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      InversionTests
       ParserTests
       Paths_PERevFlow
   hs-source-dirs:

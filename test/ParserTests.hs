@@ -19,7 +19,7 @@ testNeg p n x = testCase n $
 
 -- todo: roundtrip tests?
 tests :: TestTree
-tests = testGroup "All parsing tests" 
+tests = testGroup "All Parsing Tests" 
   [ expTests
   , patTests
   , stepTests
