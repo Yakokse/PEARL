@@ -6,7 +6,6 @@ import Values
 import Parser
 
 import BTA
-import Pointwise
 import Division
 import AST
 import AST2

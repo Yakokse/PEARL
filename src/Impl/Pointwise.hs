@@ -1,4 +1,4 @@
-module Pointwise (initPWDiv, makeCongruentPW) where
+module Impl.Pointwise where
 
 import AST
 import Values
