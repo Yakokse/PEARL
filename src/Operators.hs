@@ -12,27 +12,18 @@ calc Div     a b =
   do x <- getNum a; y <- getNum b; 
      if y /= 0 then return . Num $ x `div` y else Left "Division by 0 error."
 calc And     a b = 
-  return . boolify $ truthy a && truthy b
+  return $ if truthy a then b else a
 calc Or      a b = 
-  return . boolify $ truthy a || truthy b
+  return $ if truthy a then a else b
 calc Less    a b = 
   do x <- getNum a; y <- getNum b; 
-     return . boolify $ x < y 
+     return $ if x < y then Num y else falseV
 calc Greater a b = 
   do x <- getNum a; y <- getNum b; 
-     return . boolify $ x > y 
+     return $ if x > y then Num y else falseV
 calc Equal   a b = 
   return . boolify $ a == b
 calc Cons    a b = return $ Pair a b
-calc Index   a b = 
-  do x <- getNum b; index a x
-  where 
-    index vs 0 = 
-      do (hd, _) <- getPair vs
-         return hd
-    index vs n =
-      do (_, tl) <- getPair vs
-         index tl (n-1)
 
 -- definition of reversible binary operators
 calcR :: RevOp -> Value -> Value -> EM Value

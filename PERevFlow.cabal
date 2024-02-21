@@ -92,6 +92,7 @@ test-suite PERevFlow-test
   main-is: Main.hs
   other-modules:
       InversionTests
+      OperatorTests
       ParserTests
       WellformedTests
       Paths_PERevFlow

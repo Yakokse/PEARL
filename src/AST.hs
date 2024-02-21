@@ -59,7 +59,6 @@ data BinOp =
   | Less
   | Greater
   | Equal
-  | Index
   | Cons
   deriving (Eq, Show, Read)
 

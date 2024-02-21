@@ -107,7 +107,6 @@ prettyOp Less     = "<"
 prettyOp Greater  = ">"
 prettyOp Equal    = "="
 prettyOp Cons     = "."
-prettyOp Index    = "#"
 
 prettyROp :: RevOp -> String
 prettyROp Add = "+"

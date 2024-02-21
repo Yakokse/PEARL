@@ -90,7 +90,7 @@ pExpr = buildExpressionParser table term
           <?> "simple expression"
   table = 
     [ [prefixW "hd" Hd, prefixW "tl" Tl, prefixS "!" Not]
-    , [binary "*" Mul, binary "/" Div, binary "#" Index] 
+    , [binary "*" Mul, binary "/" Div] 
     , [binary "+" (ROp Add), binary "-" (ROp Sub), binary "^" (ROp Xor)] 
     , [binary "<" Less, binary ">" Greater, binary "=" Equal]
     , [binary "&&" And, binary "||" Or]
