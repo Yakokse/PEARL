@@ -1,4 +1,4 @@
-module Implementation.Annotate where
+module Impl.Annotate where
 
 import AST
 import AST2
