@@ -1,7 +1,5 @@
 (Prog X) -> (Prog Y) 
 with (i ProgRev Sign)
-// ISSUE: NEGATIVE NUMBERS
-// SOLUTION: NEGATIVE NUMBERS / MODULUS OPERATOR
 
 init: entry
       Y ^= '0
@@ -30,14 +28,51 @@ stop: fi Prog from loopEnd else init
       X ^= '0
       exit
 
-revOp: from loop1 //uncall Op
-       goto revOpEnd
+regOp: from loop1 //call Op
+       if i = '0 goto regSwap else regOp1
 
-revOpEnd: from revOp
+regSwap: from regOp
+         (X . Y) <- (Y . X)
+         goto regOpEnd
+
+regOp1: from regOp
+        if i = '1 goto regComb else regAdd
+
+regComb: from regOp1
+         X += Y
+         goto regOp2
+
+regAdd: from regOp1
+        X += i - '1
+        goto regOp2
+
+regOp2: fi i = '1 from regComb else regAdd
+        goto regOpEnd        
+
+regOpEnd: fi i = '0 from regSwap else regOp2
           goto loop1Join
 
-regOp: from loop1 //call Op
-       goto regOpEnd
+//uncall Op
+revOp: from loop1
+       if i = '0 goto revSwap else revOp1
 
-regOpEnd: from regOp
+revSwap: from revOp // Mergeable?
+         (Y . X) <- (X . Y)
+         goto revOpEnd
+
+revOp1: fromRevOp
+        if i = '1 goto revComb else revAdd
+
+revComb: from revOp1
+         X -= Y
+         goto revOp2
+
+revAdd: from revOp1
+        X -= i - '1
+        goto revOp2
+
+revOp2: fi i = '1 from revComb else revAdd
+        goto revOpEnd
+
+revOpEnd: fi i = '0 from regSwap else revOp2
           goto loop1Join

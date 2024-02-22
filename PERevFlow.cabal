@@ -94,6 +94,7 @@ test-suite PERevFlow-test
       InversionTests
       OperatorTests
       ParserTests
+      UniformTests
       WellformedTests
       Paths_PERevFlow
   hs-source-dirs:

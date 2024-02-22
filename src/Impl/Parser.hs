@@ -80,14 +80,12 @@ pPattern = choice
   ] <?> "Expecting pattern"
 
 pExpr :: Parser Expr
-pExpr = buildExpressionParser table term
-         <?> "expression"
+pExpr = buildExpressionParser table term <?> "expression"
  where 
   atom = (Const <$> pConstant) <|> (Var <$> pName)
   parens = between (symbol "(") (symbol ")")
-  term    =  parens pExpr
-          <|> atom
-          <?> "simple expression"
+  term   = parens pExpr <|> atom
+        <?> "simple expression"
   table = 
     [ [prefixW "hd" Hd, prefixW "tl" Tl, prefixS "!" Not]
     , [binary "*" Mul, binary "/" Div] 
