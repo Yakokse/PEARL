@@ -51,7 +51,7 @@ analyseStep d (Replacement left right) =
       p1 = analysePat dMid left
       p = p1 `qlub` p2
       d1 = updateTypes p right d
-      d2 = updateTypes p left d
+      d2 = updateTypes p left d1
   in (d1, d2)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
@@ -59,7 +59,6 @@ analyseStep d Skip = dup d
 data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
   deriving (Eq, Ord, Show)
 
--- set the type of variables in a pattern to those in expanded level
 updateTypes :: BTPattern -> Pattern -> Division -> Division
 updateTypes QStatic p d = 
   foldl (\d' n -> setType n BTStatic d') d $ getVarsPat p

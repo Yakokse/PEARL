@@ -1,17 +1,19 @@
 import Test.Tasty
 
-import qualified ParserTests as P
-import qualified InversionTests as I
-import qualified WellformedTests as W
-import qualified OperatorTests as O
-import qualified UniformTests as U
+import qualified ParserTests as PS
+import qualified InversionTests as INV
+import qualified WellformedTests as WF
+import qualified OperatorTests as OP
+import qualified UniformTests as UNI
+import qualified PointwiseTests as PW
 
 main :: IO ()
 main = defaultMain $ 
   testGroup "All tests" 
-    [ P.tests
-    , I.tests
-    , W.tests
-    , O.tests
-    , U.tests
+    [ PS.tests
+    , INV.tests
+    , WF.tests
+    , OP.tests
+    , UNI.tests
+    , PW.tests
     ]
