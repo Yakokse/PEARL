@@ -41,18 +41,35 @@ analyseBlock :: Division -> NormBlock a -> (Division, Division)
 analyseBlock d b = analyseStep d $ nstep b
 
 -- analyse a single step
--- most are uniform
--- reversible replacement has extra precision
+-- most are uniform 
 analyseStep :: Division -> Step -> (Division, Division)
 analyseStep d (Update n _ e) = dup $ boundedBy n (analyseExpr d e) d
 analyseStep d (Replacement left right) = 
-  let p2 = analysePat d right
-      dMid = setTypes (getVarsPat right) (repeat BTStatic) d
-      p1 = analysePat dMid left
-      p = p1 `qlub` p2
-      d1 = updateTypes p right d
-      d2 = updateTypes p left d1
-  in (d1, d2)
+      -- get the extended BTType for the RHS Pattern
+  let pRight = analysePat d right
+      varsRight = getVarsPat right
+      varsLeft = getVarsPat left
+      -- get the extended BTType for the LHS Pattern
+      -- Variables from the RHS pattern are considered static
+      -- since theyve been nil-cleared
+      dTemp = setTypes varsRight (repeat BTStatic) d
+      pLeft = analysePat dTemp left
+      -- Get the least upper bound of the two extended types
+      p = pRight `qlub` pLeft
+      -- Use this information to set the respective variables in each pattern
+      dRight = updateTypes p right d
+      dLeft = updateTypes p left dTemp
+      -- However some variables may not occur on other side
+      -- so we must look on the other sides div
+      -- fx (x . y) <- y, where x was initially static
+      --    now clearly depends on y on lhs, but must also be set to dynamic on rhs
+      -- fx x <- (x . y), where y was initally static
+      --    must be set to dynamic (otherwise non-inj update), but static in left div
+      onlyLHS = filter (`notElem` varsRight) varsLeft
+      onlyRHS = filter (`notElem` varsLeft) varsRight
+      dStart = setTypes onlyLHS (map (`getType` dLeft)  onlyLHS) dRight
+      dEnd   = setTypes onlyRHS (map (`getType` dRight) onlyRHS) dLeft
+  in (dStart, dEnd)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
 
@@ -61,9 +78,9 @@ data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
 
 updateTypes :: BTPattern -> Pattern -> Division -> Division
 updateTypes QStatic p d = 
-  foldl (\d' n -> setType n BTStatic d') d $ getVarsPat p
+  setTypes (getVarsPat p) (repeat BTStatic) d
 updateTypes QDynamic p d =
-  foldl (\d' n -> setType n BTDynamic d') d $ getVarsPat p
+  setTypes (getVarsPat p) (repeat BTDynamic) d
 updateTypes (QCons q1 q2) (QPair p1 p2) d =
   updateTypes q2 p2 $ updateTypes q1 p1 d
 updateTypes q (QVar n) d = setType n (patToLevel q) d
