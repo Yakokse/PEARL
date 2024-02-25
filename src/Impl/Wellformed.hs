@@ -66,7 +66,7 @@ wellformedStep _ Skip = return ()
 wellformedStep ns (Assert e) = 
   wellformedExp ns e
 wellformedStep ns (Replacement q1 q2) =
-  wellformedPat ns (QPair q1 q2)
+  wellformedPat ns q1 >> wellformedPat ns q2
 wellformedStep ns (Update n _ e) =
   do isDefined n ns
      wellformedExp (filter (/= n) ns) e
