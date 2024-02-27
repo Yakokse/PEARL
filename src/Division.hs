@@ -25,13 +25,13 @@ getDivs a d = d Map.! a
 setType :: Name -> Level -> Division -> Division
 setType = Map.insert
 
--- bound the variable in a division 
+-- bound the variable in a division
 boundedBy :: Name -> Level -> Division -> Division
 boundedBy = Map.insertWith lub
 
 -- set the divisions for a given label in a PW division
 setDiv :: Ord a => a -> (Division, Division) -> DivisionPW a -> DivisionPW a
-setDiv = Map.insert 
+setDiv = Map.insert
 
 -- set the types of multiple variables in a division
 setTypes :: [Name] -> [Level] -> Division -> Division
@@ -65,7 +65,7 @@ lubDiv = Map.unionsWith lub
 -- make a division for all variables in a declaration
 -- sets all variables to static
 makeStaticDiv :: VariableDecl -> Division
-makeStaticDiv decl = 
+makeStaticDiv decl =
   let ns = input decl `union` output decl `union` temp decl
       pairs = map (\n -> (n, BTStatic)) ns
   in listToDiv pairs
@@ -73,17 +73,17 @@ makeStaticDiv decl =
 -- create a proper division given the input and declaration
 -- all variables are static except input variables with no given value
 makeDiv :: Store -> VariableDecl -> EM Division
-makeDiv store decl = 
+makeDiv store decl =
   do mapM_ onlyInput names
      let allVars = input decl `union` output decl `union` temp decl
-         allTypes = map (\n -> if isStatic n 
-                              then BTStatic 
-                              else BTDynamic) 
+         allTypes = map (\n -> if isStatic n
+                              then BTStatic
+                              else BTDynamic)
                         allVars
      return $ setTypes allVars allTypes defaultDivision
-  where 
-    onlyInput n = if n `elem` input decl 
-                  then return () 
+  where
+    onlyInput n = if n `elem` input decl
+                  then return ()
                   else Left $ "Variable \"" ++ n ++ "\" not in input"
     storelist = storeToList store
     names = map fst storelist

@@ -7,7 +7,7 @@ import Impl.Annotate
 
 import AST
 import AST2
-import Values 
+import Values
 import Division
 
 test :: (Show b, Eq b) => TestName -> (a -> b) -> a -> b -> TestTree
@@ -17,13 +17,13 @@ xyStore :: Level -> Level -> Division
 xyStore x y = listToDiv [("x", x), ("y", y)]
 
 tests :: TestTree
-tests = testGroup "All Annotation Tests" 
+tests = testGroup "All Annotation Tests"
   [ expTests
   ]
 
 expTests :: TestTree
 expTests = testGroup "Expression Tests"
-  [ testExp "Constant" (Const $ Num 1) 
+  [ testExp "Constant" (Const $ Num 1)
             (Const' BTStatic $ Num 1) BTStatic
   , testExp "Static Variable" (Var "x")
             (Var' BTStatic "x") BTStatic
@@ -43,8 +43,6 @@ expTests = testGroup "Expression Tests"
   , testExp "Dynamic Unop" (UOp Not (Var "y"))
             (UOp' BTDynamic Not (Var' BTDynamic "y")) BTDynamic
   ]
-  where 
+  where
     xStat = xyStore BTStatic BTDynamic
-    testExp n i = curry $ test n (annotateExp xStat) i 
-    
-
+    testExp n i = curry $ test n (annotateExp xStat) i

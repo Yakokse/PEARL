@@ -7,7 +7,7 @@ loop_1:
 	if (((msg / '2) * '2) = msg)
 		goto even_1
 		else odd_1
-        
+
 stop_20:
 	fi !((msg < '5555555))
 		from odd_19

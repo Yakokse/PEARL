@@ -25,29 +25,29 @@ pProg = (,) <$> (whitespace *> pDecl) <*> many1 pBlock
 
 -- parse a variable declaration
 pDecl :: Parser VariableDecl
-pDecl = 
+pDecl =
   VariableDecl <$> pNames <*> (symbol "->" *> pNames)
                <*> option [] (word "with" *> pNames)
   where pNames = symbol "(" *> many pName <* symbol ")"
 
 -- parse a block
 pBlock :: Parser (Block Label ())
-pBlock = Block <$> (pLabelName <* symbol ":") 
-               <*> pFrom 
-               <*> many pStep 
+pBlock = Block <$> (pLabelName <* symbol ":")
+               <*> pFrom
+               <*> many pStep
                <*> pJump
 
 -- parse a come-from
 pFrom :: Parser (ComeFrom Label ())
-pFrom = choice 
-  [ Entry () <$ word "entry" 
-  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName) 
-  , From <$> (word "from" *> pLabelName) 
+pFrom = choice
+  [ Entry () <$ word "entry"
+  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
+  , From <$> (word "from" *> pLabelName)
   ] <?> "Expecting a from"
 
 -- parse a jump
 pJump :: Parser (Jump Label ())
-pJump = choice 
+pJump = choice
   [ Exit () <$ word "exit"
   , If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
   , Goto <$> (word "goto" *> pLabelName)
@@ -55,7 +55,7 @@ pJump = choice
 
 -- parse a step
 pStep :: Parser Step
-pStep = choice 
+pStep = choice
   [ word "skip" $> Skip
   , Assert <$> (word "assert" *> symbol "(" *> pExpr <* symbol ")")
   , try pUpdate
@@ -64,16 +64,16 @@ pStep = choice
 
 -- parse a reversible update
 pUpdate :: Parser Step
-pUpdate = 
+pUpdate =
   Update <$> pName <*> pOp <*> pExpr
-  where 
+  where
     pOp = choice [ symbol "+=" $> Add
                  , symbol "-=" $> Sub
                  , symbol "^=" $> Xor] <?> "Expecting reversible update"
 
 -- parse a pattern for a reversible replacement
 pPattern :: Parser Pattern
-pPattern = choice 
+pPattern = choice
   [ QVar <$> pName
   , QConst <$> pConstant
   , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
@@ -81,15 +81,15 @@ pPattern = choice
 
 pExpr :: Parser Expr
 pExpr = buildExpressionParser table term <?> "expression"
- where 
+ where
   atom = (Const <$> pConstant) <|> (Var <$> pName)
   parens = between (symbol "(") (symbol ")")
   term   = parens pExpr <|> atom
         <?> "simple expression"
-  table = 
+  table =
     [ [prefixW "hd" Hd, prefixW "tl" Tl, prefixS "!" Not]
-    , [binary "*" Mul, binary "/" Div] 
-    , [binary "+" (ROp Add), binary "-" (ROp Sub), binary "^" (ROp Xor)] 
+    , [binary "*" Mul, binary "/" Div]
+    , [binary "+" (ROp Add), binary "-" (ROp Sub), binary "^" (ROp Xor)]
     , [binary "<" Less, binary ">" Greater, binary "=" Equal]
     , [binary "&&" And, binary "||" Or]
     , [binary "." Cons]
@@ -102,7 +102,7 @@ pExpr = buildExpressionParser table term <?> "expression"
 pConstant :: Parser Value
 pConstant = symbol "'" *> pValue
  where
-  pValue = choice 
+  pValue = choice
     [ Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
     , Nil <$ word "nil"
     , Atom <$> pName
@@ -124,13 +124,13 @@ pLabelName = (,) <$> pName <*> return ()
 
 -- parse a variable name
 pName :: Parser String
-pName = 
-  lexeme . try $ 
-    do c <- letter; cs <- many pChar; 
+pName =
+  lexeme . try $
+    do c <- letter; cs <- many pChar;
        if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
-  where 
+  where
     pChar = choice [alphaNum, char '_', char '\'']
-    restricted = ["from", "fi", "else", "goto", "if", "entry", "exit", 
+    restricted = ["from", "fi", "else", "goto", "if", "entry", "exit",
                   "skip", "hd", "tl", "assert", "nil", "with"]
 
 -- parse a number

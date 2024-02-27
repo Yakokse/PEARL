@@ -9,8 +9,8 @@ import qualified PointwiseTests as PW
 import qualified AnnotateTests as AN
 
 main :: IO ()
-main = defaultMain $ 
-  testGroup "All tests" 
+main = defaultMain $
+  testGroup "All tests"
     [ PS.tests
     , INV.tests
     , WF.tests

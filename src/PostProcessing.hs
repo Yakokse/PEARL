@@ -1,4 +1,4 @@
-module PostProcessing 
+module PostProcessing
   ( constFold
   , mergeExplicators
   , mergeExits

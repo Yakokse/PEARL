@@ -5,8 +5,8 @@ import Control.Monad
 
 type IntType = Word
 type Name = String
-type ErrMsg = String 
-type EM = Either ErrMsg 
+type ErrMsg = String
+type EM = Either ErrMsg
 type Label = String
 
 data Stats = Stats
@@ -15,12 +15,12 @@ data Stats = Stats
   , assertions :: Int
   } deriving Show
 
-data Value = 
+data Value =
     Atom String
   | Num  IntType
   | Pair Value Value
   | Nil
-  deriving (Eq, Show, Read, Ord) 
+  deriving (Eq, Show, Read, Ord)
 
 data SpecValue = Dynamic | Static Value
   deriving (Eq, Show, Read, Ord)
@@ -47,15 +47,15 @@ boolify :: Bool -> Value
 boolify b = if b then trueV else falseV
 
 find ::  Name -> Store -> EM Value
-find n s = 
-  case Map.lookup n s of 
+find n s =
+  case Map.lookup n s of
     Just (Static v) -> return v
     Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
 findDyn ::  Name -> Store -> EM Value
-findDyn n s = 
-  case Map.lookup n s of 
+findDyn n s =
+  case Map.lookup n s of
     Just (Static v) -> return v
     Just _ -> return Nil
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
@@ -65,7 +65,7 @@ find' = Map.findWithDefault Dynamic
 
 findErr ::  Store -> Name -> Value
 findErr s n =
-  case Map.lookup n s of 
+  case Map.lookup n s of
     Just (Static v) -> v
     _ -> error $ "static variable " ++ n ++ " not found during lookup"
 
@@ -106,13 +106,13 @@ isIn :: Name -> Store -> Bool
 isIn = Map.member
 
 remove :: [Name] -> Store -> Store
-remove ns = Map.filterWithKey (\n _ -> n `notElem` ns) 
+remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)
 
 newtype LEM a = LEM {runLEM :: (EM a, [String])}
 
 instance Monad LEM where
-  return = pure 
-  LEM (v, l) >>= f = 
+  return = pure
+  LEM (v, l) >>= f =
     LEM $ case v of
       Left e -> (Left e, l)
       Right res -> let LEM (v', l') = f res in (v', l ++ l')
@@ -121,7 +121,7 @@ instance Functor LEM where
 instance Applicative LEM where
   pure a = LEM (Right a, []); (<*>) = ap
 
-raise :: EM a -> LEM a 
+raise :: EM a -> LEM a
 raise em = LEM (em, [])
 
 logM :: String -> LEM ()
@@ -134,4 +134,3 @@ emToLEM :: EM a -> LEM a
 emToLEM m = LEM $ case m of
   Left e -> (Left e, [e])
   Right s -> (Right s, [])
-  

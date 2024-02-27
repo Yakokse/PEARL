@@ -5,10 +5,10 @@ import Test.Tasty.HUnit
 
 import Operators
 import AST
-import Values 
+import Values
 
 tests :: TestTree
-tests = testGroup "All Operator Tests" 
+tests = testGroup "All Operator Tests"
   [ unaryTests
   , revOpTests
   , binOpTests
@@ -40,17 +40,17 @@ binOpTests = testGroup "Bin. Op Tests"
   , test "Equal False 3" Equal Nil (Pair Nil Nil) Nil
   , testN "Division by 0" Div (Num 3) (Num 0)
   ]
-  where 
-    testTrue n o x y = 
-      testCase n $ case calc o x y of 
-                    Right v | truthy v -> return () 
+  where
+    testTrue n o x y =
+      testCase n $ case calc o x y of
+                    Right v | truthy v -> return ()
                     _ -> assertFailure "False false"
-    test n o x y z = 
-      testCase n $ case calc o x y of 
+    test n o x y z =
+      testCase n $ case calc o x y of
                     Right res -> res @?= z
                     Left e -> assertFailure e
-    testN n o x y  = 
-      testCase n $ case calc o x y of 
+    testN n o x y  =
+      testCase n $ case calc o x y of
                     Left _ -> return ()
                     _ -> assertFailure "Error expected"
 
@@ -76,10 +76,10 @@ revOpTests = testGroup "Rev. Op Tests"
   , testN "N. XOR 2" Xor (Num 3) (Num 2)
   , testN "N. XOR 3" Xor (Atom "a") (Atom "b")
   ]
-  where 
-    test n o x y z = 
+  where
+    test n o x y z =
       testCase n $ case calcR o x y of Right res -> res @?= z; Left e -> assertFailure e
-    testN n o x y  = 
+    testN n o x y  =
       testCase n $ case calcR o x y of Left _ -> return (); _ -> assertFailure "Error expected"
 
 unaryTests :: TestTree
@@ -91,10 +91,9 @@ unaryTests = testGroup "Unary Tests"
   , testN "N. Head" Hd (Num 1)
   , testN "N. Tail" Tl (Num 1)
   ]
-  where 
+  where
     test' = case calcU Not Nil of Right v | truthy v -> return (); _ -> assertFailure "False false"
-    test n o x y = 
+    test n o x y =
       testCase n $ case calcU o x of Right res -> res @?= y; Left e -> assertFailure e
     testN n o x =
       testCase n $ case calcU o x of Left _ -> return (); _ -> assertFailure "Error expected"
-

@@ -15,7 +15,7 @@ nonOutput :: VariableDecl -> [Name]
 nonOutput decl = filter (`notElem` output decl) $ getVarsDecl decl
 
 staticNonOutput :: VariableDecl -> Store -> [Name]
-staticNonOutput d s = 
+staticNonOutput d s =
   let nonDyn = map (\n -> (n, find' n s /= Dynamic)) $ nonOutput d
   in map fst $ filter snd nonDyn
 
@@ -31,7 +31,7 @@ mapCombine f = mapProgram f (const ())
 mapProgram :: (a -> b -> c) -> (b -> d) ->
               [Block a b] -> [Block c d]
 mapProgram f g = map changeBlock
-  where 
+  where
     changeBlock b = Block
       { name = appName $ name b
       , from = appFrom $ from b
@@ -104,17 +104,17 @@ getVarsExp (Op _ e1 e2) = getVarsExp e1 `union` getVarsExp e2
 getVarsExp (UOp _ e) = getVarsExp e
 
 getEntryBlock :: [Block a b] -> EM (Block a b)
-getEntryBlock p = 
+getEntryBlock p =
   case filter isEntry p of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
 
 getNEntryBlock :: [NormBlock a] -> NormBlock a
-getNEntryBlock p = head $ filter isNEntry p 
+getNEntryBlock p = head $ filter isNEntry p
 
 getNExitBlock :: [NormBlock a] -> NormBlock a
-getNExitBlock p = head $ filter isNExit p 
+getNExitBlock p = head $ filter isNExit p
 
 getEntry :: [Block a b] -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
@@ -129,39 +129,39 @@ getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
 
 getExitBlock :: [Block a b] -> EM (Block a b)
-getExitBlock p = 
+getExitBlock p =
   case filter isExit p of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
 
 getEntry' :: [Block' a] -> EM a
-getEntry' p = 
+getEntry' p =
   case filter f p of
     [] -> Left "No entry point found"
     [b] -> Right (name' b)
     _ -> Left "Multiple entry points found"
-  where 
+  where
     f b = case from' b of Entry' -> True; _ -> False
 
 getEntryBlock' :: [Block' a] -> EM (Block' a)
-getEntryBlock' p = 
+getEntryBlock' p =
   case filter f p of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
-  where 
+  where
     f b = case from' b of Entry' -> True; _ -> False
 
 getExitBlock' :: [Block' a] -> EM (Block' a)
-getExitBlock' p = 
+getExitBlock' p =
   case filter isExit' p of
     [] -> Left "No exit point found"
     [b] -> Right b
     _ -> Left "Multiple exit points found"
 
 getBlock :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Maybe (Block a b)
-getBlock p l = 
+getBlock p l =
   case filter (\b -> name b == l) p of
     [b] -> return b
     _   -> Nothing
@@ -173,7 +173,7 @@ getBlockUnsafe :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Block a b
 getBlockUnsafe p l = head $ filter (\b -> name b == l) p
 
 getBlock' :: Eq a => [Block' a] -> a -> Maybe (Block' a)
-getBlock' p l = 
+getBlock' p l =
   case filter (\b -> name' b == l) p of
     [b] -> return b
     _   -> Nothing
@@ -181,20 +181,20 @@ getBlock' p l =
 getBlockUnsafe' :: Eq a => [Block' a] -> a -> Block' a
 getBlockUnsafe' p l = head $ filter (\b -> name' b == l) p
 
-getBlockErr :: (Eq a, Eq b, Show a, Show b) => 
+getBlockErr :: (Eq a, Eq b, Show a, Show b) =>
                [Block a b] -> (a, b) -> EM (Block a b)
-getBlockErr p l = 
+getBlockErr p l =
   case filter (\b -> name b == l) p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ show l
-    _   -> Left $ "Multiple blocks found named: " ++ show l 
+    _   -> Left $ "Multiple blocks found named: " ++ show l
 
 getBlockErr' :: (Eq a, Show a) => [Block' a] -> a -> EM (Block' a)
-getBlockErr' p l = 
+getBlockErr' p l =
   case filter (\b -> name' b == l) p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ show l
-    _   -> Left $ "Multiple blocks found named: " ++ show l 
+    _   -> Left $ "Multiple blocks found named: " ++ show l
 
 isEntry :: Block a b -> Bool
 isEntry = isFromEntry . from

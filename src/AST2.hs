@@ -9,7 +9,7 @@ type Program' label = [Block' label]
 data Explicated label = Regular label | Explicator label [Name]
   deriving (Eq, Show, Read)
 
-data Block' label = Block' 
+data Block' label = Block'
   { name' :: label
   , initDiv :: Division
   , from' :: ComeFrom' label
@@ -18,19 +18,19 @@ data Block' label = Block'
   }
   deriving (Eq, Show, Read)
 
-data ComeFrom' label = 
+data ComeFrom' label =
     From' label
-  | Fi' Level Expr' label label 
+  | Fi' Level Expr' label label
   | Entry'
   deriving (Eq, Show, Read)
 
-data Jump' label = 
-    Goto' label 
-  | If' Level Expr' label label 
+data Jump' label =
+    Goto' label
+  | If' Level Expr' label label
   | Exit'
   deriving (Eq, Show, Read)
 
-data Step' = 
+data Step' =
     Update' Level Name RevOp Expr'
   | Replacement' Level Pattern' Pattern'
   | Assert' Level Expr'

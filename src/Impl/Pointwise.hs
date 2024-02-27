@@ -8,7 +8,7 @@ import Utils
 -- create initial PW division for a given starting division
 -- all divisions are fully static except entry block
 initPWDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
-initPWDiv (decl, prog) d = 
+initPWDiv (decl, prog) d =
   let lStart = nname $ getNEntryBlock prog
       ls = map nname prog
       dstatic = makeStaticDiv decl
@@ -18,12 +18,12 @@ initPWDiv (decl, prog) d =
 
 -- make PW division congruent
 makeCongruentPW :: Ord a => NormProgram a -> DivisionPW a -> DivisionPW a
-makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog 
+makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog
 
 -- fix-point iteration powered by a work-queue
 workQueue :: Ord a => [NormBlock a] -> DivisionPW a -> [a] -> DivisionPW a
 workQueue _ pwdiv [] = pwdiv
-workQueue prog pwdiv (l:ls) = 
+workQueue prog pwdiv (l:ls) =
   let (d1, d2) = getDivs l pwdiv
       b = getNBlock prog l
       parentDivs = map (\(l', ()) -> snd $ getDivs l' pwdiv) $ fromLabels $ nfrom b
@@ -41,10 +41,10 @@ analyseBlock :: Division -> NormBlock a -> (Division, Division)
 analyseBlock d b = analyseStep d $ nstep b
 
 -- analyse a single step
--- most are uniform 
+-- most are uniform
 analyseStep :: Division -> Step -> (Division, Division)
 analyseStep d (Update n _ e) = dup $ boundedBy n (analyseExpr d e) d
-analyseStep d (Replacement left right) = 
+analyseStep d (Replacement left right) =
       -- get the extended BTType for the RHS Pattern
   let pRight = analysePat d right
       varsRight = getVarsPat right
@@ -77,7 +77,7 @@ data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
   deriving (Eq, Ord, Show)
 
 updateTypes :: BTPattern -> Pattern -> Division -> Division
-updateTypes QStatic p d = 
+updateTypes QStatic p d =
   setTypes (getVarsPat p) (repeat BTStatic) d
 updateTypes QDynamic p d =
   setTypes (getVarsPat p) (repeat BTDynamic) d
@@ -92,7 +92,7 @@ qlub QStatic p = collapsePat p
 qlub p QStatic = collapsePat p
 qlub QDynamic _ = QDynamic
 qlub _ QDynamic = QDynamic
-qlub (QCons p1 p2) (QCons p3 p4) = 
+qlub (QCons p1 p2) (QCons p3 p4) =
   let p1' = p1 `qlub` p3
       p2' = p2 `qlub` p4
   in QCons p1' p2'
@@ -116,8 +116,8 @@ patToLevel (QCons p1 p2) = patToLevel p1 `lub` patToLevel p2
 analysePat :: Division -> Pattern -> BTPattern
 analysePat _ (QConst _) = QStatic
 analysePat d (QVar n) = levelToPat $ getType n d
-analysePat d (QPair q1 q2) = 
-  let p1 = analysePat d q1 
+analysePat d (QPair q1 q2) =
+  let p1 = analysePat d q1
       p2 = analysePat d q2
   in QCons p1 p2
 

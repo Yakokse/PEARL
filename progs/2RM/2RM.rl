@@ -1,4 +1,4 @@
-(Prog X) -> (Prog Y) 
+(Prog X) -> (Prog Y)
 with (i ProgRev Sign)
 
 init: entry
@@ -47,7 +47,7 @@ regAdd: from regOp1
         goto regOp2
 
 regOp2: fi i = '1 from regComb else regAdd
-        goto regOpEnd        
+        goto regOpEnd
 
 regOpEnd: fi i = '0 from regSwap else regOp2
           goto loop1Join

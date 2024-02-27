@@ -12,7 +12,7 @@ type SLEM = StateT Stats LEM
 
 -- Monad utility function
 lift' :: EM a -> SLEM a
-lift' = lift . raise 
+lift' = lift . raise
 
 -- Base stats for collection
 initStats :: Stats
@@ -35,7 +35,7 @@ runProgram' (decl, prog) store =
   do  entry <- raise $ getEntry prog
       let res = evalBlocks prog (output decl) runStore entry Nothing
       runStateT res initStats
-  where 
+  where
     nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
     runStore = store `updateWithStore` nilStore
 
@@ -49,13 +49,13 @@ createStore decl store =
       allPresent = all (`elem` vars store) (input decl)
   in if anyTemp || anyOut || not allPresent
   then Left "Invalid input store"
-  else 
+  else
     let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
     in return $ nilStore `updateWithStore` store
 
 -- interpret program till exit
--- output: the output store    
-evalBlocks :: (Eq a, Show a) => 
+-- output: the output store
+evalBlocks :: (Eq a, Show a) =>
   [Block a ()] -> [Name] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
 evalBlocks prog outputs store l origin =
   do block <- lift . raise $ getBlockErr prog l
@@ -66,7 +66,7 @@ evalBlocks prog outputs store l origin =
 
 -- interpret a given block
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
-evalBlock s b l = 
+evalBlock s b l =
   do lift . logM $ prettyAnn show (name b, s)
      evalFrom s (from b) l
      s' <- evalSteps s (body b)
@@ -93,7 +93,7 @@ evalJump :: Store -> Jump a () -> SLEM (Maybe a)
 evalJump _ (Goto (l, ())) = incJump >> return (Just l)
 evalJump s (If e (l1, ()) (l2, ())) = incJump >>
   do v <- lift' $ evalExpr s e
-     return . Just $ 
+     return . Just $
       if truthy v then l1 else l2
 evalJump _ (Exit ()) = return Nothing
 
@@ -121,7 +121,7 @@ evalStep s (Update n op e) =
 -- construct an intermediate value and store for a replacement
 construct :: Store -> Pattern -> EM (Store, Value)
 construct store (QConst v) = return (store,v)
-construct store (QVar n) = 
+construct store (QVar n) =
   do v <- find n store
      let store' = update n (Static Nil) store
      return (store', v)
@@ -134,18 +134,18 @@ construct store (QPair q1' q2') =
 -- errors if cannot match
 deconstruct :: Store -> Value -> Pattern -> EM Store
 deconstruct store v (QConst v') =
-  if v == v' 
-    then return store 
+  if v == v'
+    then return store
     else Left "Non-matching constants in replacement."
 deconstruct store v (QVar n) =
   do v' <- find n store
-     if v' == Nil 
-      then return $ update n (Static v) store 
+     if v' == Nil
+      then return $ update n (Static v) store
       else Left "Non-nill variable in replacement."
 deconstruct store (Pair v1 v2) (QPair q1' q2') =
   do store' <- deconstruct store v1 q1'
      deconstruct store' v2 q2'
-deconstruct _ _ (QPair _ _) = Left "Scalar value with cons pattern in replacement."     
+deconstruct _ _ (QPair _ _) = Left "Scalar value with cons pattern in replacement."
 
 -- evaluate an expression
 evalExpr :: Store -> Expr -> EM Value

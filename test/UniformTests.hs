@@ -7,11 +7,11 @@ import Impl.Uniform
 import Control.Monad.State
 
 import AST
-import Values 
+import Values
 import Division
 
-test :: (VariableDecl -> a -> ST b) -> 
-        TestName -> 
+test :: (VariableDecl -> a -> ST b) ->
+        TestName ->
         VariableDecl ->
         Division -> a -> Division -> TestTree
 test f n decl di i o = testCase n $ getDiv (f decl i) di @?= o
@@ -23,7 +23,7 @@ getDiv :: ST a -> Division-> Division
 getDiv = execState
 
 tests :: TestTree
-tests = testGroup "All Uniform BTA Tests" 
+tests = testGroup "All Uniform BTA Tests"
   [ replacementTests
   , updateTests
   ]
@@ -45,8 +45,8 @@ updateTests = testGroup "Reversible Update Tests"
     testIn  n d = test checkStep n (outdecl []) d step
     testOut n ns = test checkStep n (outdecl ns) allStat step
     outdecl ns = VariableDecl [] ns []
-    step = Update "x" Add (Var "y") 
-  
+    step = Update "x" Add (Var "y")
+
 replacementTests :: TestTree
 replacementTests = testGroup "Reversible Replacement Tests"
   [ testIn "Push XY Static"    allStat       pushXY allStat
@@ -80,5 +80,3 @@ replacementTests = testGroup "Reversible Replacement Tests"
     popXY = Replacement (QPair (QVar "x") (QVar "y")) (QVar "y")
     swapXY = Replacement (QPair (QVar "x") (QVar "y"))
                          (QPair (QVar "y") (QVar "x"))
-    
-

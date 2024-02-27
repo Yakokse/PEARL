@@ -6,30 +6,30 @@ import Values
 -- definition of binary operators
 calc :: BinOp -> Value -> Value -> EM Value
 calc (ROp r) a b = calcR r a b
-calc Mul     a b = 
+calc Mul     a b =
   do x <- getNum a; y <- getNum b; return . Num $ x * y
-calc Div     a b = 
-  do x <- getNum a; y <- getNum b; 
+calc Div     a b =
+  do x <- getNum a; y <- getNum b;
      if y /= 0 then return . Num $ x `div` y else Left "Division by 0 error."
-calc And     a b = 
+calc And     a b =
   return $ if truthy a then b else a
-calc Or      a b = 
+calc Or      a b =
   return $ if truthy a then a else b
-calc Less    a b = 
-  do x <- getNum a; y <- getNum b; 
+calc Less    a b =
+  do x <- getNum a; y <- getNum b;
      return $ if x < y then Num y else falseV
-calc Greater a b = 
-  do x <- getNum a; y <- getNum b; 
+calc Greater a b =
+  do x <- getNum a; y <- getNum b;
      return $ if x > y then Num y else falseV
-calc Equal   a b = 
+calc Equal   a b =
   return . boolify $ a == b
 calc Cons    a b = return $ Pair a b
 
 -- definition of reversible binary operators
 calcR :: RevOp -> Value -> Value -> EM Value
-calcR Add a b = 
+calcR Add a b =
   do x <- getNum a; y <- getNum b; return . Num $ x + y
-calcR Sub a b = 
+calcR Sub a b =
   do x <- getNum a; y <- getNum b; return . Num $ x - y
 calcR Xor a b
   | a == b    = return Nil
@@ -47,17 +47,17 @@ calcU Not v = return . boolify . not . truthy $ v
 -- Make a value into an int
 getNum :: Value -> EM IntType
 getNum (Num i) = return i
-getNum _ = Left "Expected an integer." 
+getNum _ = Left "Expected an integer."
 
 -- make a value into an atom
 getAtom :: Value -> EM String
 getAtom (Atom a) = return a
-getAtom _ = Left "Expected an atom." 
+getAtom _ = Left "Expected an atom."
 
 -- make a value into two values
 getPair :: Value -> EM (Value, Value)
 getPair (Pair v1 v2) = return (v1, v2)
-getPair _ = Left "Expected a pair." 
+getPair _ = Left "Expected a pair."
 
 -- assert that a value is nil
 isNil :: Value -> EM ()

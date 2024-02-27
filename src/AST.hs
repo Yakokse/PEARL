@@ -1,16 +1,16 @@
 module AST where
 
-import Values 
+import Values
 
 type Program label store = (VariableDecl, [Block label store])
 
-data VariableDecl = VariableDecl 
+data VariableDecl = VariableDecl
   { input  :: [Name]
   , output :: [Name]
-  , temp   :: [Name] 
+  , temp   :: [Name]
   } deriving (Eq, Show, Read)
 
-data Block label store = Block 
+data Block label store = Block
   { name :: (label, store)
   , from :: ComeFrom label store
   , body :: [Step]
@@ -18,19 +18,19 @@ data Block label store = Block
   }
   deriving (Eq, Show, Read)
 
-data ComeFrom label store = 
+data ComeFrom label store =
     From (label, store)
   | Fi Expr (label, store) (label, store)
   | Entry store
   deriving (Eq, Show, Read)
 
-data Jump label store = 
+data Jump label store =
     Goto (label, store)
   | If Expr (label, store) (label, store)
   | Exit store
   deriving (Eq, Show, Read)
 
-data Step = 
+data Step =
     Update Name RevOp Expr
   | Replacement Pattern Pattern
   | Assert Expr
@@ -68,18 +68,17 @@ data RevOp =
   | Xor
   deriving (Eq, Show, Read)
 
-data UnOp = 
+data UnOp =
     Hd
   | Tl
   | Not
   deriving (Eq, Show, Read)
 
 type NormProgram label = (VariableDecl, [NormBlock label])
-data NormBlock label = NormBlock 
+data NormBlock label = NormBlock
   { nname :: label
   , nfrom :: ComeFrom label ()
-  , nstep :: Step 
+  , nstep :: Step
   , njump :: Jump label ()
   }
   deriving (Eq, Show, Read)
-

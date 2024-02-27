@@ -8,7 +8,7 @@ import Data.Maybe (catMaybes)
 
 -- add explicators for a given RL2 program
 explicate :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
-explicate pwd p f = 
+explicate pwd p f =
   let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
       (renames, blocks) = (concat renames', concat blocks')
   in fixComeFroms renames blocks
@@ -17,10 +17,10 @@ explicate pwd p f =
 fixComeFroms :: Ord a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
                      -> Program' (Explicated a)
 fixComeFroms [] bs = bs
-fixComeFroms ((l, (target, replace)) : ls) bs = 
+fixComeFroms ((l, (target, replace)) : ls) bs =
   let bs' = map (\b -> if name' b == l then fixBlock b else b) bs
   in fixComeFroms ls bs'
-  where 
+  where
     fixBlock b@Block'{from' = k} = b{from' = fixFrom k}
     fixLabel l' = if l' == target then replace else l'
     fixFrom Entry' = Entry'
@@ -30,9 +30,9 @@ fixComeFroms ((l, (target, replace)) : ls) bs =
 -- "Explicate" a single block
 -- returning the block along with possible explicators
 -- + some extra information for relabelling
-explicateBlock :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Block' a 
+explicateBlock :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Block' a
                        -> ([(Explicated a, (Explicated a, Explicated a))], [Block' (Explicated a)])
-explicateBlock pwd p f b@Block'{name' = src, jump' = j} = 
+explicateBlock pwd p f b@Block'{name' = src, jump' = j} =
   let (_, d2) = getDivs src pwd
       b' = mapBlock' Regular b
       pending = toBeExplicated pwd d2 j
@@ -43,7 +43,7 @@ explicateBlock pwd p f b@Block'{name' = src, jump' = j} =
       bNew = b'{jump' = jNew}
       renames = map renameInfo explicatorBlocks
   in (renames, bNew : explicatorBlocks)
-  where 
+  where
     renameOrigJump l Nothing = Regular l
     renameOrigJump _ (Just expl) = name' expl
     renameInfo x = (head . jumpLabels' $ jump' x, (head . fromLabels' $ from' x, name' x))
@@ -51,16 +51,16 @@ explicateBlock pwd p f b@Block'{name' = src, jump' = j} =
 -- For a given jump, give the list of variables that need to be generalized
 -- in each label
 toBeExplicated :: Ord a => DivisionPW a -> Division -> Jump' a -> Jump' [Name]
-toBeExplicated pwd d j = 
+toBeExplicated pwd d j =
   let nextdivs = mapJump' (\l -> divisionToList . fst $ getDivs l pwd ) j
       combined = mapJump' (zipWith
-                            (\(n1, l1) (n2, l2) -> 
-                              if n1 /= n2 
+                            (\(n1, l1) (n2, l2) ->
+                              if n1 /= n2
                               then error "Non-matching vars in divs"
                               else (n1, l1, l2))
                             (divisionToList d)) nextdivs
       notMatching = mapJump' (filter (\(_, l1, l2) -> l1 /= l2)) combined
-      explicators = mapJump' (map (\(n, l1, l2) ->  
+      explicators = mapJump' (map (\(n, l1, l2) ->
                                     case (l1, l2) of
                                       (BTStatic, BTDynamic) -> n
                                       _ -> error "BTA failed monotonicity"
@@ -69,17 +69,17 @@ toBeExplicated pwd d j =
 
 -- create an explicator block for generalizing variables
 -- integer used to distinguish between branches
-createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) -> Int 
+createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) -> Int
                          -> (a, Maybe (Block' (Explicated a)))
 createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
-createExplicator p f src (dest, ns) idx = (dest, return (Block' 
+createExplicator p f src (dest, ns) idx = (dest, return (Block'
   { name' = Explicator (f src idx) ns
   , initDiv = unexplicate . initDiv $ getBlockUnsafe' p dest
   , from' = From' $ Regular src
   , body' = map Generalize ns
   , jump' = Goto' $ Regular dest
   }))
-  where 
+  where
     unexplicate = setTypes ns (repeat BTStatic)
 
 -- annotate jump labels and distinguish between paths

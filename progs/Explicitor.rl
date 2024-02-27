@@ -20,7 +20,7 @@ right: from statpath
 
 merge: fi dyn from left else right
        goto end
-       
+
 dynpath: from init
          stat += dyn
          goto end

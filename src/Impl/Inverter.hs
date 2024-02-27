@@ -4,15 +4,15 @@ import AST
 -- invert a program
 invertProg :: Program a b -> Program a b
 invertProg (decl, p) = (invertDecl decl, map invertBlock p)
-   
+
 invertDecl :: VariableDecl -> VariableDecl
-invertDecl decl = decl {input = output decl, output = input decl} 
+invertDecl decl = decl {input = output decl, output = input decl}
 
 -- invert a block
 invertBlock :: Block a b -> Block a b
-invertBlock Block {name = l, from = f, body = b, jump = j} = Block 
-  { name = l, 
-    from = invertJump j, 
+invertBlock Block {name = l, from = f, body = b, jump = j} = Block
+  { name = l,
+    from = invertJump j,
     body = reverse $ map invertStep b,
     jump = invertFrom f}
 

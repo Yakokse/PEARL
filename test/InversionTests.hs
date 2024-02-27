@@ -10,7 +10,7 @@ testEq :: (Eq b, Show b) => (a -> b) -> TestName -> a -> b -> TestTree
 testEq f n x y = testCase n $ f x @?= y
 
 tests :: TestTree
-tests = testGroup "All Inversion Tests" 
+tests = testGroup "All Inversion Tests"
   [ stepTests
   , jumpTests
   , fromTests
@@ -25,45 +25,45 @@ declTests = testGroup "Variable Declaration Tests"
      (VariableDecl ["a", "b"] ["b", "c"] ["d"])
      (VariableDecl ["b", "c"] ["a", "b"] ["d"])
   ]
-  where 
+  where
     testInv = testEq invertDecl
 
 blockTests :: TestTree
-blockTests = testGroup "Block Tests" 
-  [ testInv "Block" 
+blockTests = testGroup "Block Tests"
+  [ testInv "Block"
      (Block ("l", ()) (Entry ()) [Skip, Update "x" Add (Var "y")] (Goto ("l1", ())))
      (Block ("l", ()) (From ("l1", ())) [Update "x" Sub (Var "y"), Skip] (Exit ()))
   ]
-  where 
+  where
     testInv = testEq invertBlock
 
 fromTests :: TestTree
 fromTests = testGroup "Come-from Tests"
   [ testInv "Exit" (Entry ()) (Exit ())
   , testInv "Goto" (From ("l", ())) (Goto ("l", ()))
-  , testInv "If" 
+  , testInv "If"
         (Fi (Var "e") ("l1", ()) ("l2", ()))
         (If (Var "e") ("l1", ()) ("l2", ()))
   ]
-  where 
+  where
     testInv = testEq invertFrom
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
   [ testInv "Exit" (Exit ()) (Entry ())
   , testInv "Goto" (Goto ("l", ())) (From ("l", ()))
-  , testInv "If" 
+  , testInv "If"
         (If (Var "e") ("l1", ()) ("l2", ()))
         (Fi (Var "e") ("l1", ()) ("l2", ()))
   ]
-  where 
+  where
     testInv = testEq invertJump
 
 stepTests :: TestTree
 stepTests = testGroup "Step Tests"
   [ testInv "Skip" Skip Skip
   , testInv "Assert" (Assert (Var "x")) (Assert (Var "x"))
-  , testInv "Replacement" 
+  , testInv "Replacement"
         (Replacement (QVar "a") (QVar "b"))
         (Replacement (QVar "b") (QVar "a"))
   , testInv "Update +"
@@ -76,7 +76,5 @@ stepTests = testGroup "Step Tests"
         (Update "x" Xor (Var "y"))
         (Update "x" Xor (Var "y"))
   ]
-  where 
+  where
     testInv = testEq invertStep
-
-    

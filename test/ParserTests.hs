@@ -12,14 +12,14 @@ testPos :: (Eq a, Show a) => Parser a -> TestName -> String -> a -> TestTree
 testPos p n x y = testCase n $ parseStr p x @?= Right y
 
 testNeg :: Show a => Parser a -> TestName -> String -> TestTree
-testNeg p n x = testCase n $ 
+testNeg p n x = testCase n $
                       case parseStr p x of
                         Left _ -> return ()
                         Right e -> assertFailure $ "Expression unexpectedly parsed: " ++ show e
 
 -- todo: roundtrip tests?
 tests :: TestTree
-tests = testGroup "All Parsing Tests" 
+tests = testGroup "All Parsing Tests"
   [ expTests
   , patTests
   , stepTests
@@ -37,13 +37,13 @@ progTests = testGroup "Program Tests"
   , testProg "Medium" (concat [emptyDeclStr, block1Str, block2Str])
       (emptyDecl, [block1, block2])
   , testProg "Big" (concat [normDeclStr, block1Str, block2Str, block3Str])
-      (normDecl, [block1, block2, block3]) 
+      (normDecl, [block1, block2, block3])
   , testProgN "Empty" ""
   , testProgN "Decl missing" block1Str
   , testProgN "Block missing" normDeclStr
   , testProgN "Wrong order" $ block1Str ++ normDeclStr
   ]
-  where 
+  where
     emptyDeclStr = "() -> () "
     emptyDecl  = VariableDecl [] [] []
     normDeclStr  = "(a) -> (b) with (c) "
@@ -51,15 +51,15 @@ progTests = testGroup "Program Tests"
     block1Str = "l: entry exit "
     block1 = Block ("l", ()) (Entry ()) [] (Exit ())
     block2Str = "l1: from l2 skip skip goto l3 "
-    block2 = Block ("l1", ()) 
-            (From ("l2", ())) 
-            [Skip, Skip] 
+    block2 = Block ("l1", ())
+            (From ("l2", ()))
+            [Skip, Skip]
             (Goto ("l3", ()))
     block3Str = "l1: fi a from l2 else l3 x <- y z += '3 if b goto l4 else l5"
-    block3 = Block ("l1", ()) 
-            (Fi (Var "a") ("l2", ()) ("l3", ())) 
+    block3 = Block ("l1", ())
+            (Fi (Var "a") ("l2", ()) ("l3", ()))
             [ Replacement (QVar "x") (QVar "y")
-            , Update "z" Add (Const $ Num 3)] 
+            , Update "z" Add (Const $ Num 3)]
             (If (Var "b") ("l4", ()) ("l5", ()))
     testProg  = testPos pProg
     testProgN = testNeg pProg
@@ -69,7 +69,7 @@ declTests = testGroup "Variable Declaration Tests"
   [ testDecl "Empty 1" "() -> ()" $ VariableDecl [] [] []
   , testDecl "Empty 2" "() -> () with ()" $ VariableDecl [] [] []
   , testDecl "Simple 1" "(a) -> (b)" $ VariableDecl ["a"] ["b"] []
-  , testDecl "Simple 2" "(a) -> (b) with (c)" $ 
+  , testDecl "Simple 2" "(a) -> (b) with (c)" $
       VariableDecl ["a"] ["b"] ["c"]
   , testDecl "Big 1" "(a b c d) -> (e f g h)" $
       VariableDecl ["a", "b", "c", "d"] ["e", "f", "g", "h"] []
@@ -80,7 +80,7 @@ declTests = testGroup "Variable Declaration Tests"
   , testDeclN "Empty" ""
   , testDeclN "Wrong order" "() with () -> ()"
   ]
-  where 
+  where
     testDecl  = testPos pDecl
     testDeclN = testNeg pDecl
 
@@ -91,19 +91,19 @@ blockTests = testGroup "Block Tests"
   , testBlock "Basic 1" "l: entry skip exit" $
       Block ("l", ()) (Entry ()) [Skip] (Exit ())
   , testBlock "Basic 2" "l1: from l2 skip skip goto l3" $
-      Block ("l1", ()) (From ("l2", ())) 
-                       [Skip, Skip] 
+      Block ("l1", ()) (From ("l2", ()))
+                       [Skip, Skip]
                        (Goto ("l3", ()))
   , testBlock "Complex" "l1: fi a from l2 else l3 x <- y z += '3 if b goto l4 else l5" $
-     Block ("l1", ()) (Fi (Var "a") ("l2", ()) ("l3", ())) 
+     Block ("l1", ()) (Fi (Var "a") ("l2", ()) ("l3", ()))
                        [ Replacement (QVar "x") (QVar "y")
-                       , Update "z" Add (Const $ Num 3)] 
+                       , Update "z" Add (Const $ Num 3)]
                        (If (Var "b") ("l4", ()) ("l5", ()))
   , testBlockN "Missing \":\"" "l entry skip exit"
   , testBlockN "Missing from" "l: skip exit"
   , testBlockN "Missing jump" "l: entry skip"
   ]
-  where 
+  where
     testBlock  = testPos pBlock
     testBlockN = testNeg pBlock
 
@@ -111,9 +111,9 @@ fromTests :: TestTree
 fromTests = testGroup "Come-from Tests"
   [ testFrom "Entry" "entry" $ Entry ()
   , testFrom "From" "from l" $ From ("l", ())
-  , testFrom "Fi 1" "fi e from l1 else l2" $ 
+  , testFrom "Fi 1" "fi e from l1 else l2" $
       Fi (Var "e") ("l1", ()) ("l2", ())
-  , testFrom "Fi 2" "fi x * y from l1 else l2" $ 
+  , testFrom "Fi 2" "fi x * y from l1 else l2" $
       Fi (Op Mul (Var "x") (Var "y")) ("l1", ()) ("l2", ())
   , testFromN "Case Sensitive 1" "Entry"
   , testFromN "Case Sensitive 2" "From l"
@@ -123,7 +123,7 @@ fromTests = testGroup "Come-from Tests"
   , testFromN "Forbidden label 3" "fi e from entry else l"
   , testFromN "Forbidden label 4" "fi e from l else exit"
   ]
-  where 
+  where
     testFrom  = testPos pFrom
     testFromN = testNeg pFrom
 
@@ -131,9 +131,9 @@ jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
   [ testJump "Exit" "exit" $ Exit ()
   , testJump "Goto" "goto l" $ Goto ("l", ())
-  , testJump "If 1" "if e goto l1 else l2" $ 
+  , testJump "If 1" "if e goto l1 else l2" $
       If (Var "e") ("l1", ()) ("l2", ())
-  , testJump "If 2" "if x * y goto l1 else l2" $ 
+  , testJump "If 2" "if x * y goto l1 else l2" $
       If (Op Mul (Var "x") (Var "y")) ("l1", ()) ("l2", ())
   , testJumpN "Case Sensitive 1" "Exit"
   , testJumpN "Case Sensitive 2" "Goto l"
@@ -143,7 +143,7 @@ jumpTests = testGroup "Jump Tests"
   , testJumpN "Forbidden label 3" "if e goto entry else l"
   , testJumpN "Forbidden label 4" "if e goto l else exit"
   ]
-  where 
+  where
     testJump  = testPos pJump
     testJumpN = testNeg pJump
 
@@ -151,7 +151,7 @@ stepTests :: TestTree
 stepTests = testGroup "Step Tests"
   [ testStep "Skip" "skip" Skip
   , testStep "Assert 1" "assert(x)" $ Assert (Var "x")
-  , testStep "Assert 2" "assert(x*y)" $ 
+  , testStep "Assert 2" "assert(x*y)" $
       Assert (Op Mul (Var "x") (Var "y"))
   , testStep "Replacement 1" "x <- y" $
       Replacement (QVar "x") (QVar "y")
@@ -160,7 +160,7 @@ stepTests = testGroup "Step Tests"
   , testStep "Update 1" "x += y" $ Update "x" Add (Var "y")
   , testStep "Update 2" "x -= y" $ Update "x" Sub (Var "y")
   , testStep "Update 3" "x ^= y" $ Update "x" Xor (Var "y")
-  , testStep "Update 4" "x += y * z" $ 
+  , testStep "Update 4" "x += y * z" $
       Update "x" Add (Op Mul (Var "y") (Var "z"))
   , testStepN "Empty" ""
   , testStepN "Case Sensitive 1" "Skip"
@@ -174,7 +174,7 @@ stepTests = testGroup "Step Tests"
   , testStepN "Non-rev operator 1" "x *= "
   , testStepN "Non-rev operator 2" "x /= "
   ]
-  where 
+  where
     testStep  = testPos pStep
     testStepN = testNeg pStep
 
@@ -186,17 +186,17 @@ patTests = testGroup "Pattern Tests"
   , testPat "Pair" "(x . y)" (QPair (QVar "x") (QVar "y"))
   , testPat "Const Pair" "'(1 . 2)" (QConst $ Pair (Num 1) (Num 2))
   , testPat "Complex" "((x . 'nil) . ('(1 . 2) . y))" $
-      QPair (QPair (QVar "x") (QConst Nil)) 
+      QPair (QPair (QVar "x") (QConst Nil))
             (QPair (QConst $ Pair (Num 1) (Num 2)) (QVar "y"))
-  , testPatN "Extra parens" "(x)" 
-  , testPatN "Missing parens" "x . y" 
-  , testPatN "Mismatched 1" "(x" 
-  , testPatN "Mismatched 2" "x)" 
+  , testPatN "Extra parens" "(x)"
+  , testPatN "Missing parens" "x . y"
+  , testPatN "Mismatched 1" "(x"
+  , testPatN "Mismatched 2" "x)"
   , testPatN "Missing \"'\" 1" "1"
   , testPatN "Missing \"'\" 2" "nil"
   , testPatN "Missing \"'\" 3" "(1 . 2)"
   ]
-  where 
+  where
     testPat  = testPos pPattern
     testPatN = testNeg pPattern
 
@@ -214,31 +214,31 @@ expTests = testGroup "Expression Tests"
   , testExp "Unary operator 1" "hd x" (UOp Hd (Var "x") )
   , testExp "Unary operator 2" "tl x" (UOp Tl (Var "x") )
   , testExp "Unary operator 3" "!x" (UOp Not (Var "x") )
-  , testExp "Repeated brackets 1" 
+  , testExp "Repeated brackets 1"
     "(((((((((((((((((((((((((((((x)))))))))))))))))))))))))))))" (Var "x")
-  , testExp "Repeated brackets 2" 
-    "(((((((((((((((((((((((((((((x . y)))))))))))))))))))))))))))))" 
+  , testExp "Repeated brackets 2"
+    "(((((((((((((((((((((((((((((x . y)))))))))))))))))))))))))))))"
             (Op Cons (Var "x") (Var "y"))
-  , testExp "Repeated brackets 3" 
-    "((((((((((((((((((((((((((((((((((((((x))))))))))))))))))))))))))).(((((((((y))))))))))))))))))))" 
+  , testExp "Repeated brackets 3"
+    "((((((((((((((((((((((((((((((((((((((x))))))))))))))))))))))))))).(((((((((y))))))))))))))))))))"
             (Op Cons (Var "x") (Var "y"))
   , testExp "Repeated unary op" "!(!(!x))" (UOp Not(UOp Not(UOp Not (Var "x"))))
-  , testExp "Associativity 1" "x - y - z" 
+  , testExp "Associativity 1" "x - y - z"
       (Op (ROp Sub) (Op (ROp Sub) (Var "x") (Var "y")) (Var "z"))
   , testExp "Associativity 2" "x / y / z" (Op Div (Op Div (Var "x") (Var "y")) (Var "z"))
-  , testExp "Same Precedence 1" "a + b - c" 
+  , testExp "Same Precedence 1" "a + b - c"
       (Op (ROp Sub) (Op (ROp Add) (Var "a") (Var "b")) (Var "c"))
-  , testExp "Same Precedence 2" "a - b + c" 
+  , testExp "Same Precedence 2" "a - b + c"
       (Op (ROp Add) (Op (ROp Sub) (Var "a") (Var "b")) (Var "c"))
-  , testExp "Same Precedence 3" "a * b / c" 
+  , testExp "Same Precedence 3" "a * b / c"
       (Op Div (Op Mul (Var "a") (Var "b")) (Var "c"))
-  , testExp "Same Precedence 4" "a / b * c" 
+  , testExp "Same Precedence 4" "a / b * c"
       (Op Mul (Op Div (Var "a") (Var "b")) (Var "c"))
   , testExp "Big Precedence 1" "a * b + c < d && e . f" $
-    Op Cons (Op And (Op Less (Op (ROp Add) (Op Mul 
+    Op Cons (Op And (Op Less (Op (ROp Add) (Op Mul
       (Var "a") (Var "b")) (Var "c")) (Var "d")) (Var "e")) (Var "f")
   , testExp "Big Precedence 2" "a . b && c < d + e * f" $
-    Op Cons (Var "a") (Op And (Var "b") (Op Less (Var "c") 
+    Op Cons (Var "a") (Op And (Var "b") (Op Less (Var "c")
       (Op (ROp Add) (Var "d") (Op Mul (Var "e") (Var "f")))))
   , testExpN "Missing \"'\" 1" "nil"
   , testExpN "Missing \"'\" 2" "1"
@@ -249,7 +249,6 @@ expTests = testGroup "Expression Tests"
   , testExpN "Mismatched parens 1" "(((x))"
   , testExpN "Mismatched parens 2" "((x)))"
   ]
-  where 
+  where
     testExp  = testPos pExpr
     testExpN = testNeg pExpr
-    

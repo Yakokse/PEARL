@@ -5,7 +5,7 @@ import Test.Tasty.HUnit
 
 import Impl.Wellformed
 import AST
-import Values 
+import Values
 
 wellformed :: (a -> EM b) -> TestName -> a -> TestTree
 wellformed f n x = testCase n $ case f x of Right _ -> return (); Left e -> assertFailure e
@@ -14,7 +14,7 @@ malformed :: (a -> EM b) -> TestName -> a -> TestTree
 malformed f n x = testCase n $ case f x of Left _ -> return (); _ -> assertFailure "Unexpectedly wellformed"
 
 tests :: TestTree
-tests = testGroup "All Inversion Tests" 
+tests = testGroup "All Inversion Tests"
   [ exprTests
   , patTests
   , stepTests
@@ -40,7 +40,7 @@ declTests = testGroup "Variable Declaration Tests"
   , testDecN "Repeated out" (v [] ["x", "x"] [])
   , testDecN "Repeated tmp" (v [] [] ["x", "x"])
   ]
-  where 
+  where
     v = VariableDecl
     testDec = wellformed wellformedDecl
     testDecN = malformed wellformedDecl
@@ -60,13 +60,13 @@ blockTests = testGroup "Block Tests"
   , testBlockN "Wrong from" $
       Block ("z", ()) (From ("c", ())) [] (Goto ("c", ()))
   , testBlockN "Nonexistant 1" $
-      Block ("x", ()) (From ("a", ())) [] (Goto ("c", ())) 
+      Block ("x", ()) (From ("a", ())) [] (Goto ("c", ()))
   , testBlockN "Nonexistant 2" $
-      Block ("x", ()) (From ("c", ())) [] (Goto ("a", ()))   
+      Block ("x", ()) (From ("c", ())) [] (Goto ("a", ()))
   ]
-  where 
+  where
     terminal = Block ("t", ()) (Entry ()) [] (Exit ())
-    connective = Block ("c", ()) 
+    connective = Block ("c", ())
                        (Fi (Var "a") ("x", ()) ("y", ()))
                        []
                        (If (Var "a") ("x", ()) ("z", ()))
@@ -84,7 +84,7 @@ fromTests = testGroup "From Tests"
   ]
   where
     testStep = wellformed $ wellformedFrom ["x", "y", "z"]
-    testStepN = malformed $ wellformedFrom ["x", "y", "z"] 
+    testStepN = malformed $ wellformedFrom ["x", "y", "z"]
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
@@ -115,10 +115,10 @@ stepTests = testGroup "Step Tests"
 
 patTests :: TestTree
 patTests = testGroup "Pattern Tests"
-  [ testPat "Constant" (QConst $ Num 3) 
+  [ testPat "Constant" (QConst $ Num 3)
   , testPat "Variable" (QVar "x")
   , testPat "Pair" (QPair (QVar "y") (QVar "x"))
-  , testPat "Big" (QPair (QPair (QVar "y") (QConst $ Num 1)) 
+  , testPat "Big" (QPair (QPair (QVar "y") (QConst $ Num 1))
                          (QPair (QVar "z") (QVar "x")))
   , testPatN "N. Variable" (QVar "a")
   , testPatN "N. Pair 1" (QPair (QVar "y") (QVar "a"))
@@ -128,7 +128,7 @@ patTests = testGroup "Pattern Tests"
   where
     testPat = wellformed $ wellformedPat ["x", "y", "z"]
     testPatN = malformed $ wellformedPat ["x", "y", "z"]
-  
+
 exprTests :: TestTree
 exprTests = testGroup "Expression Tests"
   [ testExp "Constant" (Const $ Num 3)
