@@ -130,6 +130,10 @@ wellformedStep' d1 d2 (Replacement' l p1 p2) =
      if l == l1 && l1 == l2
       then return ()
       else Left "Pattern mismatch."
+wellformedStep' d1 d2 (Generalize n) =
+  if getType n d1 == BTStatic && getType n d2 == BTDynamic
+    then return ()
+    else Left $ "Unexpected explicator: " ++ n 
 
 wellformedPat' :: Division -> Pattern' -> EM Level
 wellformedPat' _ (QConst' l _) = return l

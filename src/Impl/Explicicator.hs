@@ -1,6 +1,5 @@
 module Impl.Explicicator where
 
-import AST
 import AST2
 import Utils
 import Values
@@ -8,14 +7,14 @@ import Division
 import Data.Maybe (catMaybes)
 
 -- add explicators for a given RL2 program
-explicate :: Eq a => Program' a -> (a -> Int -> a) -> Program' (Explicated a)
-explicate p f = 
-  let (renames', blocks') = unzip $ map (explicateBlock p f) p
+explicate :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
+explicate pwd p f = 
+  let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
       (renames, blocks) = (concat renames', concat blocks')
   in fixComeFroms renames blocks
 
 -- fix come-froms for blocks where an explicator was inserted before it
-fixComeFroms :: Eq a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
+fixComeFroms :: Ord a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
                      -> Program' (Explicated a)
 fixComeFroms [] bs = bs
 fixComeFroms ((l, (target, replace)) : ls) bs = 
@@ -31,11 +30,12 @@ fixComeFroms ((l, (target, replace)) : ls) bs =
 -- "Explicate" a single block
 -- returning the block along with possible explicators
 -- + some extra information for relabelling
-explicateBlock :: Eq a => Program' a -> (a -> Int -> a) -> Block' a 
+explicateBlock :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Block' a 
                        -> ([(Explicated a, (Explicated a, Explicated a))], [Block' (Explicated a)])
-explicateBlock p f b@Block'{name' = src, jump' = j, endDiv = d2} = 
-  let b' = mapBlock' Regular b
-      pending = toBeExplicated p d2 j
+explicateBlock pwd p f b@Block'{name' = src, jump' = j} = 
+  let (_, d2) = getDivs src pwd
+      b' = mapBlock' Regular b
+      pending = toBeExplicated pwd d2 j
       withDest = combineJumpWith (,) j pending
       explicators = mapJumpInt (createExplicator p f src) withDest
       explicatorBlocks = catMaybes . jumpLabels' $ mapJump' snd explicators
@@ -50,13 +50,15 @@ explicateBlock p f b@Block'{name' = src, jump' = j, endDiv = d2} =
 
 -- For a given jump, give the list of variables that need to be generalized
 -- in each label
-toBeExplicated :: Eq a => Program' a -> Division -> Jump' a -> Jump' [Name]
-toBeExplicated p d j = 
-  let nextdivs = mapJump' (divisionToList . initDiv . getBlockUnsafe' p ) j
+toBeExplicated :: Ord a => DivisionPW a -> Division -> Jump' a -> Jump' [Name]
+toBeExplicated pwd d j = 
+  let nextdivs = mapJump' (\l -> divisionToList . fst $ getDivs l pwd ) j
       combined = mapJump' (zipWith
-                      (\(n1, l1) (n2, l2) -> if n1 /= n2 then error "Non-matching vars in divs"
-                                             else (n1, l1, l2))
-                      (divisionToList d)) nextdivs
+                            (\(n1, l1) (n2, l2) -> 
+                              if n1 /= n2 
+                              then error "Non-matching vars in divs"
+                              else (n1, l1, l2))
+                            (divisionToList d)) nextdivs
       notMatching = mapJump' (filter (\(_, l1, l2) -> l1 /= l2)) combined
       explicators = mapJump' (map (\(n, l1, l2) ->  
                                     case (l1, l2) of
@@ -66,18 +68,19 @@ toBeExplicated p d j =
   in explicators
 
 -- create an explicator block for generalizing variables
-createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a 
-                         -> (a, [Name]) -> Int -> (a, Maybe (Block' (Explicated a)))
+-- integer used to distinguish between branches
+createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) -> Int 
+                         -> (a, Maybe (Block' (Explicated a)))
 createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
 createExplicator p f src (dest, ns) idx = (dest, return (Block' 
   { name' = Explicator (f src idx) ns
-  , initDiv = endDiv $ getBlockUnsafe' p src
+  , initDiv = unexplicate . initDiv $ getBlockUnsafe' p dest
   , from' = From' $ Regular src
-  , body' = map initVar ns
+  , body' = map Generalize ns
   , jump' = Goto' $ Regular dest
-  , endDiv = initDiv $ getBlockUnsafe' p dest
   }))
-    where initVar n = Update' BTDynamic n Xor (Lift (Var' BTStatic n))
+  where 
+    unexplicate = setTypes ns (repeat BTStatic)
 
 -- annotate jump labels and distinguish between paths
 mapJumpInt :: (a -> Int -> b) -> Jump' a -> Jump' b

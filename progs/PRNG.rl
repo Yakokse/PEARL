@@ -14,14 +14,14 @@ loop: fi nums from loop1 else init
       if bit = '0 goto xor0 else xor1
 
 xor0: from loop
-      bit += seed # '0 
+      bit += hd seed
       goto xor
 
 xor1: from loop
-      bit -= seed # '0 
+      bit -= hd seed
       goto xor
 
-xor: fi bit = seed # '0 from xor0 else xor1
+xor: fi bit = hd seed from xor0 else xor1
      goto append
 
 append: fi seedrev from append else xor

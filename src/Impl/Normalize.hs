@@ -4,19 +4,29 @@ import AST
 import Utils
 
 -- normalize a program
-normalize :: Eq a => a -> Program a () -> (a -> Int -> a) -> NormProgram a
-normalize entry (decl, prog) f = (decl, pad entry $ concatMap (normalizeBlock prog f) prog)
+normalize :: Eq a => a -> a -> Program a () -> (a -> Int -> a) -> NormProgram a
+normalize entry exit (decl, prog) f = (decl, pad entry exit $ concatMap (normalizeBlock prog f) prog)
 
 -- add an extra nop block in the beginning of a program
 -- for room for explicator in beginning of program
-pad :: Eq a => a -> [NormBlock a] -> [NormBlock a]
-pad entryLabel prog = 
-  let first = getNEntryBlock prog
-      l = nname first
-      rest = filter (\b -> nname b /= l) prog
-      first' = first{nfrom = From (entryLabel, ())}
-      padding = NormBlock entryLabel (Entry ()) Skip (Goto (l, ()))
-  in [padding, first'] ++ rest
+pad :: Eq a => a -> a -> [NormBlock a] -> [NormBlock a]
+pad entryLabel exitLabel prog = 
+  let entryBlock = getNEntryBlock prog
+      exitBlock = getNExitBlock prog
+      l1 = nname entryBlock
+      l2 = nname exitBlock
+      padding1 = NormBlock entryLabel (Entry ()) Skip (Goto (l1, ()))
+      padding2 = NormBlock exitLabel (From (l2, ())) Skip (Exit ())
+  in if l1 /= l2
+     then let rest = filter (\b -> nname b `notElem` [l1, l2]) prog
+              entry' = entryBlock{nfrom = From (entryLabel, ())}
+              exit' = exitBlock{njump = Goto (exitLabel, ())}
+          in [padding1, entry'] ++ rest ++ [exit', padding2]
+     else [ padding1
+          , exitBlock{ nfrom = From (entryLabel, ())
+                     , njump = Goto (entryLabel, ())
+                     }
+          , padding2]
 
 -- normalize a block, transforming each step into its own block
 normalizeBlock :: Eq a => [Block a ()] -> (a -> Int -> a) -> Block a () -> [NormBlock a]

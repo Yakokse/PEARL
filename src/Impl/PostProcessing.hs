@@ -202,14 +202,14 @@ changeConditionals prog = map changeCond prog
       _ -> (j , [])
 
 -- Compress blocks that chain together
-compressPaths :: (Ord a, Ord b) => [Block a b] -> EM [Block a b]
+compressPaths :: (Ord a, Ord b) => [Block a b] -> [Block a b]
 compressPaths p = 
-  do entry <- getEntryBlock p
-     let bss = chainBlocks [name entry] []
-     let bs = map combineBlocks bss
-     let relabels = Map.fromList $ map relabelPair bss
-     let p' = mapBoth (updateL relabels) bs
-     return p'
+  let entry = getEntryName p
+      bss = chainBlocks [entry] []
+      bs = map combineBlocks bss
+      relabels = Map.fromList $ map relabelPair bss
+      p' = mapBoth (updateL relabels) bs
+  in removeEmptyBlocks p'
   where 
     combineBlocks bs = Block {
       name = name $ head bs
@@ -237,6 +237,26 @@ compressPaths p =
                       in (b:bs, ls)
                   Just _ -> ([b], [l])
                   Nothing -> ([b], [])
+
+-- remove empty blocks that are not necessary
+removeEmptyBlocks :: (Ord a, Ord b) => [Block a b] -> [Block a b]
+removeEmptyBlocks p = 
+  let (normal, empty) = L.partition isNeeded p
+      relabelFroms = Map.fromList $ map (\b -> 
+                      (name b, head . fromLabels $ from b)) empty
+      relabelJumps = Map.fromList $ map (\b ->
+                      (name b, head . jumpLabels $ jump b)) empty
+      jumpsFixed = map (mapJumpB (updateL relabelJumps)) normal
+      fromsFixed = map (mapFromB (updateL relabelFroms)) jumpsFixed
+  in fromsFixed
+  where 
+    updateL relab l = fromMaybe l $ Map.lookup l relab
+    mapJumpB f b = b{jump = mapJump f $ jump b} 
+    mapFromB f b = b{from = mapFrom f $ from b} 
+    isNeeded Block{from = f, body = b, jump = j} =
+      let semanticFrom = case f of From _ -> False; _ -> True
+          semanticJump = case j of Goto _ -> False; _ -> True
+      in not (null b) || semanticFrom || semanticJump
 
 -- Transform the store annotations into integers.
 enumerateAnn :: Ord b => [Block a b] -> [Block a Int]

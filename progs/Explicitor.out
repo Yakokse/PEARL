@@ -8,7 +8,7 @@ init_1:
 
 init_1_1_expl_1:
 	from init_1
-	stat ^= '0
+	stat <- '0
 	stat += dyn
 	goto end_1_2
 
@@ -28,7 +28,7 @@ statpath_1_1:
 left_1_1:
 	from statpath_1_1
 	assert(dyn)
-	stat ^= '3
+	stat <- '3
 	goto merge_1_1_e1_2_expl_3
 
 merge_1_1_e1_2_expl_3:
@@ -40,5 +40,5 @@ merge_1_1_e1_2_expl_3:
 right_1_1:
 	from statpath_1_1
 	assert(!(dyn))
-	stat ^= '9
+	stat <- '9
 	goto merge_1_1_e1_2_expl_3

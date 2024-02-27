@@ -18,7 +18,6 @@ annotateBlock pwd b =
     , from' = annotateFrom d1 $ nfrom b
     , body' = [annotateStep d1 d2 $ nstep b]
     , jump' = annotateJump d2 $ njump b
-    , endDiv = d2
     } 
   where 
     (d1, d2) = getDivs (nname b) pwd

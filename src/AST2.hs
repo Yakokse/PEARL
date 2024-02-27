@@ -15,7 +15,6 @@ data Block' label = Block'
   , from' :: ComeFrom' label
   , body' :: [Step']
   , jump' :: Jump' label
-  , endDiv :: Division
   }
   deriving (Eq, Show, Read)
 
@@ -36,6 +35,7 @@ data Step' =
   | Replacement' Level Pattern' Pattern'
   | Assert' Level Expr'
   | Skip' Level
+  | Generalize Name
   deriving (Eq, Show, Read)
 
 data Pattern' =

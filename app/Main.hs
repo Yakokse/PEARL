@@ -211,7 +211,7 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      initStore <- parseFile "division and specilization data" 
                     v parseSpec specPath
      trace v "- Normalizing input program."
-     let nprog = normalize "init" prog (\l i -> l ++ "_" ++ show i)
+     let nprog = normalize "init" "stop" prog (\l i -> l ++ "_" ++ show i)
      trace v "- Creating initial binding."
      d <- fromEM "binding" $ makeDiv initStore decl
      trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
@@ -222,7 +222,7 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      let prog2 = annotateProg congruentDiv nprog
      _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report." 
                  (wellformedProg' congruentDiv prog2)
-     let explicated = explicate prog2 (\l i -> l ++ "_" ++ show i)
+     let explicated = explicate congruentDiv prog2 (\l i -> l ++ "_" ++ show i)
      out <- if skipSpecPhase specOpts 
               then do trace v "- Skip specialization";
                       return $ prettyProg' (serializeExpl id) explicated
@@ -235,7 +235,6 @@ btaPW p d =
   let initd = initPWDiv p d
   in makeCongruentPW p initd
 
--- todo: pipeline cleanup
 specMain2 :: SpecOptions -> VariableDecl -> Program' (Explicated Label) -> Store -> IO String
 specMain2 specOpts decl prog2 store = 
   let v = specVerbose specOpts
@@ -278,7 +277,7 @@ specPostProcess v origdecl (decl, prog) =
             mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, withAssertions)
      showLength singleExit
      trace v "- Compressing paths"
-     compressed <- fromEM "Path compression" $ compressPaths singleExit
+     let compressed = compressPaths singleExit
      showLength compressed
      trace v "- Cleaning names"
      let numeratedStore = enumerateAnn compressed
@@ -328,19 +327,21 @@ benchMain BenchOptions { benchFile     = inputPath
          (outRes, stats) <- run mode prog runstore
          let combinedOut = updateWithStore (makeStore outStatic) outRes
          verifyOutput mode origOut combinedOut
+         fromEM ("wellformedness of residual prog " ++ mode) $ 
+            wellformedProg prog
          return (prog, stats)
     preprocess mode bta nprog d =
       do trace v $ "Preprocessing " ++ mode
          let cdiv = bta nprog d
          let p2 = annotateProg cdiv nprog
          fromEM "wellformedness of RL2 prog" (wellformedProg' cdiv p2)
-         let expl = explicate p2 (\l i -> l ++ "_" ++ show i)
+         let expl = explicate cdiv p2 (\l i -> l ++ "_" ++ show i)
          return expl 
     run mode p s = 
       do trace v $ "Interpreting " ++ mode
          (res, _) <- fromLEM "execution" $ runProgram' p s
          return res
-    normalize' p = normalize "init" p (\l i -> l ++ "_" ++ show i) 
+    normalize' p = normalize "init" "stop" p (\l i -> l ++ "_" ++ show i) 
     specialize' mode d p s = 
       do trace v $ "Specializing " ++ mode
          (prog, _) <- fromLEM "specializing" $ specialize d p s (Regular "entry")

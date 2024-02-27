@@ -28,14 +28,14 @@ specDecl decl p =
   do inBlock <- getEntryBlock' p
      outBlock <- getExitBlock' p
      let inDiv = initDiv inBlock
-     let outDiv = endDiv outBlock
+     let outDiv = initDiv outBlock
      let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
      let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
      let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ getVarsDecl decl
      let tmp = filter (\n -> any (isDynIn n) p) potentialTemp
      return VariableDecl { input = inp, output = out, temp = tmp }
   where 
-    isDynIn n b = isType n BTDynamic (initDiv b) || isType n BTDynamic (endDiv b)
+    isDynIn n b = isType n BTDynamic (initDiv b)
 
 
 specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe Store)] 
@@ -67,11 +67,11 @@ merge block prog
   | otherwise = 
     do logM "MERGE"
        b <- raise $ getBlockErr prog $ name block
-       b' <- raise $ mergeBlocks b block
+       b' <- raise $ mergeBlock b block
        let rest = filter (\x -> name block /= name x) prog
        return $ b' : rest
   where 
-    mergeBlocks x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
+    mergeBlock x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
     mergeFi (Fi e (l1, s1) (l2, s2)) (Fi e' (l1', s1') (l2', s2')) 
       | e == e' && l1 == l1' && l2 == l2' = 
           return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2')
@@ -84,7 +84,7 @@ specBlock entry decl s b origin =
   do let l = (name' b, Just s)
      f <- specFrom entry s (from' b) origin
      (s', as) <- specSteps s $ body' b
-     (j, pending) <- specJump s' decl (jump' b) (endDiv b)
+     (j, pending) <- specJump s' decl (jump' b)
      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 specFrom :: Eq a => a -> Store -> ComeFrom' a -> (a, Store) 
@@ -114,10 +114,10 @@ annotate :: Eq a => a -> (a, Store) -> (a, Maybe Store)
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> VariableDecl -> Jump' a -> Division
+specJump :: Store -> VariableDecl -> Jump' a 
             -> EM (Jump a (Maybe Store), [Point a])
-specJump s decl Exit' d = 
-  let s' = updateStore s d
+specJump s decl Exit' = 
+  let s' = s-- updateStore s d
       checkable = staticNonOutput decl s'
       vals = map (`find` s') checkable
 --      cleanStore = s' `onlyIn` output decl
@@ -128,29 +128,17 @@ specJump s decl Exit' d =
      case offendingVars of
       [] -> return (Exit (Just s'), [])
       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
-specJump s _ (Goto' l) d = 
-  let s' = updateStore s d
-  in return (Goto (l, Just s'), [(l, s')])
-specJump s _ (If' BTDynamic e l1 l2) d = 
-  let s' = updateStore s d
-  in 
-  do e' <- getExpr e s'; 
-     return (If e' (l1, Just s') (l2, Just s'), [(l1, s'), (l2, s')]) 
-specJump s _ (If' BTStatic e l1 l2) d = 
-  let s' = updateStore s d
-  in 
+specJump s _ (Goto' l) =
+   return (Goto (l, Just s), [(l, s)])
+specJump s _ (If' BTDynamic e l1 l2) = 
+  do e' <- getExpr e s; 
+     return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)]) 
+specJump s _ (If' BTStatic e l1 l2) = 
   do v <- getValue e s
      return $ 
       if truthy v 
-        then (Goto (l1, Just s'), [(l1, s')]) 
-        else (Goto (l2, Just s'), [(l2, s')])
-
-updateStore :: Store -> Division -> Store
-updateStore s d = mapStore updateVar s
-  where
-    updateVar n v = case getType n d of
-      BTStatic -> v
-      BTDynamic -> Dynamic  
+        then (Goto (l1, Just s), [(l1, s)]) 
+        else (Goto (l2, Just s), [(l2, s)]) 
 
 specSteps :: Store -> [Step'] -> EM (Store, [Step])
 specSteps s [] = return (s, [])
@@ -191,6 +179,11 @@ specStep s (Replacement' BTStatic q1 q2) =
      case (q1', q2') of
       (Nothing, Nothing) -> return (s', [])
       q -> Left $ "Static replacement produced residual patterns: " ++ show q
+specStep s (Generalize n) =
+  do v <- find n s
+     let s' = update n Dynamic s
+     let step = [Replacement (QVar n) (QConst v) | v /= Nil]
+     return (s', step)
 
 data PEPattern = PEStatic Value | PEDynamic | PECons PEPattern PEPattern
 

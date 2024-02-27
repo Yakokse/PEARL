@@ -113,11 +113,17 @@ getEntryBlock p =
 getNEntryBlock :: [NormBlock a] -> NormBlock a
 getNEntryBlock p = head $ filter isNEntry p 
 
+getNExitBlock :: [NormBlock a] -> NormBlock a
+getNExitBlock p = head $ filter isNExit p 
+
 getEntry :: [Block a b] -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
 
 getEntryLabel :: [Block a b] -> a
 getEntryLabel = label . head . filter isEntry
+
+getEntryName :: [Block a b] -> (a, b)
+getEntryName = name . head . filter isEntry
 
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
@@ -191,16 +197,22 @@ getBlockErr' p l =
     _   -> Left $ "Multiple blocks found named: " ++ show l 
 
 isEntry :: Block a b -> Bool
-isEntry = isJumpEntry . from
+isEntry = isFromEntry . from
 
 isNEntry :: NormBlock a -> Bool
-isNEntry = isJumpEntry . nfrom
+isNEntry = isFromEntry . nfrom
 
-isJumpEntry :: ComeFrom a b -> Bool
-isJumpEntry j = case j of Entry _ -> True; _ -> False
+isFromEntry :: ComeFrom a b -> Bool
+isFromEntry j = case j of Entry _ -> True; _ -> False
 
 isExit :: Block a b -> Bool
-isExit b = case jump b of Exit _ -> True; _ -> False
+isExit = isJumpExit . jump
+
+isNExit :: NormBlock a -> Bool
+isNExit = isJumpExit . njump
+
+isJumpExit :: Jump a b -> Bool
+isJumpExit j = case j of Exit _ -> True; _ -> False
 
 exitCount :: [Block a b] -> Int
 exitCount = length . filter isExit

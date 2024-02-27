@@ -1,3 +1,3 @@
 stat = '0
 
-dyn = 'nil
+//dyn = 'nil

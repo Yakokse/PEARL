@@ -135,10 +135,10 @@ prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b = 
   (f (name' b) ++ ": " ++ prettyDiv' (initDiv b)) : 
   map ('\t' :) 
-    (prettyFrom' f (from' b) 
+    (  prettyFrom' f (from' b) 
     ++ map prettyStep' (body' b) 
     ++ prettyJump' f (jump' b)
-    ++ [prettyDiv' (endDiv b)]) ++ [""]
+    ) ++ [""]
 
 prettyFrom' :: Print a -> ComeFrom' a -> [String]
 prettyFrom' f (From' l)  = ["%from " ++ f l]
@@ -175,6 +175,7 @@ prettyStep' (Assert' BTDynamic e) = "%assert(" ++ prettyExpr' e ++ ")"
 prettyStep' (Assert' BTStatic e) = "assert(" ++ prettyExpr' e ++ ")"
 prettyStep' (Replacement' BTDynamic q1 q2) = prettyPat' q1 ++ " %<- " ++ prettyPat' q2
 prettyStep' (Replacement' BTStatic q1 q2) = prettyPat' q1 ++ " <- " ++ prettyPat' q2
+prettyStep' (Generalize n) = "generalize(" ++ n ++ ")"
 
 prettyPat' :: Pattern' -> String
 prettyPat' (QConst' BTDynamic v) = "%'" ++ prettyVal v
