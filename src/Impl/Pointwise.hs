@@ -48,7 +48,6 @@ analyseStep d (Replacement left right) =
       -- get the extended BTType for the RHS Pattern
   let pRight = analysePat d right
       varsRight = getVarsPat right
-      varsLeft = getVarsPat left
       -- get the extended BTType for the LHS Pattern
       -- Variables from the RHS pattern are considered static
       -- since theyve been nil-cleared
@@ -59,17 +58,7 @@ analyseStep d (Replacement left right) =
       -- Use this information to set the respective variables in each pattern
       dRight = updateTypes p right d
       dLeft = updateTypes p left dTemp
-      -- However some variables may not occur on other side
-      -- so we must look on the other sides div
-      -- fx (x . y) <- y, where x was initially static
-      --    now clearly depends on y on lhs, but must also be set to dynamic on rhs
-      -- fx x <- (x . y), where y was initally static
-      --    must be set to dynamic (otherwise non-inj update), but static in left div
-      onlyLHS = filter (`notElem` varsRight) varsLeft
-      onlyRHS = filter (`notElem` varsLeft) varsRight
-      dStart = setTypes onlyLHS (map (`getType` dLeft)  onlyLHS) dRight
-      dEnd   = setTypes onlyRHS (map (`getType` dRight) onlyRHS) dLeft
-  in (dStart, dEnd)
+  in (dRight, dLeft)
 analyseStep d (Assert _) = dup d
 analyseStep d Skip = dup d
 

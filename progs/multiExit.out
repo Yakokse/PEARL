@@ -11,9 +11,9 @@ fst_1_2:
 	assert((dyn = '5))
 	dyn += '1
 	elim ^= '1
-	goto stop_1_x1_2_3
+	goto stop_x1_2_5
 
-stop_1_x1_2_3:
+stop_x1_2_5:
 	fi (elim = '1)
 		from fst_1_2
 		else snd_1_2
@@ -24,4 +24,4 @@ snd_1_2:
 	assert(!((dyn = '5)))
 	dyn += '2
 	elim ^= '2
-	goto stop_1_x1_2_3
+	goto stop_x1_2_5

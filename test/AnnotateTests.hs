@@ -19,7 +19,12 @@ xyStore x y = listToDiv [("x", x), ("y", y)]
 tests :: TestTree
 tests = testGroup "All Annotation Tests"
   [ expTests
+  , patTests
   ]
+
+patTests :: TestTree
+patTests = testGroup "Replacement Tests"
+  [undefined]
 
 expTests :: TestTree
 expTests = testGroup "Expression Tests"

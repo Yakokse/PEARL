@@ -77,11 +77,15 @@ constFold p = concat <$> mapM constFoldB p
 
 
 -- Merge all explicator blocks
-mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) Store] -> [Block (Explicated a) Store]
+mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) Store]
+                          -> [Block (Explicated a) Store]
 mergeExplicators annotateExpl p =
   let (expl, rest) = L.partition (\b -> case fst $ name b of
                                       Regular _ -> False; _ -> True) p
-      explLabel = getLabel . fst . name
+      explLabel b =
+        let (l', s) = name b
+            (l, ns) = getBoth l'
+        in  (l, s `withouts` ns)
       explGroups' = L.groupBy (\b1 b2 -> explLabel b1 == explLabel b2) $
                     L.sortBy (\b1 b2 -> explLabel b1 `compare` explLabel b2) expl
       originss = map (map name) explGroups'
@@ -99,6 +103,9 @@ mergeExplicators annotateExpl p =
       getVars n = case n of
                        Regular _ -> []
                        Explicator _ ns -> ns
+      getBoth n = case n of
+                       Regular l -> (l, [])
+                       Explicator l ns -> (l, ns)
       getStore = snd . name
       annotateBlock b lb ub =
         let l =  label b

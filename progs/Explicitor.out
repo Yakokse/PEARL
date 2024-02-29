@@ -15,7 +15,7 @@ init_1_1_expl_1:
 end_1_2:
 	fi dyn
 		from init_1_1_expl_1
-		else merge_1_1_e1_2_expl_3
+		else merge_1_1_e1_2_expl_8
 	stat += '3
 	exit
 
@@ -29,9 +29,9 @@ left_1_1:
 	from statpath_1_1
 	assert(dyn)
 	stat <- '3
-	goto merge_1_1_e1_2_expl_3
+	goto merge_1_1_e1_2_expl_8
 
-merge_1_1_e1_2_expl_3:
+merge_1_1_e1_2_expl_8:
 	fi (stat = '3)
 		from left_1_1
 		else right_1_1
@@ -41,4 +41,4 @@ right_1_1:
 	from statpath_1_1
 	assert(!(dyn))
 	stat <- '9
-	goto merge_1_1_e1_2_expl_3
+	goto merge_1_1_e1_2_expl_8

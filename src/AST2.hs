@@ -42,6 +42,7 @@ data Pattern' =
     QConst' Level Value
   | QVar' Level Name
   | QPair' Level Pattern' Pattern'
+  | Drop Name
   deriving (Eq, Show, Read)
 
 data Expr' =

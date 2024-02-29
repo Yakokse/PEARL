@@ -131,9 +131,9 @@ getExitLabel = label . head . filter isExit
 getExitBlock :: [Block a b] -> EM (Block a b)
 getExitBlock p =
   case filter isExit p of
-    [] -> Left "No entry point found"
+    [] -> Left "No exit point found"
     [b] -> Right b
-    _ -> Left "Multiple entry points found"
+    _ -> Left "Multiple exit points found"
 
 getEntry' :: [Block' a] -> EM a
 getEntry' p =

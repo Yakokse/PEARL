@@ -7,7 +7,7 @@ import Values
 import Division
 import qualified Data.Set as S
 
-wellformedProg :: (Eq a, Show a) => Program a () -> EM ()
+wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
 wellformedProg (decl, p) =
   do _ <- wellformedDecl decl
      _ <- getEntryBlock p
@@ -30,7 +30,7 @@ wellformedDecl decl =
     notTemp = all (`notElem` tmp)
 
 
-wellformedBlock :: (Eq a, Show a) => [Block a ()] -> [Name] -> Block a () -> EM ()
+wellformedBlock :: (Eq a, Show a, Eq b, Show b) => [Block a b] -> [Name] -> Block a b -> EM ()
 wellformedBlock p ns b =
   do mapM_ checkFrom $ jumpLabels $ jump b
      mapM_ checkGoto $ fromLabels $ from b
@@ -42,20 +42,21 @@ wellformedBlock p ns b =
       b' <- getBlockErr p l
       if name b `elem` fromLabels (from b')
         then return ()
-        else Left $ show (name b) ++ " not mentioned in " ++ show l
+        else Left $ show (name b) ++ " not mentioned in come-from of " ++ show l
     checkGoto l = do
       b' <- getBlockErr p l
       if name b `elem` jumpLabels (jump b')
         then return ()
-        else Left $ show (name b) ++ " not mentioned in " ++ show l
+        else Left $ show (name b) ++ " not mentioned in jump of " ++ show l ++
+                "\n\nInstead:" ++ show (jump b')
 
-wellformedJump :: [Name] -> Jump a () -> EM ()
+wellformedJump :: [Name] -> Jump a b -> EM ()
 wellformedJump _ (Goto _) = return ()
 wellformedJump ns (If e _ _) =
   wellformedExp ns e
 wellformedJump _ (Exit _) = return ()
 
-wellformedFrom :: [Name] -> ComeFrom a () -> EM ()
+wellformedFrom :: [Name] -> ComeFrom a b -> EM ()
 wellformedFrom _  (From _) = return ()
 wellformedFrom ns (Fi e _ _) =
   wellformedExp ns e
@@ -147,6 +148,7 @@ wellformedPat' d (QPair' l q1 q2) =
      if l == BTDynamic || (l1 == l2 && l2 == BTStatic)
       then return l
       else Left "Type mismatch in pair"
+wellformedPat' _ _ = return BTDynamic
 
 wellformedJump' :: Division -> Jump' a -> EM ()
 wellformedJump' _ Exit'         = return ()

@@ -7,6 +7,7 @@ import qualified OperatorTests as OP
 import qualified UniformTests as UNI
 import qualified PointwiseTests as PW
 import qualified AnnotateTests as AN
+import qualified PostprocessingTests as PP
 
 main :: IO ()
 main = defaultMain $
@@ -18,4 +19,5 @@ main = defaultMain $
     , UNI.tests
     , PW.tests
     , AN.tests
+    , PP.tests
     ]

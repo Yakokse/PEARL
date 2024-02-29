@@ -267,22 +267,25 @@ specPostProcess v origdecl (decl, prog) =
      let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
      let merged = mapLabel (serializeExpl id) merged'
      showLength merged
+     trace v "- Merging exits"
+     let ((decl', singleExit), staticVals) =
+            mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, merged)
+     showLength singleExit
      trace v "- Removing dead blocks"
-     let liveProg = removeDeadBlocks merged
+     let liveProg = removeDeadBlocks singleExit
      showLength liveProg
      trace v "- Adding assertions / Making blocks wellformed"
      let withAssertions = changeConditionals liveProg
-     trace v "- Merging exits"
-     let ((decl', singleExit), staticVals) =
-            mergeExits origdecl (\l i1 i2 -> l ++ "_x" ++ show i1 ++ "_" ++ show i2) (decl, withAssertions)
-     showLength singleExit
-     trace v "- Compressing paths"
-     let compressed = compressPaths singleExit
-     showLength compressed
+     fromEM "Wellformedness check 1" $ wellformedProg (decl', withAssertions)
      trace v "- Cleaning names"
-     let numeratedStore = enumerateAnn compressed
+     let numeratedStore = enumerateAnn withAssertions
      let clean = mapCombine (\l s -> l ++ "_" ++ show s) numeratedStore
-     return ((decl', clean), staticVals)
+     fromEM "Wellformedness check 2" $ wellformedProg (decl', clean)
+     trace v "- Compressing paths"
+     let compressed = compressPaths clean
+     fromEM "Wellformedness check 3" $ wellformedProg (decl', compressed)
+     showLength compressed
+     return ((decl', compressed), staticVals)
 
 printStaticOutput :: VariableDecl -> [(Name, SpecValue)] -> IO ()
 printStaticOutput decl tpls =

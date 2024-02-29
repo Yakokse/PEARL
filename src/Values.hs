@@ -46,18 +46,18 @@ truthy = (/= falseV)
 boolify :: Bool -> Value
 boolify b = if b then trueV else falseV
 
-find ::  Name -> Store -> EM Value
+find :: Name -> Store -> EM Value
 find n s =
   case Map.lookup n s of
     Just (Static v) -> return v
     Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
-findDyn ::  Name -> Store -> EM Value
-findDyn n s =
+isDynIn :: Name -> Store -> EM ()
+isDynIn n s =
   case Map.lookup n s of
-    Just (Static v) -> return v
-    Just _ -> return Nil
+    Just (Static _) -> Left $ "Variable \"" ++ n ++ "\" static during lookup"
+    Just Dynamic -> return ()
     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
 find' :: Name -> Store -> SpecValue

@@ -33,7 +33,7 @@ annotateStep d1 _ (Update n rop e) =
     BTDynamic ->
       Update' BTDynamic n rop $ lift (annotateExp d1 e)
 annotateStep d1 d2 (Replacement q1 q2) =
-  let (q1', q2', btType) = annotatePats (q1, d2) (q2, d1)
+  let (q1', q2', btType) = annotatePats d2 d1 q1 q2
   in Replacement' btType q1' q2'
 annotateStep d1 _ (Assert e) =
   let (e', btType) = annotateExp d1 e
@@ -57,32 +57,33 @@ annotateJump d (If e (l1, ()) (l2, ())) =
   in If' btType e' l1 l2
 
 -- Annotate patterns with precision
-annotatePats :: (Pattern, Division) -> (Pattern, Division) -> (Pattern', Pattern', Level)
-annotatePats (QPair q1 q2, d1) (QPair q3 q4, d2) =
-  let (q1', q3', t1) = annotatePats (q1, d1) (q3, d2)
-      (q2', q4', t2) = annotatePats (q2, d1) (q4, d2)
+annotatePats :: Division -> Division -> Pattern -> Pattern -> (Pattern', Pattern', Level)
+annotatePats d1 d2 (QPair q1 q2) (QPair q3 q4) =
+  let (q1', q3', t1) = annotatePats d1 d2 q1 q3
+      (q2', q4', t2) = annotatePats d1 d2 q2 q4
       t = t1 `lub` t2
   in (QPair' t q1' q2', QPair' t q3' q4', t)
-annotatePats (q1, d1) (q2, d2)
-  | isDynPat q1 d1 || isDynPat q2 d2 = (annotateDynamic q1, annotateDynamic q2, BTDynamic)
-  | otherwise = (annotateStatic q1, annotateStatic q2, BTStatic)
-  where
-    -- Annotate whole pattern as dynamic
-    annotateDynamic (QConst v) = QConst' BTDynamic v
-    annotateDynamic (QVar n) = QVar' BTDynamic n
-    annotateDynamic (QPair l r) =
-      QPair' BTDynamic (annotateDynamic l) (annotateDynamic r)
-    -- Annotate whole pattern as static
-    annotateStatic (QConst v) = QConst' BTStatic v
-    annotateStatic (QVar n) = QVar' BTStatic n
-    annotateStatic (QPair l r) =
-      QPair' BTStatic (annotateStatic l) (annotateStatic r)
+annotatePats d1 d2 q1 q2 =
+  let (q1', t1) = annotatePat d1 d2 q1
+      (q2', t2) = annotatePat d2 d1 q2
+      t = t1 `lub` t2
+  in case t of
+      BTStatic -> (q1', q2', t)
+      BTDynamic -> (liftQ q1', liftQ q2', t)
 
--- Is the pattern at least partially dynamic
-isDynPat :: Pattern -> Division -> Bool
-isDynPat (QConst _) _ = False
-isDynPat (QVar n) d = isType n BTDynamic d
-isDynPat (QPair q1 q2) d = isDynPat q1 d || isDynPat q2 d
+annotatePat :: Division -> Division -> Pattern -> (Pattern', Level)
+annotatePat _ _ (QConst c) = (QConst' BTStatic c, BTStatic)
+annotatePat d d' (QVar n) =
+  let t = getType n d
+      t' = getType n d'
+  in case (t, t') of
+        (BTDynamic, BTStatic) -> (Drop n, t)
+        (_, _) -> (QVar' t n, t)
+annotatePat d d' (QPair q1 q2) =
+  let (q1', t1) = annotatePat d d' q1
+      (q2', t2) = annotatePat d d' q2
+      t = t1 `lub` t2
+  in (QPair' t q1' q2', t)
 
 -- Annotate an expression
 annotateExp :: Division -> Expr -> (Expr', Level)
@@ -100,7 +101,14 @@ annotateExp d (UOp op e) =
   let (e', btType) = annotateExp d e
   in (UOp' btType op e', btType)
 
+-- Lift static pattern
+liftQ :: Pattern' -> Pattern'
+liftQ (QConst' BTStatic c) = QConst' BTDynamic c
+liftQ (QPair' l q1 q2) = QPair' l (liftQ q1) (liftQ q2)
+liftQ q = q
+
 -- Lift static expressions
 lift :: (Expr', Level) -> Expr'
+lift (Const' BTStatic c, BTStatic) = Const' BTDynamic c
 lift (e, BTStatic) = Lift e
 lift (e, BTDynamic) = e
