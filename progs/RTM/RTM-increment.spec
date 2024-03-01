@@ -1,7 +1,7 @@
 // Describe the TM
 Start = '1
 End = '6
-Transitions =
+Rules =
  '((1 . (BLANK . (BLANK . 2))) .
   ((2 . (SLASH . (RIGHT . 3))) .
   ((3 . (0 .     (1     . 4))) .
@@ -13,6 +13,4 @@ Transitions =
    nil))))))))
 
 // Tape for full specialization
-S = 'BLANK
-S_left = 'nil
 S_right = '(1 . (1 . (0 .  nil)))

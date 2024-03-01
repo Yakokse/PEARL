@@ -3,7 +3,7 @@
 // Example: _000 --> _111
 Start = '1
 End = '6
-Transitions =
+Rules =
  '((1 . (BLANK . (BLANK . 2))) .
   ((2 . (SLASH . (RIGHT . 3))) .
   ((3 . (0 .     (1     . 2))) .
@@ -14,6 +14,4 @@ Transitions =
    nil))))))))
 
 // Tape for full specialization
-S = 'BLANK
-S_left = 'nil
 S_right = '(0 . (0 . (0 . nil)))

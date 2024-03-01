@@ -68,8 +68,8 @@ annotatePats d1 d2 q1 q2 =
       (q2', t2) = annotatePat d2 d1 q2
       t = t1 `lub` t2
   in case t of
-      BTStatic -> (q1', q2', t)
-      BTDynamic -> (liftQ q1', liftQ q2', t)
+      BTStatic -> (q1', q2', BTStatic)
+      BTDynamic -> (liftQ q1', liftQ q2', BTDynamic)
 
 annotatePat :: Division -> Division -> Pattern -> (Pattern', Level)
 annotatePat _ _ (QConst c) = (QConst' BTStatic c, BTStatic)
@@ -104,7 +104,7 @@ annotateExp d (UOp op e) =
 -- Lift static pattern
 liftQ :: Pattern' -> Pattern'
 liftQ (QConst' BTStatic c) = QConst' BTDynamic c
-liftQ (QPair' l q1 q2) = QPair' l (liftQ q1) (liftQ q2)
+liftQ (QPair' BTStatic q1 q2) = QPair' BTDynamic (liftQ q1) (liftQ q2)
 liftQ q = q
 
 -- Lift static expressions

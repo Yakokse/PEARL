@@ -117,16 +117,14 @@ annotate l (l', s) | l == l'   = (l, Just s)
 specJump :: Store -> VariableDecl -> Jump' a
             -> EM (Jump a (Maybe Store), [Point a])
 specJump s decl Exit' =
-  let s' = s-- updateStore s d
-      checkable = staticNonOutput decl s'
-      vals = map (`find` s') checkable
---      cleanStore = s' `onlyIn` output decl
+  let checkable = staticNonOutput decl s
+      vals = map (`find` s) checkable
   in
   do vs <- sequence vals
      let pairs = zip checkable vs
      let offendingVars = filter (\(_,v) -> v /= Nil) pairs
      case offendingVars of
-      [] -> return (Exit (Just s'), [])
+      [] -> return (Exit (Just s), [])
       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
 specJump s _ (Goto' l) =
    return (Goto (l, Just s), [(l, s)])
@@ -174,9 +172,9 @@ specStep s (Replacement' BTDynamic q1 q2) =
       (Just q1', Just q2') -> return (s', [Replacement q1' q2'])
       _ -> Left "Dynamic replacement did not produce pattern"
 specStep s (Replacement' BTStatic q1 q2) =
-  do (p, s'', q2') <- specPatConstruct s q2
-     (s', q1') <- specPatDeconstruct s'' q1 p
-     case (q1', q2') of
+  do (p, s'', mq2) <- specPatConstruct s q2
+     (s', mq1) <- specPatDeconstruct s'' q1 p
+     case (mq1, mq2) of
       (Nothing, Nothing) -> return (s', [])
       q -> Left $ "Static replacement produced residual patterns: " ++ show q
 specStep s (Generalize n) =
@@ -186,6 +184,7 @@ specStep s (Generalize n) =
      return (s', step)
 
 data PEPattern = PEStatic Value | PEDynamic | PECons PEPattern PEPattern
+  deriving (Show)
 
 specPatConstruct :: Store -> Pattern' -> EM (PEPattern, Store, Maybe Pattern)
 specPatConstruct s (QConst' BTDynamic c) = return (PEDynamic, s, return $ QConst c)
@@ -196,16 +195,16 @@ specPatConstruct s (QVar' BTStatic n) =
      let s' = update n (Static Nil) s
      return (PEStatic v, s', Nothing)
 specPatConstruct s (QPair' BTDynamic q1 q2) =
-  do (p1, s1, q1') <- specPatConstruct s q1
-     (p2, s2, q2') <- specPatConstruct s1 q2
-     return (combinePEPats p1 p2, s2, combinePats q1' q2')
+  do (p1, s1, mq1) <- specPatConstruct s q1
+     (p2, s2, mq2) <- specPatConstruct s1 q2
+     case (p1, p2, mq1, mq2) of
+        (PEDynamic, PEDynamic, Just q1', Just q2') ->
+            return (PEDynamic, s2, Just $ QPair q1' q2')
+        _ -> Left "Pattern BT-type issue in dynamic pair"
 specPatConstruct s (QPair' BTStatic q1 q2) =
   do (p1, s1, q1') <- specPatConstruct s q1
      (p2, s2, q2') <- specPatConstruct s1 q2
-     case (p1, p2, q1', q2') of
-      (PEStatic _, PEStatic _, Nothing, Nothing) ->
-        return (combinePEPats p1 p2, s2, Nothing)
-      _ -> Left "Pattern BT-type issue in static pair"
+     return (combinePEPats p1 p2, s2, combinePats q1' q2')
 specPatConstruct s (Drop n) =
   do n `isDynIn` s
      let s' = update n (Static Nil) s
@@ -215,19 +214,24 @@ specPatConstruct s (Drop n) =
 -- static constants can become dynamic from other side of matching
 -- we need the pattern from BTA for true annotation
 specPatDeconstruct :: Store -> Pattern' -> PEPattern -> EM (Store, Maybe Pattern)
-specPatDeconstruct s (QConst' BTDynamic c) _ = return (s, Just $ QConst c)
-specPatDeconstruct s (QConst' BTStatic c) p =
-  do v <- valFromPEPat p
-     if c == v
-      then return (s, Nothing)
-      else Left "Failed to match static constant"
-specPatDeconstruct s (QVar' BTDynamic n) _ = return (s, Just $ QVar n)
+specPatDeconstruct s (QConst' BTDynamic c) PEDynamic =
+  return (s, Just $ QConst c)
+specPatDeconstruct s (QConst' BTStatic c) (PEStatic c') =
+  if c == c'
+    then return (s, Nothing)
+    else Left "Failed to match static constant"
+specPatDeconstruct s (QVar' BTDynamic n) PEDynamic =
+  return (s, Just $ QVar n)
 specPatDeconstruct s (QVar' BTStatic n) p =
   do v <- valFromPEPat p
      v' <- find n s
      res <- calcR Xor v v'
      return (update n (Static res) s, Nothing)
-specPatDeconstruct s (QPair' _ q1 q2) p =
+specPatDeconstruct s (QPair' BTDynamic q1 q2) PEDynamic =
+  do (s'', q1') <- specPatDeconstruct s   q1 PEDynamic
+     (s', q2')  <- specPatDeconstruct s'' q2 PEDynamic
+     return (s', combinePats q1' q2')
+specPatDeconstruct s (QPair' BTStatic q1 q2) p =
   do (p1, p2) <- splitPEPat p
      (s'', q1') <- specPatDeconstruct s q1 p1
      (s', q2') <- specPatDeconstruct s'' q2 p2
@@ -238,6 +242,8 @@ specPatDeconstruct s (Drop n) _ =
      if v /= Nil
       then Left $ "Variable " ++ n ++ "was not nil for inverted drop"
       else return (s', Just $ QVar n)
+specPatDeconstruct a b c = error $
+  show a ++ "\n" ++ show b ++ "\n" ++ show c
 
 splitPEPat :: PEPattern -> EM (PEPattern, PEPattern)
 splitPEPat PEDynamic = return (PEDynamic, PEDynamic)
