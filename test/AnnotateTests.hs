@@ -20,11 +20,35 @@ tests :: TestTree
 tests = testGroup "All Annotation Tests"
   [ expTests
   , patTests
+  , stepTests
+  ]
+
+stepTests :: TestTree
+stepTests = testGroup "Step Tests"
+  [ testCase "todo" $ assertFailure "TODO"
   ]
 
 patTests :: TestTree
-patTests = testGroup "Replacement Tests"
-  [undefined]
+patTests = testGroup "Pattern Tests"
+  [ testPat "Const" xStat xStat (QConst $ Num 1)
+      (QConst' BTStatic $ Num 1) BTStatic
+  , testPat "Static var" xStat xStat (QVar "x")
+      (QVar' BTStatic "x") BTStatic
+  , testPat "Dynamic var" yStat yStat (QVar "x")
+      (QVar' BTDynamic "x") BTDynamic
+  , testPat "Drop" yStat xStat (QVar "x")
+      (Drop "x") BTDynamic
+  , testPat "Static Pair" xStat xStat (QPair (QVar "x") (QConst $ Num 4))
+      (QPair' BTStatic (QVar' BTStatic "x") (QConst' BTStatic $ Num 4)) BTStatic
+  , testPat "Partial Pair" xStat xStat (QPair (QVar "x") (QVar "y"))
+      (QPair' BTStatic (QVar' BTStatic "x") (QVar' BTDynamic "y")) BTDynamic
+  , testPat "Fully Dyn" xStat xStat (QPair (QVar "y") (QVar "y"))
+      (QPair' BTStatic (QVar' BTDynamic "y") (QVar' BTDynamic "y")) BTDynamic
+  ]
+  where
+    xStat   = xyStore BTStatic  BTDynamic
+    yStat   = xyStore BTDynamic BTStatic
+    testPat n d1 d2 p p' l = test n (annotatePat d1 d2) p (p', l)
 
 expTests :: TestTree
 expTests = testGroup "Expression Tests"

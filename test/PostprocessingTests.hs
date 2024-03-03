@@ -18,7 +18,8 @@ tests = testGroup "All Postprocessing Tests"
 
 explicatorTests :: TestTree
 explicatorTests = testGroup ""
-  [undefined]
+  [ testCase "todo" $ assertFailure "TODO"
+  ]
 
 emptyBlockTests :: TestTree
 emptyBlockTests = testGroup "removeEmptyBlocks Tests"

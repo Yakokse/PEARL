@@ -49,17 +49,7 @@ getNum :: Value -> EM IntType
 getNum (Num i) = return i
 getNum _ = Left "Expected an integer."
 
--- make a value into an atom
-getAtom :: Value -> EM String
-getAtom (Atom a) = return a
-getAtom _ = Left "Expected an atom."
-
 -- make a value into two values
 getPair :: Value -> EM (Value, Value)
 getPair (Pair v1 v2) = return (v1, v2)
 getPair _ = Left "Expected a pair."
-
--- assert that a value is nil
-isNil :: Value -> EM ()
-isNil Nil = return ()
-isNil _ = Left "Expected value to be nil."

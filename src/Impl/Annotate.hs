@@ -83,7 +83,7 @@ annotatePat d d' (QPair q1 q2) =
   let (q1', t1) = annotatePat d d' q1
       (q2', t2) = annotatePat d d' q2
       t = t1 `lub` t2
-  in (QPair' t q1' q2', t)
+  in (QPair' BTStatic q1' q2', t)
 
 -- Annotate an expression
 annotateExp :: Division -> Expr -> (Expr', Level)
