@@ -21,12 +21,51 @@ tests = testGroup "All Annotation Tests"
   [ expTests
   , patTests
   , stepTests
+  , jumpTests
+  , fromTests
+  ]
+
+jumpTests :: TestTree
+jumpTests = testGroup "Jump Tests"
+  [ testCase "todo" $ assertFailure "TODO"
+
+  ]
+
+fromTests :: TestTree
+fromTests = testGroup "Jump Tests"
+  [ testCase "todo" $ assertFailure "TODO"
+
   ]
 
 stepTests :: TestTree
 stepTests = testGroup "Step Tests"
-  [ testCase "todo" $ assertFailure "TODO"
+  [ testStep "Static Update" allStat allStat
+      (Update "x" Add (Var "y"))
+      (Update' BTStatic "x" Add (Var' BTStatic "y"))
+  , testStep "Dynamic Update" allDyn allDyn
+      (Update "x" Add (Var "y"))
+      (Update' BTDynamic "x" Add (Var' BTDynamic "y"))
+  , testStep "Static Update" allStat allStat
+      (Assert $ Var "x")
+      (Assert' BTStatic $ Var' BTStatic "x")
+  , testStep "Dynamic Update" allDyn allDyn
+      (Assert $ Var "x")
+      (Assert' BTDynamic $ Var' BTDynamic "x")
+  , testStep "Skip" allDyn allDyn Skip (Skip' BTStatic)
+  , testStep "Replacement Static" allStat allStat
+      (Replacement (QVar "x") (QVar "y"))
+      (Replacement' BTStatic (QVar' BTStatic "x") (QVar' BTStatic "y"))
+  , testStep "Replacement Partial" allStat allDyn
+      (Replacement (QVar "x") (QVar "y"))
+      (Replacement' BTDynamic (Drop "x") (QVar' BTStatic "y"))
+  , testStep "Replacement Dynamic" allDyn allDyn
+      (Replacement (QVar "x") (QVar "y"))
+      (Replacement' BTDynamic (QVar' BTDynamic "x") (QVar' BTDynamic "y"))
   ]
+  where
+    allStat = xyStore BTStatic  BTStatic
+    allDyn  = xyStore BTDynamic BTDynamic
+    testStep n d1 d2 = test n (annotateStep d1 d2)
 
 patTests :: TestTree
 patTests = testGroup "Pattern Tests"
