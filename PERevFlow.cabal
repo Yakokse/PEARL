@@ -26,8 +26,8 @@ library
   exposed-modules:
       Assertions.Abstraction
       Assertions.Analysis
-      Interpretation.Execute
-      Interpretation.Impl.Execute
+      Interpretation.Impl.Interpret
+      Interpretation.Interpret
       Inversion.Impl.Inverter
       Inversion.Inverter
       Maps
