@@ -1,12 +1,12 @@
 module PE.Preprocessing.Impl.Explicicator where
 
-import Utils
 import Utils.Maps
 
 import RL.Values
 
-import PE.SpecValues
 import PE.AST2
+import PE.SpecValues
+import PE.Program2
 import PE.Preprocessing.Division
 
 import Data.Maybe (catMaybes)

@@ -7,7 +7,7 @@ import RL.Values
 import RL.AST
 
 import Parsing.Impl.Common
-import Parsing.Impl.Parser
+import Parsing.Impl.Program
 
 
 testPos :: (Eq a, Show a) => Parser a -> TestName -> String -> a -> TestTree

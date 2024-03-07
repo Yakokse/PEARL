@@ -1,7 +1,6 @@
 module Interpretation.Impl.Interpret where
 
 
-import Utils
 import Utils.Error
 import Utils.Maps
 import Utils.PrettyPrint
@@ -9,6 +8,8 @@ import Utils.PrettyPrint
 import RL.AST
 import RL.Operators
 import RL.Values
+import RL.Variables
+import RL.Program
 
 import qualified Control.Monad.State as S
 
@@ -82,7 +83,7 @@ evalBlocks prog outputs store l origin =
 -- interpret a given block
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock s b l =
-  do S.lift . logM $  show (fst $ name b) ++ prettyStore s -- TODO: improve
+  do S.lift . logM $  show (label b) ++ prettyStore s -- TODO: improve
      evalFrom s (from b) l
      s' <- evalSteps s (body b)
      l' <- evalJump s' (jump b)

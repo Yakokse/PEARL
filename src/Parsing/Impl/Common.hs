@@ -5,6 +5,8 @@ import Data.Functor (void)
 
 import Utils.Error
 
+import RL.Values
+
 type Parser = Parsec String ()
 
 -- apply a parser to a string
@@ -13,12 +15,24 @@ parseStr p s = case parse (p <* eof) "" s of
   Left err -> Left $ show err
   Right res -> Right res
 
+-- parse a constant literal
+pConstant :: Parser Value
+pConstant = symbol "'" *> pValue
+ where
+  pValue = choice
+    [ Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
+    , Nil <$ word "nil"
+    , Atom <$> pName
+    , Num <$> pNum
+    ] <?> "Expecting a value"
+
 -- parse a variable name
 pName :: Parser String
 pName =
   lexeme . try $
     do c <- letter; cs <- many pChar;
-       if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
+       let n = c : cs
+       if n `elem` restricted then fail "Restricted Word" else return n
   where
     pChar = choice [alphaNum, char '_', char '\'']
     restricted = ["from", "fi", "else", "goto", "if", "entry", "exit",

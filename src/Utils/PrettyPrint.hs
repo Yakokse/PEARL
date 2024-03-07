@@ -58,7 +58,7 @@ prettyDecl d =
 
 prettyBlock :: Print a -> Block a () -> [String]
 prettyBlock f b =
-  (f ((fst . name) b) ++ ":") :
+  (f (label b) ++ ":") :
   map ('\t' :)
     (prettyFrom f (from b)
     ++ map prettyStep (body b)

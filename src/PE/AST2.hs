@@ -54,3 +54,36 @@ data Expr' =
   | UOp' Level UnOp Expr'
   | Lift Expr'
   deriving (Eq, Show, Read)
+
+mapProg' :: (a -> b) -> Program' a -> Program' b
+mapProg' f = map (mapBlock' f)
+
+mapBlock' :: (a -> b) -> Block' a -> Block' b
+mapBlock' f b = b
+  { name' = f $ name' b
+  , from' = mapFrom' f $ from' b
+  , jump' = mapJump' f $ jump' b
+  }
+
+mapFrom' :: (a -> b) -> ComeFrom' a -> ComeFrom' b
+mapFrom' _ Entry' = Entry'
+mapFrom' f (From' l) = From' (f l)
+mapFrom' f (Fi' l e l1 l2) = Fi' l e (f l1) (f l2)
+
+mapJump' :: (a -> b) -> Jump' a -> Jump' b
+mapJump' _ Exit' = Exit'
+mapJump' f (Goto' l) = Goto' (f l)
+mapJump' f (If' l e l1 l2) = If' l e (f l1) (f l2)
+
+isExit' :: Block' a -> Bool
+isExit' b = case jump' b of Exit' -> True; _ -> False
+
+fromLabels' :: ComeFrom' a -> [a]
+fromLabels' Entry' = []
+fromLabels' (From' l) = [l]
+fromLabels' (Fi' _ _ l1 l2) = [l1, l2]
+
+jumpLabels' :: Jump' a -> [a]
+jumpLabels' Exit' = []
+jumpLabels' (Goto' l) = [l]
+jumpLabels' (If' _ _ l1 l2) = [l1, l2]

@@ -1,10 +1,11 @@
 module PE.Preprocessing.Impl.Uniform where
 
-import Utils
 import Utils.Maps
+
 
 import RL.AST
 import RL.Values
+import RL.Variables
 
 import PE.SpecValues
 import PE.Preprocessing.Division

@@ -1,3 +1,4 @@
 module Parsing.Parser (parseProg, parseSpec) where
 
-import Parsing.Impl.Parser
+import Parsing.Impl.Program
+import Parsing.Impl.Spec

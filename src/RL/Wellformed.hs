@@ -1,3 +1,3 @@
-module RL.Wellformed (wellformedProg, wellformedProg') where
+module RL.Wellformed (wellformedProg) where
 
 import RL.Impl.Wellformed

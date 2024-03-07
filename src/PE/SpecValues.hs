@@ -5,8 +5,7 @@ import Utils.Error
 
 import RL.AST
 import RL.Values
-
-import Data.List (union)
+import RL.Variables
 
 data Level = BTStatic | BTDynamic
   deriving (Eq, Show, Read)
@@ -22,11 +21,8 @@ lub _ _ = BTDynamic
 
 staticNonOutput :: VariableDecl -> SpecStore -> [Name]
 staticNonOutput d s =
-  let nonDyn = map (\n -> (n, get n s /= Dynamic)) nonOutput
+  let nonDyn = map (\n -> (n, get n s /= Dynamic)) $ nonOutput d
   in map fst $ filter snd nonDyn
-  where
-    vars = input d `union` output d `union` temp d
-    nonOutput = filter (`notElem` output d) vars
 
 find :: Name -> SpecStore -> EM SpecValue
 find n s =

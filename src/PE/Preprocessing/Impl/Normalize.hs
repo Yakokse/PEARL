@@ -1,7 +1,7 @@
 module PE.Preprocessing.Impl.Normalize where
 
-import Utils
 import RL.AST
+import RL.Program
 
 -- normalize a program
 normalize :: Eq a => a -> a -> Program a () -> (a -> Int -> a) -> NormProgram a

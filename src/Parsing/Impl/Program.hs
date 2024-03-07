@@ -1,6 +1,5 @@
-module Parsing.Impl.Parser where
+module Parsing.Impl.Program where
 
-import Utils.Maps
 import Utils.Error
 
 import RL.AST
@@ -93,26 +92,6 @@ pExpr = buildExpressionParser table term <?> "expression"
   binary  op f = Infix (do symbol op; return (Op f)) AssocLeft
   prefixW op f = Prefix $ do word op;   return (UOp f)
   prefixS op f = Prefix $ do symbol op; return (UOp f)
-
--- parse a constant literal
-pConstant :: Parser Value
-pConstant = symbol "'" *> pValue
- where
-  pValue = choice
-    [ Pair <$> (symbol "(" *> pValue) <*> (symbol "." *> pValue <* symbol ")")
-    , Nil <$ word "nil"
-    , Atom <$> pName
-    , Num <$> pNum
-    ] <?> "Expecting a value"
-
--- parse a string as a specialization specification
-parseSpec :: String -> EM Store
-parseSpec = parseStr pFile
-  where pFile = fromList <$> (whitespace *> many pDeclaration)
-
--- parse a single declaration in a specification
-pDeclaration :: Parser (Name, Value)
-pDeclaration = (,) <$> (pName <* symbol "=") <*> pConstant
 
 -- parse a label for the abstracted labels in AST
 pLabelName :: Parser (Label, ())

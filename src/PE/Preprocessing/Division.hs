@@ -5,10 +5,9 @@ import Utils.Error
 
 import RL.AST
 import RL.Values
+import RL.Variables
 
 import PE.SpecValues
-
-import Data.List (union)
 
 type Division = Map Name Level
 type PWDivision l = Map l (Division, Division)
@@ -27,8 +26,7 @@ boundedBy = update lub
 -- sets all variables to static
 makeStaticDiv :: VariableDecl -> Division
 makeStaticDiv decl =
-  let ns = input decl `union` output decl `union` temp decl
-      pairs = map (\n -> (n, BTStatic)) ns
+  let pairs = map (\n -> (n, BTStatic)) $ allVars decl
   in fromList pairs
 
 -- create a proper division given the input and declaration
@@ -36,7 +34,7 @@ makeStaticDiv decl =
 makeDiv :: Store -> VariableDecl -> EM Division
 makeDiv store decl =
   do mapM_ onlyInput $ keys store
-     let vars = input decl `union` output decl `union` temp decl
+     let vars = allVars decl
          divlist = map (\n -> if isStatic n
                                 then (n, BTStatic)
                                 else (n, BTDynamic))

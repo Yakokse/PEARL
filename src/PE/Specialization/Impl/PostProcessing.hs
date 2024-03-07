@@ -1,11 +1,11 @@
 module PE.Specialization.Impl.PostProcessing where
 
-import Utils
 import Utils.Maps
 import Utils.Error
 
 import RL.AST
 import RL.Operators
+import RL.Program
 import RL.Values
 
 import PE.AST2
@@ -86,7 +86,7 @@ constFold p = concat <$> mapM constFoldB p
 mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) SpecStore]
                           -> [Block (Explicated a) SpecStore]
 mergeExplicators annotateExpl p =
-  let (expl, rest) = L.partition (\b -> case fst $ name b of
+  let (expl, rest) = L.partition (\b -> case label b of
                                       Regular _ -> False; _ -> True) p
       explLabel b =
         let (l', s) = name b

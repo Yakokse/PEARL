@@ -1,9 +1,10 @@
 module PE.Preprocessing.Impl.Pointwise where
 
-import Utils
 import Utils.Maps
 
 import RL.AST
+import RL.Variables
+import RL.Program
 
 import PE.SpecValues
 import PE.Preprocessing.Division
@@ -119,3 +120,6 @@ analyseExpr _ (Const _)    = BTStatic
 analyseExpr d (Var n)      = get n d
 analyseExpr d (Op _ e1 e2) = analyseExpr d e1  `lub` analyseExpr d e2
 analyseExpr d (UOp _ e)    = analyseExpr d e
+
+dup :: a -> (a, a)
+dup a = (a, a)

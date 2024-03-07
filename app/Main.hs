@@ -1,6 +1,5 @@
 module Main (main) where
 
-import Utils
 import Utils.Error
 import Utils.Maps
 import Utils.PrettyPrint
@@ -8,6 +7,7 @@ import Utils.PrettyPrint
 import RL.AST
 import RL.Wellformed
 import RL.Values
+import RL.Variables
 
 import Parsing.Parser
 
@@ -18,6 +18,7 @@ import PE.Preprocessing.Division
 import PE.Preprocessing.Normalize
 import PE.Preprocessing.Explicicator
 import PE.Preprocessing.Annotate
+import PE.Preprocessing.Wellformed2
 import PE.Specialization.Specialize
 import PE.Specialization.PostProcessing
 
@@ -368,7 +369,7 @@ benchMain BenchOptions { benchFile     = inputPath
 
 makeSpecStore :: VariableDecl -> Store -> SpecStore
 makeSpecStore decl s =
-  let dynStore = fromList . map (\n -> (n, Dynamic)) $ getVarsDecl decl
+  let dynStore = fromList . map (\n -> (n, Dynamic)) $ allVars decl
       nilStore = fromList . map (\n -> (n, Static Nil)) $ nonInput decl
       statStore = mmap (\_ v -> Static v) s
       store = statStore `combine` nilStore `combine` dynStore

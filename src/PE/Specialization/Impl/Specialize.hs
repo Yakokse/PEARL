@@ -1,6 +1,5 @@
 module PE.Specialization.Impl.Specialize where
 
-import Utils
 import Utils.Error
 import Utils.Maps
 import Utils.PrettyPrint
@@ -8,8 +7,11 @@ import Utils.PrettyPrint
 import RL.AST
 import RL.Operators
 import RL.Values
+import RL.Variables
+import RL.Program
 
 import PE.AST2
+import PE.Program2
 import PE.SpecValues
 import PE.Preprocessing.Division
 
@@ -36,12 +38,11 @@ specDecl decl p =
      let outDiv = initDiv outBlock
      let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
      let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
-     let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ getVarsDecl decl
+     let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ allVars decl
      let tmp = filter (\n -> any (isDynInB n) p) potentialTemp
      return VariableDecl { input = inp, output = out, temp = tmp }
   where
     isDynInB n b = isType n BTDynamic (initDiv b)
-
 
 specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]

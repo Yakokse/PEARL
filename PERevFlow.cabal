@@ -31,7 +31,8 @@ library
       Inversion.Impl.Inverter
       Inversion.Inverter
       Parsing.Impl.Common
-      Parsing.Impl.Parser
+      Parsing.Impl.Program
+      Parsing.Impl.Spec
       Parsing.Parser
       PE.AST2
       PE.Preprocessing.Annotate
@@ -43,7 +44,10 @@ library
       PE.Preprocessing.Impl.Normalize
       PE.Preprocessing.Impl.Pointwise
       PE.Preprocessing.Impl.Uniform
+      PE.Preprocessing.Impl.Wellformed2
       PE.Preprocessing.Normalize
+      PE.Preprocessing.Wellformed2
+      PE.Program2
       PE.Specialization.Impl.PostProcessing
       PE.Specialization.Impl.Specialize
       PE.Specialization.PostProcessing
@@ -52,9 +56,10 @@ library
       RL.AST
       RL.Impl.Wellformed
       RL.Operators
+      RL.Program
       RL.Values
+      RL.Variables
       RL.Wellformed
-      Utils
       Utils.Error
       Utils.Maps
       Utils.PrettyPrint
