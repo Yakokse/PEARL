@@ -33,27 +33,27 @@ library
       Maps
       Parsing.Impl.Parser
       Parsing.Parser
-      Preprocessing.Annotate
-      Preprocessing.AST2
-      Preprocessing.BTA
-      Preprocessing.Division
-      Preprocessing.Explicicator
-      Preprocessing.Impl.Annotate
-      Preprocessing.Impl.Explicicator
-      Preprocessing.Impl.Normalize
-      Preprocessing.Impl.Pointwise
-      Preprocessing.Impl.Uniform
-      Preprocessing.Normalize
+      PE.Preprocessing.Annotate
+      PE.Preprocessing.AST2
+      PE.Preprocessing.BTA
+      PE.Preprocessing.Division
+      PE.Preprocessing.Explicicator
+      PE.Preprocessing.Impl.Annotate
+      PE.Preprocessing.Impl.Explicicator
+      PE.Preprocessing.Impl.Normalize
+      PE.Preprocessing.Impl.Pointwise
+      PE.Preprocessing.Impl.Uniform
+      PE.Preprocessing.Normalize
+      PE.Specialization.Impl.PostProcessing
+      PE.Specialization.Impl.Specialize
+      PE.Specialization.PostProcessing
+      PE.Specialization.Specialize
+      PE.Specialization.SpecValues
       PrettyPrint
       RL.AST
       RL.Impl.Wellformed
       RL.Operators
       RL.Wellformed
-      Specialization.Impl.PostProcessing
-      Specialization.Impl.Specialize
-      Specialization.PostProcessing
-      Specialization.Specialize
-      Specialization.SpecValues
       Utils
       Values
   other-modules:
