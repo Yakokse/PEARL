@@ -1,6 +1,8 @@
 module Utils where
 
-import Values
+import Utils.Error
+
+import RL.Values
 import RL.AST
 
 import PE.AST2

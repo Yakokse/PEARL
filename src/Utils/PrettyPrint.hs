@@ -1,9 +1,9 @@
-module PrettyPrint where
+module Utils.PrettyPrint where
 
-import Values
-import Maps
+import Utils.Maps
 
 import RL.AST
+import RL.Values
 
 import PE.AST2
 import PE.SpecValues

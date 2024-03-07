@@ -3,7 +3,7 @@ module OperatorTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Values
+import RL.Values
 import RL.AST
 
 import RL.Operators

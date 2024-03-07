@@ -3,8 +3,9 @@ module AnnotateTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Maps
-import Values
+import Utils.Maps
+
+import RL.Values
 import RL.AST
 
 import PE.AST2

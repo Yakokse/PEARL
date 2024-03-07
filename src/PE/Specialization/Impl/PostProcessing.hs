@@ -1,11 +1,12 @@
 module PE.Specialization.Impl.PostProcessing where
 
 import Utils
-import Values
-import Maps
+import Utils.Maps
+import Utils.Error
 
 import RL.AST
 import RL.Operators
+import RL.Values
 
 import PE.AST2
 import PE.SpecValues

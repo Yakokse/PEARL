@@ -1,7 +1,7 @@
 module PE.AST2 where
 
-import Values
 import RL.AST
+import RL.Values
 
 import PE.SpecValues
 import PE.Preprocessing.Division

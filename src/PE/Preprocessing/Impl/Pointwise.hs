@@ -1,7 +1,7 @@
 module PE.Preprocessing.Impl.Pointwise where
 
 import Utils
-import Maps
+import Utils.Maps
 
 import RL.AST
 

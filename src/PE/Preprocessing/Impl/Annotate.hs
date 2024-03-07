@@ -1,6 +1,7 @@
 module PE.Preprocessing.Impl.Annotate where
 
-import Maps
+import Utils.Maps
+
 import RL.AST
 
 import PE.AST2

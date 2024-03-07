@@ -1,12 +1,8 @@
-module Maps where
+module Utils.Maps where
 
 import qualified Data.Map.Strict as Map
 
 type Map = Map.Map
--- type VarMap e = Map Name e
--- type PWMap l e = Map l (VarMap e, VarMap e)
--- type Store = VarMap Value
--- type SpecStore = VarMap SpecValue
 
 get :: Ord n => n -> Map n e -> e
 get n m = m Map.! n
@@ -65,29 +61,3 @@ allWhere f m = keys $ Map.filterWithKey f m
 
 mmap :: (n -> a -> b) -> Map n a -> Map n b
 mmap = Map.mapWithKey
--- make n division for all variables in n declaration
--- sets all variables to static
--- makeStaticDiv :: VariableDecl -> Division
--- makeStaticDiv decl =
---   let ns = input decl `union` output decl `union` temp decl
---       pairs = map (\n -> (n, BTStatic)) ns
---   in listToDiv pairs
-
--- create n proper division given the input and declaration
--- all variables are static except input variables with no given value
--- makeDiv :: Store -> VariableDecl -> EM Division
--- makeDiv store decl =
---   do mapM_ onlyInput names
---      let allVars = input decl `union` output decl `union` temp decl
---          allTypes = map (\n -> if isStatic n
---                               then BTStatic
---                               else BTDynamic)
---                         allVars
---      return $ setTypes allVars allTypes defaultDivision
---   where
---     onlyInput n = if n `elem` input decl
---                   then return ()
---                   else Left $ "Variable \"" ++ n ++ "\" not in input"
---     storelist = storeToList store
---     names = map fst storelist
---     isStatic n = n `isIn` store || n `notElem` input decl

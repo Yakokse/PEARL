@@ -1,10 +1,11 @@
 module RL.Impl.Wellformed where
 
 import Utils
-import Values
-import Maps
+import Utils.Maps
+import Utils.Error
 
 import RL.AST
+import RL.Values
 
 import PE.AST2
 import PE.SpecValues

@@ -1,9 +1,11 @@
 module PE.Preprocessing.Division where
 
-import Values
-import Maps
+import Utils.Maps
+import Utils.Error
 
 import RL.AST
+import RL.Values
+
 import PE.SpecValues
 
 import Data.List (union)

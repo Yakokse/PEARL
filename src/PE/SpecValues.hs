@@ -1,9 +1,10 @@
 module PE.SpecValues where
 
-import Maps
-import Values
+import Utils.Maps
+import Utils.Error
 
 import RL.AST
+import RL.Values
 
 import Data.List (union)
 

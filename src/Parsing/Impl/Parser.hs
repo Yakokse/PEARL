@@ -1,20 +1,15 @@
 module Parsing.Impl.Parser where
 
-import Values
-import Maps
+import Utils.Maps
+import Utils.Error
 
 import RL.AST
+import RL.Values
 
 import Parsing.Impl.Common
 
 import Text.Parsec
 import Text.Parsec.Expr
-
--- apply a parser to a string
-parseStr :: Parser a -> String -> EM a
-parseStr p s = case parse (p <* eof) "" s of
-  Left err -> Left $ show err
-  Right res -> Right res
 
 -- parser a string as a program
 parseProg :: String -> EM (Program Label ())

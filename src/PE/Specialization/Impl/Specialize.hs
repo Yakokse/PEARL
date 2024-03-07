@@ -1,13 +1,13 @@
 module PE.Specialization.Impl.Specialize where
 
-import Values
 import Utils
-import Maps
+import Utils.Error
+import Utils.Maps
+import Utils.PrettyPrint
 
 import RL.AST
 import RL.Operators
-
-import PrettyPrint
+import RL.Values
 
 import PE.AST2
 import PE.SpecValues

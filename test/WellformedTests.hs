@@ -3,7 +3,9 @@ module WellformedTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Values
+import Utils.Error
+
+import RL.Values
 import RL.AST
 
 import RL.Impl.Wellformed

@@ -1,8 +1,9 @@
 module PE.Preprocessing.Impl.Explicicator where
 
 import Utils
-import Values
-import Maps
+import Utils.Maps
+
+import RL.Values
 
 import PE.SpecValues
 import PE.AST2

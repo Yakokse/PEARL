@@ -1,12 +1,9 @@
-module Values where
+module RL.Values where
 
 import qualified Data.Map.Strict as Map
-import Control.Monad
 
 type IntType = Word
 type Name = String
-type ErrMsg = String
-type EM = Either ErrMsg
 type Label = String
 
 data Value =
@@ -44,32 +41,3 @@ mapStore = Map.mapWithKey
 
 remove :: [Name] -> Store -> Store
 remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)
-
-newtype LEM a = LEM {runLEM :: (EM a, [String])}
-
-instance Monad LEM where
-  return = pure
-  LEM (v, l) >>= f =
-    LEM $ case v of
-      Left e -> (Left e, l)
-      Right res -> let LEM (v', l') = f res in (v', l ++ l')
-
-instance Functor LEM where
-  fmap = liftM
-
-instance Applicative LEM where
-  pure a = LEM (Right a, []); (<*>) = ap
-
-raise :: EM a -> LEM a
-raise em = LEM (em, [])
-
-logM :: String -> LEM ()
-logM s = LEM (Right (), [s])
-
-logManyM :: [String] -> LEM ()
-logManyM = mapM_ logM
-
-emToLEM :: EM a -> LEM a
-emToLEM m = LEM $ case m of
-  Left e -> (Left e, [e])
-  Right s -> (Right s, [])

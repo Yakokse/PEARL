@@ -1,14 +1,15 @@
 module Main (main) where
 
 import Utils
-import Values
-import Maps
+import Utils.Error
+import Utils.Maps
+import Utils.PrettyPrint
 
 import RL.AST
 import RL.Wellformed
+import RL.Values
 
 import Parsing.Parser
-import PrettyPrint
 
 import PE.AST2
 import PE.SpecValues

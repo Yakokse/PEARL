@@ -3,7 +3,15 @@ module Parsing.Impl.Common where
 import Text.Parsec
 import Data.Functor (void)
 
+import Utils.Error
+
 type Parser = Parsec String ()
+
+-- apply a parser to a string
+parseStr :: Parser a -> String -> EM a
+parseStr p s = case parse (p <* eof) "" s of
+  Left err -> Left $ show err
+  Right res -> Right res
 
 -- parse a variable name
 pName :: Parser String

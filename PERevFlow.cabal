@@ -30,7 +30,6 @@ library
       Interpretation.Interpret
       Inversion.Impl.Inverter
       Inversion.Inverter
-      Maps
       Parsing.Impl.Common
       Parsing.Impl.Parser
       Parsing.Parser
@@ -50,13 +49,15 @@ library
       PE.Specialization.PostProcessing
       PE.Specialization.Specialize
       PE.SpecValues
-      PrettyPrint
       RL.AST
       RL.Impl.Wellformed
       RL.Operators
+      RL.Values
       RL.Wellformed
       Utils
-      Values
+      Utils.Error
+      Utils.Maps
+      Utils.PrettyPrint
   other-modules:
       Paths_PERevFlow
   hs-source-dirs:

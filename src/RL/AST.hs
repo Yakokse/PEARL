@@ -1,6 +1,6 @@
 module RL.AST where
 
-import Values
+import RL.Values
 
 type Program label store = (VariableDecl, [Block label store])
 

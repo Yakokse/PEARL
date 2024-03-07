@@ -3,7 +3,8 @@ module UniformTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Maps
+import Utils.Maps
+
 import RL.AST
 
 import PE.SpecValues
