@@ -5,14 +5,26 @@ import Operators
 import Values
 import Utils
 import PrettyPrint
+import Impl.Maps
 
-import Control.Monad.State
+import qualified Control.Monad.State as S
 
-type SLEM = StateT Stats LEM
+type SLEM = S.StateT Stats LEM
 
 -- Monad utility function
 lift' :: EM a -> SLEM a
-lift' = lift . raise
+lift' = S.lift . raise
+
+data Stats = Stats
+  { steps :: Int
+  , jumps :: Int
+  , assertions :: Int
+  } deriving Show
+
+prettyStats :: Stats -> String
+prettyStats Stats{steps = s, jumps = j} =
+  "Total Steps: " ++ show s ++ ", Total Jumps: " ++ show j ++ ", Combined Total: " ++ show total
+    where total = s + j * 2
 
 -- Base stats for collection
 initStats :: Stats
@@ -25,7 +37,7 @@ runProgram (decl, prog) inpstore =
   do  entry <- raise $ getEntry prog
       store <- raise $ createStore decl inpstore
       let res = evalBlocks prog (output decl) store entry Nothing
-      runStateT res initStats
+      S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
@@ -34,31 +46,31 @@ runProgram' :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
 runProgram' (decl, prog) store =
   do  entry <- raise $ getEntry prog
       let res = evalBlocks prog (output decl) runStore entry Nothing
-      runStateT res initStats
+      S.runStateT res initStats
   where
-    nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
-    runStore = store `updateWithStore` nilStore
+    nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
+    runStore = combine nilStore store
 
 -- Create a proper store given an input store
 -- verifies that input store is wellformed
 createStore :: VariableDecl -> Store -> EM Store
 createStore decl store =
-  let anyTemp = any (\n -> n `elem` temp decl) (vars store)
+  let anyTemp = any (\n -> n `elem` temp decl) (keys store)
       anyOut = any (\n -> n `elem` output decl
-                       && n `notElem` output decl) (vars store)
-      allPresent = all (`elem` vars store) (input decl)
+                       && n `notElem` output decl) (keys store)
+      allPresent = all (`elem` keys store) (input decl)
   in if anyTemp || anyOut || not allPresent
   then Left "Invalid input store"
   else
-    let nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
-    in return $ nilStore `updateWithStore` store
+    let nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
+    in return $ combine store nilStore
 
 -- interpret program till exit
 -- output: the output store
 evalBlocks :: (Eq a, Show a) =>
   [Block a ()] -> [Name] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
 evalBlocks prog outputs store l origin =
-  do block <- lift . raise $ getBlockErr prog l
+  do block <- S.lift . raise $ getBlockErr prog l
      (label', store') <- evalBlock store block origin
      case label' of
        Nothing -> return $ store' `onlyIn` outputs
@@ -67,7 +79,7 @@ evalBlocks prog outputs store l origin =
 -- interpret a given block
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock s b l =
-  do lift . logM $ prettyAnn show (name b, s)
+  do S.lift . logM $  show (fst $ name b) ++ prettyStore s -- TODO: improve
      evalFrom s (from b) l
      s' <- evalSteps s (body b)
      l' <- evalJump s' (jump b)
@@ -99,7 +111,7 @@ evalJump _ (Exit ()) = return Nothing
 
 -- interpret multiple steps
 evalSteps :: Store -> [Step] -> SLEM Store
-evalSteps = foldM (\store step -> incStep >> evalStep store step)
+evalSteps = S.foldM (\store step -> incStep >> evalStep store step)
 
 -- interpret a given step
 evalStep :: Store -> Step -> SLEM Store
@@ -111,19 +123,19 @@ evalStep s (Assert e) =
      else lift' $ Left  $ "failed assertion: " ++ show e
 evalStep s (Replacement q1 q2) =
   do (s1, v) <- lift' $ construct s q2
-     lift'$ deconstruct s1 v q1
+     lift' $ deconstruct s1 v q1
 evalStep s (Update n op e) =
   do v1 <- lift' $ find n s
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
-     return $ update n (Static v3) s
+     return $ set n v3 s
 
 -- construct an intermediate value and store for a replacement
 construct :: Store -> Pattern -> EM (Store, Value)
 construct store (QConst v) = return (store,v)
 construct store (QVar n) =
   do v <- find n store
-     let store' = update n (Static Nil) store
+     let store' = set n Nil store
      return (store', v)
 construct store (QPair q1' q2') =
   do (store', v)   <- construct store q1'
@@ -140,7 +152,7 @@ deconstruct store v (QConst v') =
 deconstruct store v (QVar n) =
   do v' <- find n store
      if v' == Nil
-      then return $ update n (Static v) store
+      then return $ set n v store
       else Left "Non-nill variable in replacement."
 deconstruct store (Pair v1 v2) (QPair q1' q2') =
   do store' <- deconstruct store v1 q1'
@@ -159,18 +171,24 @@ evalExpr s (UOp op e) =
   do v <- evalExpr s e
      calcU op v
 
+find :: Name -> Store -> EM Value
+find n s =
+  case lookupM n s of
+    Just v -> return v
+    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+
 -- helper functions for statistics
 incAssert :: SLEM ()
 incAssert =
-  do stats <- get
-     put (stats{assertions = assertions stats + 1})
+  do stats <- S.get
+     S.put (stats{assertions = assertions stats + 1})
 
 incJump :: SLEM ()
 incJump =
-  do stats <- get
-     put (stats{jumps = jumps stats + 1})
+  do stats <- S.get
+     S.put (stats{jumps = jumps stats + 1})
 
 incStep :: SLEM ()
 incStep =
-  do stats <- get
-     put (stats{steps = steps stats + 1})
+  do stats <- S.get
+     S.put (stats{steps = steps stats + 1})

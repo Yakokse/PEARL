@@ -7,8 +7,10 @@ import Impl.Uniform
 import Control.Monad.State
 
 import AST
-import Values
 import Division
+
+import Impl.SpecValues
+import Impl.Maps
 
 test :: (VariableDecl -> a -> ST b) ->
         TestName ->
@@ -17,7 +19,7 @@ test :: (VariableDecl -> a -> ST b) ->
 test f n decl di i o = testCase n $ getDiv (f decl i) di @?= o
 
 xyStore :: Level -> Level -> Division
-xyStore x y = listToDiv [("x", x), ("y", y)]
+xyStore x y = fromList [("x", x), ("y", y)]
 
 getDiv :: ST a -> Division-> Division
 getDiv = execState

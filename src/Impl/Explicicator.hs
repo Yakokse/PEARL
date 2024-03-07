@@ -5,9 +5,11 @@ import Utils
 import Values
 import Division
 import Data.Maybe (catMaybes)
+import Impl.Maps
+import Impl.SpecValues
 
 -- add explicators for a given RL2 program
-explicate :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
+explicate :: Ord a => PWDivision a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
 explicate pwd p f =
   let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
       (renames, blocks) = (concat renames', concat blocks')
@@ -30,10 +32,10 @@ fixComeFroms ((l, (target, replace)) : ls) bs =
 -- "Explicate" a single block
 -- returning the block along with possible explicators
 -- + some extra information for relabelling
-explicateBlock :: Ord a => DivisionPW a -> Program' a -> (a -> Int -> a) -> Block' a
+explicateBlock :: Ord a => PWDivision a -> Program' a -> (a -> Int -> a) -> Block' a
                        -> ([(Explicated a, (Explicated a, Explicated a))], [Block' (Explicated a)])
 explicateBlock pwd p f b@Block'{name' = src, jump' = j} =
-  let (_, d2) = getDivs src pwd
+  let (_, d2) = get src pwd
       b' = mapBlock' Regular b
       pending = toBeExplicated pwd d2 j
       withDest = combineJumpWith (,) j pending
@@ -50,15 +52,15 @@ explicateBlock pwd p f b@Block'{name' = src, jump' = j} =
 
 -- For a given jump, give the list of variables that need to be generalized
 -- in each label
-toBeExplicated :: Ord a => DivisionPW a -> Division -> Jump' a -> Jump' [Name]
+toBeExplicated :: Ord a => PWDivision a -> Division -> Jump' a -> Jump' [Name]
 toBeExplicated pwd d j =
-  let nextdivs = mapJump' (\l -> divisionToList . fst $ getDivs l pwd ) j
+  let nextdivs = mapJump' (\l -> toList . fst $ get l pwd ) j
       combined = mapJump' (zipWith
                             (\(n1, l1) (n2, l2) ->
                               if n1 /= n2
                               then error "Non-matching vars in divs"
                               else (n1, l1, l2))
-                            (divisionToList d)) nextdivs
+                            (toList d)) nextdivs
       notMatching = mapJump' (filter (\(_, l1, l2) -> l1 /= l2)) combined
       explicators = mapJump' (map (\(n, l1, l2) ->
                                     case (l1, l2) of
@@ -80,7 +82,7 @@ createExplicator p f src (dest, ns) idx = (dest, return (Block'
   , jump' = Goto' $ Regular dest
   }))
   where
-    unexplicate = setTypes ns (repeat BTStatic)
+    unexplicate = sets ns (repeat BTStatic)
 
 -- annotate jump labels and distinguish between paths
 mapJumpInt :: (a -> Int -> b) -> Jump' a -> Jump' b

@@ -9,12 +9,6 @@ type ErrMsg = String
 type EM = Either ErrMsg
 type Label = String
 
-data Stats = Stats
-  { steps :: Int
-  , jumps :: Int
-  , assertions :: Int
-  } deriving Show
-
 data Value =
     Atom String
   | Num  IntType
@@ -22,17 +16,7 @@ data Value =
   | Nil
   deriving (Eq, Show, Read, Ord)
 
-data SpecValue = Dynamic | Static Value
-  deriving (Eq, Show, Read, Ord)
-
-type Store = Map.Map Name SpecValue
-
-data Level = BTStatic | BTDynamic
-  deriving (Eq, Show, Read)
-
-lub :: Level -> Level -> Level
-lub BTStatic BTStatic = BTStatic
-lub _ _ = BTDynamic
+type Store = Map.Map Name Value
 
 trueV :: Value
 trueV = Atom "true"
@@ -46,64 +30,64 @@ truthy = (/= falseV)
 boolify :: Bool -> Value
 boolify b = if b then trueV else falseV
 
-find :: Name -> Store -> EM Value
-find n s =
-  case Map.lookup n s of
-    Just (Static v) -> return v
-    Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
-    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+-- find :: Name -> Store -> EM Value
+-- find n s =
+--   case Map.lookup n s of
+--     Just v -> return v
+--     -- Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
+--     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
-isDynIn :: Name -> Store -> EM ()
-isDynIn n s =
-  case Map.lookup n s of
-    Just (Static _) -> Left $ "Variable \"" ++ n ++ "\" static during lookup"
-    Just Dynamic -> return ()
-    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+-- isDynIn :: Name -> Store -> EM ()
+-- isDynIn n s =
+--   case Map.lookup n s of
+--     Just (Static _) -> Left $ "Variable \"" ++ n ++ "\" static during lookup"
+--     Just Dynamic -> return ()
+--     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
-find' :: Name -> Store -> SpecValue
-find' = Map.findWithDefault Dynamic
+-- find' :: Name -> Store -> SpecValue
+-- find' = Map.findWithDefault Dynamic
 
 findErr ::  Store -> Name -> Value
 findErr s n =
   case Map.lookup n s of
-    Just (Static v) -> v
+    Just v -> v
     _ -> error $ "static variable " ++ n ++ " not found during lookup"
 
-vars :: Store -> [Name]
-vars = Map.keys
+-- vars :: Store -> [Name]
+-- vars = Map.keys
 
-emptyStore :: Store
-emptyStore = Map.empty
+-- emptyStore :: Store
+-- emptyStore = Map.empty
 
-makeStore :: [(Name, SpecValue)] -> Store
-makeStore = Map.fromList
+-- makeStore :: [(Name, SpecValue)] -> Store
+-- makeStore = Map.fromList
 
-storeToList :: Store -> [(Name, SpecValue)]
-storeToList = Map.toAscList
+-- storeToList :: Store -> [(Name, SpecValue)]
+-- storeToList = Map.toAscList
 
-update :: Name -> SpecValue -> Store -> Store
-update = Map.insert
+-- update :: Name -> SpecValue -> Store -> Store
+-- update = Map.insert
 
-updateWithStore :: Store -> Store -> Store
-updateWithStore s1 s2 = Map.union s2 s1
+-- updateWithStore :: Store -> Store -> Store
+-- updateWithStore s1 s2 = Map.union s2 s1
 
-disjoint :: Store -> Store -> Bool
-disjoint = Map.disjoint
+-- disjoint :: Store -> Store -> Bool
+-- disjoint = Map.disjoint
 
-without :: Store -> Name -> Store
-without s n = Map.delete n s
+-- without :: Store -> Name -> Store
+-- without s n = Map.delete n s
 
-withouts :: Store -> [Name] -> Store
-withouts s ns = Map.filterWithKey (\k _ -> k `notElem` ns) s
+-- withouts :: Store -> [Name] -> Store
+-- withouts s ns = Map.filterWithKey (\k _ -> k `notElem` ns) s
 
 onlyIn :: Store -> [Name] -> Store
 onlyIn s ns = Map.filterWithKey (\k _ -> k `elem` ns) s
 
-mapStore :: (Name -> SpecValue -> SpecValue) -> Store -> Store
+mapStore :: (Name -> Value -> Value) -> Store -> Store
 mapStore = Map.mapWithKey
 
-isIn :: Name -> Store -> Bool
-isIn = Map.member
+-- isIn :: Name -> Store -> Bool
+-- isIn = Map.member
 
 remove :: [Name] -> Store -> Store
 remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)

@@ -4,21 +4,19 @@ import AST
 import AST2
 import Data.List (intercalate)
 import Values
+import Impl.SpecValues
 import Division
+import Impl.Maps
+
 type Print a = a -> String
 
-prettyStats :: Stats -> String
-prettyStats Stats{steps = s, jumps = j} =
-  "Total Steps: " ++ show s ++ ", Total Jumps: " ++ show j ++ ", Combined Total: " ++ show total
-    where total = s + j * 2
-
 prettyDiv :: Division -> String
-prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . divisionToList
+prettyDiv = concatMap (\(n,t) -> n ++ ": " ++ prettyLvl t ++ "\n") . toList
   where prettyLvl BTStatic = "BTStatic"
         prettyLvl BTDynamic = "BTDynamic"
 
 prettyDiv' :: Division -> String
-prettyDiv' = intercalate ", " . map (\(n,t) -> n ++ ": " ++ prettyLvl t) . divisionToList
+prettyDiv' = intercalate ", " . map (\(n,t) -> n ++ ": " ++ prettyLvl t) . toList
   where prettyLvl BTStatic = "BTStatic"
         prettyLvl BTDynamic = "BTDynamic"
 
@@ -26,11 +24,11 @@ serializeExpl :: Print a -> Explicated a -> String
 serializeExpl f (Regular l) = f l
 serializeExpl f (Explicator l _) = f l ++ "_expl"
 
-serializeAnn :: Print a -> a -> Maybe Store -> String
+serializeAnn :: Print a -> a -> Maybe SpecStore -> String
 serializeAnn f l Nothing = f l
 serializeAnn f l (Just s) = f l ++ serializeStore s
   where
-    serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serializeBT i) . storeToList
+    serializeStore = concatMap (\(n, i) -> "_" ++ n ++ "_" ++ serializeBT i) . toList
     serializeBT (Static v) = "S" ++ serialize v
     serializeBT Dynamic = "Dyn"
     serialize (Atom a) = a
@@ -38,11 +36,14 @@ serializeAnn f l (Just s) = f l ++ serializeStore s
     serialize (Pair v1 v2) = "ZS"++ serialize v1 ++ "_" ++ serialize v2 ++ "ZE"
     serialize Nil = "nil"
 
-prettyAnn :: Print a -> (a, Store) -> String
-prettyAnn f (l, s) = f l ++ ": " ++ prettyStore s
+prettyAnn :: Print a -> (a, SpecStore) -> String
+prettyAnn f (l, s) = f l ++ ": " ++ prettySpecStore s
+
+prettySpecStore :: SpecStore -> String
+prettySpecStore = concatMap (\(n, v) -> n ++ "=" ++ prettyBTVal v ++ " ") . toList
 
 prettyStore :: Store -> String
-prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyBTVal v ++ " ") . storeToList
+prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . toList
 
 prettyProg :: Print a -> Program a () -> String
 prettyProg f (decl, p)= prettyDecl decl ++ intercalate "\n" (concatMap (prettyBlock f) p)

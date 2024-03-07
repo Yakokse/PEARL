@@ -5,6 +5,9 @@ import AST2
 import Utils
 import Values
 import Division
+import Impl.Maps
+import Impl.SpecValues
+
 import qualified Data.Set as S
 
 wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
@@ -97,11 +100,11 @@ isDefined n ns =
     then return ()
     else Left $ "Variable \"" ++ n ++ "\" not defined (or not available here)"
 
-wellformedProg' :: Ord a => DivisionPW a -> Program' a -> EM ()
+wellformedProg' :: Ord a => PWDivision a -> Program' a -> EM ()
 wellformedProg' pwd = mapM_ wellformedBlock'
   where
     wellformedBlock' b = do
-      let (d1, d2) = getDivs (name' b) pwd
+      let (d1, d2) = get (name' b) pwd
       wellformedFrom' d1 $ from' b
       mapM_ (wellformedStep' d1 d2) $ body' b
       wellformedJump' d2 $ jump' b
@@ -122,7 +125,7 @@ wellformedStep' d _ (Assert' l e) =
      else Left "Assert mismatch"
 wellformedStep' d _ (Update' l n _ e) =
   do l' <- wellformedExp' d e
-     if l == l' && l == getType n d
+     if l == l' && l == get n d
       then return ()
       else Left "Update mismatch."
 wellformedStep' d1 d2 (Replacement' l p1 p2) =
@@ -132,14 +135,14 @@ wellformedStep' d1 d2 (Replacement' l p1 p2) =
       then return ()
       else Left "Pattern mismatch."
 wellformedStep' d1 d2 (Generalize n) =
-  if getType n d1 == BTStatic && getType n d2 == BTDynamic
+  if get n d1 == BTStatic && get n d2 == BTDynamic
     then return ()
     else Left $ "Unexpected explicator: " ++ n
 
 wellformedPat' :: Division -> Pattern' -> EM Level
 wellformedPat' _ (QConst' l _) = return l
 wellformedPat' d (QVar' l n) =
-  if getType n d == l
+  if get n d == l
     then return l
     else Left $ "Variable mismatch: " ++ n
 wellformedPat' d (QPair' l q1 q2) =
@@ -161,7 +164,7 @@ wellformedJump' d (If' l e _ _) =
 wellformedExp' :: Division -> Expr' -> EM Level
 wellformedExp' _ (Const' l _) = return l
 wellformedExp' d (Var' l n) =
-  if getType n d == l
+  if get n d == l
     then return l
     else Left $ "Variable mismatch: " ++ n
 wellformedExp' d (Op' l op e1 e2) =

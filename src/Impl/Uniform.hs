@@ -4,21 +4,23 @@ import AST
 import Values
 import Division
 import Utils
-import Control.Monad.State
+import qualified Control.Monad.State as S
+import Impl.Maps
+import Impl.SpecValues
 
-type ST a = State Division a
+type ST a = S.State Division a
 
 -- Create a congruent uniform division for a program
-congruentUniformDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
+congruentUniformDiv :: Ord a => NormProgram a -> Division -> PWDivision a
 congruentUniformDiv (decl, p) d =
   let congruentDiv = makeCongruent (decl, p) d
       ls = map nname p
       pairs = map (\l -> (l, (congruentDiv, congruentDiv))) ls
-  in listToPWDiv pairs
+  in fromList pairs
 
 -- Fix-point iteration for division
 makeCongruent :: NormProgram a -> Division -> Division
-makeCongruent p = fixed (execState $ checkProg p)
+makeCongruent p = fixed (S.execState $ checkProg p)
   where
     fixed f d' | d' == f d' = d'
                | otherwise = fixed f $ f d'
@@ -39,13 +41,13 @@ checkBlock decl b = checkStep decl $ nstep b
 checkStep :: VariableDecl -> Step -> ST ()
 checkStep decl (Update n _ e) =
   do b <- isDynExpr e;
-     when b $ setDyn n;
-     when (n `elem` output decl) $ setDyn n
+     S.when b $ setDyn n;
+     S.when (n `elem` output decl) $ setDyn n
 checkStep decl (Replacement q1 q2) =
   do b1 <- isDynPat q1; b2 <- isDynPat q2
      let ns = getVarsPat (QPair q1 q2)
-     when (b1 || b2) $ setDyns ns
-     when (any (`elem` output decl) ns) $ setDyns ns
+     S.when (b1 || b2) $ setDyns ns
+     S.when (any (`elem` output decl) ns) $ setDyns ns
 checkStep _ (Assert _) = return ()
 checkStep _ Skip = return ()
 
@@ -68,7 +70,7 @@ isDynExpr (UOp _ e)    = isDynExpr e
 
 -- Make a variable dynamic
 setDyn :: Name -> ST ()
-setDyn n = do d <- get; put $ setType n BTDynamic d
+setDyn n = do d <- S.get; S.put $ set n BTDynamic d
 
 -- Make a list of variables dynamic
 setDyns :: [Name] -> ST ()
@@ -76,4 +78,4 @@ setDyns = mapM_ setDyn
 
 -- Check if a variable is dynamic
 isDynVar :: Name -> ST Bool
-isDynVar n = gets $ isType n BTDynamic
+isDynVar n = S.gets $ isType n BTDynamic

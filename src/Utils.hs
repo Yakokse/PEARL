@@ -14,11 +14,6 @@ nonInput decl = filter (`notElem` input decl) $ getVarsDecl decl
 nonOutput :: VariableDecl -> [Name]
 nonOutput decl = filter (`notElem` output decl) $ getVarsDecl decl
 
-staticNonOutput :: VariableDecl -> Store -> [Name]
-staticNonOutput d s =
-  let nonDyn = map (\n -> (n, find' n s /= Dynamic)) $ nonOutput d
-  in map fst $ filter snd nonDyn
-
 mapLabel :: (a -> b) -> [Block a c] -> [Block b c]
 mapLabel f = mapProgram (\l _ -> f l) id
 

@@ -9,12 +9,14 @@ import AST
 import AST2
 import Values
 import Division
+import Impl.Maps
+import Impl.SpecValues
 
 test :: (Show b, Eq b) => TestName -> (a -> b) -> a -> b -> TestTree
 test n f i o = testCase n $ f i @?= o
 
 xyStore :: Level -> Level -> Division
-xyStore x y = listToDiv [("x", x), ("y", y)]
+xyStore x y = fromList [("x", x), ("y", y)]
 
 tests :: TestTree
 tests = testGroup "All Annotation Tests"
@@ -27,15 +29,35 @@ tests = testGroup "All Annotation Tests"
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
-  [ testCase "todo" $ assertFailure "TODO"
-
+  [ testJump "Exit" allDyn (Exit () :: Jump String ()) Exit'
+  , testJump "Goto" allDyn (Goto ("A", ())) (Goto' "A")
+  , testJump "If Static" allStat
+      (If (Var "x") ("A", ()) ("B", ()))
+      (If' BTStatic (Var' BTStatic "x") "A" "B")
+  , testJump "If Dynamic" allDyn
+      (If (Var "x") ("A", ()) ("B", ()))
+      (If' BTDynamic (Var' BTDynamic "x") "A" "B")
   ]
+  where
+    allStat = xyStore BTStatic  BTStatic
+    allDyn  = xyStore BTDynamic BTDynamic
+    testJump n d = test n (annotateJump d)
 
 fromTests :: TestTree
-fromTests = testGroup "Jump Tests"
-  [ testCase "todo" $ assertFailure "TODO"
-
+fromTests = testGroup "Come-from Tests"
+  [ testFrom "Entry" allDyn (Entry () :: ComeFrom String ()) Entry'
+  , testFrom "From" allDyn (From ("A", ())) (From' "A")
+  , testFrom "Fi Static" allStat
+      (Fi (Var "x") ("A", ()) ("B", ()))
+      (Fi' BTStatic (Var' BTStatic "x") "A" "B")
+  , testFrom "Fi Dynamic" allDyn
+      (Fi (Var "x") ("A", ()) ("B", ()))
+      (Fi' BTDynamic (Var' BTDynamic "x") "A" "B")
   ]
+  where
+    allStat = xyStore BTStatic  BTStatic
+    allDyn  = xyStore BTDynamic BTDynamic
+    testFrom n d = test n (annotateFrom d)
 
 stepTests :: TestTree
 stepTests = testGroup "Step Tests"

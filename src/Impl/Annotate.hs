@@ -3,14 +3,15 @@ module Impl.Annotate where
 import AST
 import AST2
 import Division
-import Values
+import Impl.SpecValues
+import Impl.Maps
 
 -- Annotate a normalized program
-annotateProg :: Ord a => DivisionPW a -> NormProgram a -> Program' a
+annotateProg :: Ord a => PWDivision a -> NormProgram a -> Program' a
 annotateProg d (_, p)= map (annotateBlock d) p
 
 -- Annotate a normalized block
-annotateBlock :: Ord a => DivisionPW a -> NormBlock a -> Block' a
+annotateBlock :: Ord a => PWDivision a -> NormBlock a -> Block' a
 annotateBlock pwd b =
   Block'
     { name' = nname b
@@ -20,12 +21,12 @@ annotateBlock pwd b =
     , jump' = annotateJump d2 $ njump b
     }
   where
-    (d1, d2) = getDivs (nname b) pwd
+    (d1, d2) = get (nname b) pwd
 
 -- Annotate a step
 annotateStep :: Division -> Division -> Step -> Step'
 annotateStep d1 _ (Update n rop e) =
-  case getType n d1 of
+  case get n d1 of
     BTStatic ->
       case annotateExp d1 e of
         (e', BTStatic) -> Update' BTStatic n rop e'
@@ -74,8 +75,8 @@ annotatePats d1 d2 q1 q2 =
 annotatePat :: Division -> Division -> Pattern -> (Pattern', Level)
 annotatePat _ _ (QConst c) = (QConst' BTStatic c, BTStatic)
 annotatePat d d' (QVar n) =
-  let t = getType n d
-      t' = getType n d'
+  let t = get n d
+      t' = get n d'
   in case (t, t') of
         (BTDynamic, BTStatic) -> (Drop n, t)
         (_, _) -> (QVar' t n, t)
@@ -89,7 +90,7 @@ annotatePat d d' (QPair q1 q2) =
 annotateExp :: Division -> Expr -> (Expr', Level)
 annotateExp _ (Const i) = (Const' BTStatic i, BTStatic)
 annotateExp d (Var n) =
-  let btType = getType n d
+  let btType = get n d
   in (Var' btType n, btType)
 annotateExp d (Op bop e1 e2) =
   let (e1', t1) = annotateExp d e1

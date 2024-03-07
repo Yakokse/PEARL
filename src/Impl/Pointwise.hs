@@ -1,37 +1,38 @@
 module Impl.Pointwise where
 
 import AST
-import Values
 import Division
 import Utils
+import Impl.Maps
+import Impl.SpecValues
 
 -- create initial PW division for a given starting division
 -- all divisions are fully static except entry block
-initPWDiv :: Ord a => NormProgram a -> Division -> DivisionPW a
+initPWDiv :: Ord a => NormProgram a -> Division -> PWDivision a
 initPWDiv (decl, prog) d =
   let lStart = nname $ getNEntryBlock prog
       ls = map nname prog
       dstatic = makeStaticDiv decl
       actualDiv l = (l, if l == lStart then (d, dstatic) else dup dstatic)
       pairs = map actualDiv ls
-  in listToPWDiv pairs
+  in fromList pairs
 
 -- make PW division congruent
-makeCongruentPW :: Ord a => NormProgram a -> DivisionPW a -> DivisionPW a
+makeCongruentPW :: Ord a => NormProgram a -> PWDivision a -> PWDivision a
 makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog
 
 -- fix-point iteration powered by a work-queue
-workQueue :: Ord a => [NormBlock a] -> DivisionPW a -> [a] -> DivisionPW a
+workQueue :: Ord a => [NormBlock a] -> PWDivision a -> [a] -> PWDivision a
 workQueue _ pwdiv [] = pwdiv
 workQueue prog pwdiv (l:ls) =
-  let (d1, d2) = getDivs l pwdiv
+  let (d1, d2) = get l pwdiv
       b = getNBlock prog l
-      parentDivs = map (\(l', ()) -> snd $ getDivs l' pwdiv) $ fromLabels $ nfrom b
+      parentDivs = map (\(l', ()) -> snd $ get l' pwdiv) $ fromLabels $ nfrom b
       newDiv = lubDiv $ d1 : parentDivs
       (d1', d2') = analyseBlock newDiv b
       children = map fst $ jumpLabels $ njump b
       lsNew = if d2' == d2 then [] else children
-      pwdivNew = setDiv l (lubDiv [d1, d1'], lubDiv [d2, d2']) pwdiv
+      pwdivNew = set l (lubDiv [d1, d1'], lubDiv [d2, d2']) pwdiv
   in workQueue prog pwdivNew $ ls ++ lsNew
 
 -- analyse a normalized block
@@ -51,7 +52,7 @@ analyseStep d (Replacement left right) =
       -- get the extended BTType for the LHS Pattern
       -- Variables from the RHS pattern are considered static
       -- since theyve been nil-cleared
-      dTemp = setTypes varsRight (repeat BTStatic) d
+      dTemp = sets varsRight (repeat BTStatic) d
       pLeft = analysePat dTemp left
       -- Get the least upper bound of the two extended types
       p = pRight `qlub` pLeft
@@ -67,12 +68,12 @@ data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
 
 updateTypes :: BTPattern -> Pattern -> Division -> Division
 updateTypes QStatic p d =
-  setTypes (getVarsPat p) (repeat BTStatic) d
+  sets (getVarsPat p) (repeat BTStatic) d
 updateTypes QDynamic p d =
-  setTypes (getVarsPat p) (repeat BTDynamic) d
+  sets (getVarsPat p) (repeat BTDynamic) d
 updateTypes (QCons q1 q2) (QPair p1 p2) d =
   updateTypes q2 p2 $ updateTypes q1 p1 d
-updateTypes q (QVar n) d = setType n (patToLevel q) d
+updateTypes q (QVar n) d = set n (patToLevel q) d
 updateTypes _ (QConst _) d = d
 
 -- least-upper-bound of two expanded levels
@@ -104,7 +105,7 @@ patToLevel (QCons p1 p2) = patToLevel p1 `lub` patToLevel p2
 -- find expanded level of a pattern under a division
 analysePat :: Division -> Pattern -> BTPattern
 analysePat _ (QConst _) = QStatic
-analysePat d (QVar n) = levelToPat $ getType n d
+analysePat d (QVar n) = levelToPat $ get n d
 analysePat d (QPair q1 q2) =
   let p1 = analysePat d q1
       p2 = analysePat d q2
@@ -113,6 +114,6 @@ analysePat d (QPair q1 q2) =
 -- find level of expression under a division
 analyseExpr :: Division -> Expr -> Level
 analyseExpr _ (Const _)    = BTStatic
-analyseExpr d (Var n)      = getType n d
+analyseExpr d (Var n)      = get n d
 analyseExpr d (Op _ e1 e2) = analyseExpr d e1  `lub` analyseExpr d e2
 analyseExpr d (UOp _ e)    = analyseExpr d e

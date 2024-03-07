@@ -37,11 +37,13 @@ library
       Impl.Execute
       Impl.Explicicator
       Impl.Inverter
+      Impl.Maps
       Impl.Normalize
       Impl.Parser
       Impl.Pointwise
       Impl.PostProcessing
       Impl.Specialize
+      Impl.SpecValues
       Impl.Uniform
       Impl.Wellformed
       Inverter

@@ -2,6 +2,7 @@ module AST2 where
 
 import AST
 import Values
+import Impl.SpecValues
 import Division
 
 type Program' label = [Block' label]

@@ -9,16 +9,18 @@ import Utils
 import Operators
 import PrettyPrint
 import Division
+import Impl.SpecValues
+import Impl.Maps
 
-type Point a = (a, Store)
+type Point a = (a, SpecStore)
 type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
-specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> Store -> a -> LEM (Program a (Maybe Store))
+specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> SpecStore -> a -> LEM (Program a (Maybe SpecStore))
 specialize decl prog s entry =
   do
      b <- raise $ getEntry' prog
-     let pending = [((b,s), (entry, emptyStore))]
+     let pending = [((b,s), (entry, emptyMap))]
      res <- specProg entry decl prog pending [] []
      decl' <- raise $ specDecl decl prog -- specDecl decl
      return (decl', reverse res) -- Reverse for nicer ordering of blocks
@@ -38,8 +40,8 @@ specDecl decl p =
     isDynInB n b = isType n BTDynamic (initDiv b)
 
 
-specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe Store)]
-                            -> LEM [Block a (Maybe Store)]
+specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe SpecStore)]
+                            -> LEM [Block a (Maybe SpecStore)]
 specProg _ _ _ [] _ res =
   do logM "Specialization done."; return res
 specProg entry decl prog (p:ps) seen res
@@ -60,8 +62,8 @@ specProg entry decl prog (p:ps) seen res
           res' <- merge b' res
           specProg entry decl prog (pnew ++ ps) seen' res'
 
-merge :: (Eq a, Show a) => Block a (Maybe Store) -> [Block a (Maybe Store)]
-                            -> LEM [Block a (Maybe Store)]
+merge :: (Eq a, Show a) => Block a (Maybe SpecStore) -> [Block a (Maybe SpecStore)]
+                            -> LEM [Block a (Maybe SpecStore)]
 merge block prog
   | name block `notElem` map name prog = return $ block : prog
   | otherwise =
@@ -78,8 +80,8 @@ merge block prog
       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specBlock :: Eq a => a -> VariableDecl -> Store -> Block' a -> (a, Store)
-                  -> EM (Block a (Maybe Store), [Point a])
+specBlock :: Eq a => a -> VariableDecl -> SpecStore -> Block' a -> (a, SpecStore)
+                  -> EM (Block a (Maybe SpecStore), [Point a])
 specBlock entry decl s b origin =
   do let l = (name' b, Just s)
      f <- specFrom entry s (from' b) origin
@@ -87,8 +89,8 @@ specBlock entry decl s b origin =
      (j, pending) <- specJump s' decl (jump' b)
      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
-specFrom :: Eq a => a -> Store -> ComeFrom' a -> (a, Store)
-                 -> EM (ComeFrom a (Maybe Store))
+specFrom :: Eq a => a -> SpecStore -> ComeFrom' a -> (a, SpecStore)
+                 -> EM (ComeFrom a (Maybe SpecStore))
 specFrom _ _ (From' l) origin
   | l `isFrom` origin = return (From (l, Just . snd $ origin))
   | otherwise         = Left "Invalid jump to an unconditional from."
@@ -107,22 +109,22 @@ specFrom _ s (Fi' BTDynamic e l1 l2) origin
        return $ Fi e' (annotate l1 origin) (annotate l2 origin)
   | otherwise = Left "Jump not from either of the expected blocks."
 
-isFrom :: Eq a => a -> (a, Store) -> Bool
+isFrom :: Eq a => a -> (a, SpecStore) -> Bool
 isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
 
-annotate :: Eq a => a -> (a, Store) -> (a, Maybe Store)
+annotate :: Eq a => a -> (a, SpecStore) -> (a, Maybe SpecStore)
 annotate l (l', s) | l == l'   = (l, Just s)
                    | otherwise = (l, Nothing)
 
-specJump :: Store -> VariableDecl -> Jump' a
-            -> EM (Jump a (Maybe Store), [Point a])
+specJump :: SpecStore -> VariableDecl -> Jump' a
+            -> EM (Jump a (Maybe SpecStore), [Point a])
 specJump s decl Exit' =
   let checkable = staticNonOutput decl s
       vals = map (`find` s) checkable
   in
   do vs <- sequence vals
      let pairs = zip checkable vs
-     let offendingVars = filter (\(_,v) -> v /= Nil) pairs
+     let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
      case offendingVars of
       [] -> return (Exit (Just s), [])
       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
@@ -138,14 +140,14 @@ specJump s _ (If' BTStatic e l1 l2) =
         then (Goto (l1, Just s), [(l1, s)])
         else (Goto (l2, Just s), [(l2, s)])
 
-specSteps :: Store -> [Step'] -> EM (Store, [Step])
+specSteps :: SpecStore -> [Step'] -> EM (SpecStore, [Step])
 specSteps s [] = return (s, [])
 specSteps s (a:as) =
   do (s'', a') <- specStep s a
      (s', as') <- specSteps s'' as
      return (s', a' ++ as')
 
-specStep :: Store -> Step' -> EM (Store, [Step])
+specStep :: SpecStore -> Step' -> EM (SpecStore, [Step])
 specStep s (Skip' BTDynamic) = return (s, [Skip])
 specStep s (Skip' BTStatic) = return (s, [])
 specStep s (Assert' BTDynamic e) =
@@ -161,9 +163,9 @@ specStep s (Update' BTDynamic n op e) =
      return (s, [Update n op e'])
 specStep s (Update' BTStatic n op e) =
   do rhs <- getValue e $ s `without` n
-     lhs <- find n s
+     lhs <- find' n s
      res <- calcR op lhs rhs
-     let s' = update n (Static res) s
+     let s' = set n (Static res) s
      return (s', [])
 specStep s (Replacement' BTDynamic q1 q2) =
   do (p, s'', mq2) <- specPatConstruct s q2
@@ -178,21 +180,21 @@ specStep s (Replacement' BTStatic q1 q2) =
       (Nothing, Nothing) -> return (s', [])
       q -> Left $ "Static replacement produced residual patterns: " ++ show q
 specStep s (Generalize n) =
-  do v <- find n s
-     let s' = update n Dynamic s
+  do v <- find' n s
+     let s' = set n Dynamic s
      let step = [Replacement (QVar n) (QConst v) | v /= Nil]
      return (s', step)
 
 data PEPattern = PEStatic Value | PEDynamic | PECons PEPattern PEPattern
   deriving (Show)
 
-specPatConstruct :: Store -> Pattern' -> EM (PEPattern, Store, Maybe Pattern)
+specPatConstruct :: SpecStore -> Pattern' -> EM (PEPattern, SpecStore, Maybe Pattern)
 specPatConstruct s (QConst' BTDynamic c) = return (PEDynamic, s, return $ QConst c)
 specPatConstruct s (QConst' BTStatic c) = return (PEStatic c, s, Nothing)
 specPatConstruct s (QVar' BTDynamic n) = return (PEDynamic, s, Just $ QVar n)
 specPatConstruct s (QVar' BTStatic n) =
-  do v <- find n s
-     let s' = update n (Static Nil) s
+  do v <- find' n s
+     let s' = set n (Static Nil) s
      return (PEStatic v, s', Nothing)
 specPatConstruct s (QPair' BTDynamic q1 q2) =
   do (p1, s1, mq1) <- specPatConstruct s q1
@@ -207,13 +209,13 @@ specPatConstruct s (QPair' BTStatic q1 q2) =
      return (combinePEPats p1 p2, s2, combinePats q1' q2')
 specPatConstruct s (Drop n) =
   do n `isDynIn` s
-     let s' = update n (Static Nil) s
+     let s' = set n (Static Nil) s
      return (PEDynamic, s', Just $ QVar n)
 
 -- Nill/dyn handling
 -- static constants can become dynamic from other side of matching
 -- we need the pattern from BTA for true annotation
-specPatDeconstruct :: Store -> Pattern' -> PEPattern -> EM (Store, Maybe Pattern)
+specPatDeconstruct :: SpecStore -> Pattern' -> PEPattern -> EM (SpecStore, Maybe Pattern)
 specPatDeconstruct s (QConst' BTDynamic c) PEDynamic =
   return (s, Just $ QConst c)
 specPatDeconstruct s (QConst' BTStatic c) (PEStatic c') =
@@ -224,9 +226,9 @@ specPatDeconstruct s (QVar' BTDynamic n) PEDynamic =
   return (s, Just $ QVar n)
 specPatDeconstruct s (QVar' BTStatic n) p =
   do v <- valFromPEPat p
-     v' <- find n s
+     v' <- find' n s
      res <- calcR Xor v v'
-     return (update n (Static res) s, Nothing)
+     return (set n (Static res) s, Nothing)
 specPatDeconstruct s (QPair' BTDynamic q1 q2) PEDynamic =
   do (s'', q1') <- specPatDeconstruct s   q1 PEDynamic
      (s', q2')  <- specPatDeconstruct s'' q2 PEDynamic
@@ -237,8 +239,8 @@ specPatDeconstruct s (QPair' BTStatic q1 q2) p =
      (s', q2') <- specPatDeconstruct s'' q2 p2
      return (s', combinePats q1' q2')
 specPatDeconstruct s (Drop n) _ =
-  do v <- find n s
-     let s' = update n Dynamic s
+  do v <- find' n s
+     let s' = set n Dynamic s
      if v /= Nil
       then Left $ "Variable " ++ n ++ "was not nil for inverted drop"
       else return (s', Just $ QVar n)
@@ -271,12 +273,12 @@ combinePats p Nothing = p
 combinePats (Just q1) (Just q2) = Just $ QPair q1 q2
 
 type PEValue = Either Value Expr
-specExpr :: Store -> Expr' -> EM PEValue
+specExpr :: SpecStore -> Expr' -> EM PEValue
 specExpr _ (Const' BTDynamic c) = return . Right $ Const c
 specExpr _ (Const' BTStatic c) = return $ Left c
 specExpr _ (Var' BTDynamic n) = return . Right $ Var n
 specExpr s (Var' BTStatic n) =
-  do v <- find n s; return . Left $ v
+  do v <- find' n s; return . Left $ v
 specExpr s (Op' BTDynamic op e1 e2) =
   do e1' <- getExpr e1 s; e2' <- getExpr e2 s
      return . Right $ Op op e1' e2'
@@ -290,14 +292,14 @@ specExpr s (UOp' BTStatic op e) =
      Left <$> calcU op v
 specExpr s (Lift e) = Right . Const <$> getValue e s
 
-getExpr ::  Expr' -> Store -> EM Expr
+getExpr ::  Expr' -> SpecStore -> EM Expr
 getExpr e s =
   do res <- specExpr s e
      case res of
       Right e' -> return e'
       _ -> Left "Expression expected"
 
-getValue ::  Expr' -> Store -> EM Value
+getValue ::  Expr' -> SpecStore -> EM Value
 getValue e s =
   do res <- specExpr s e
      case res of

@@ -1,3 +1,3 @@
-module Execute (runProgram, runProgram') where
+module Execute (runProgram, runProgram', prettyStats) where
 
 import Impl.Execute

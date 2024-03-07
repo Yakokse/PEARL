@@ -8,6 +8,8 @@ import qualified Data.Map.Strict as Map
 import Values
 import Operators
 import Data.Maybe (fromMaybe, mapMaybe)
+import Impl.Maps
+import Impl.SpecValues
 
 -- Constant folding of an expression
 -- Logging included
@@ -77,8 +79,8 @@ constFold p = concat <$> mapM constFoldB p
 
 
 -- Merge all explicator blocks
-mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) Store]
-                          -> [Block (Explicated a) Store]
+mergeExplicators :: Ord a => (a -> Int -> Int -> a) -> [Block (Explicated a) SpecStore]
+                          -> [Block (Explicated a) SpecStore]
 mergeExplicators annotateExpl p =
   let (expl, rest) = L.partition (\b -> case fst $ name b of
                                       Regular _ -> False; _ -> True) p
@@ -86,8 +88,8 @@ mergeExplicators annotateExpl p =
         let (l', s) = name b
             (l, ns) = getBoth l'
         in  (l, s `withouts` ns)
-      explGroups' = L.groupBy (\b1 b2 -> explLabel b1 == explLabel b2) $
-                    L.sortBy (\b1 b2 -> explLabel b1 `compare` explLabel b2) expl
+      explGroups' = L.groupBy ((==) `on` explLabel) $
+                    L.sortBy  (compare `on` explLabel) expl
       originss = map (map name) explGroups'
       origins = map head originss
       dests = map (head . jumpLabels . jump . head) explGroups'
@@ -97,6 +99,7 @@ mergeExplicators annotateExpl p =
       corrections = zipWith3 (\d o b -> (d, o, name b)) dests originss finals
   in map (correctBlock corrections) rest ++ finals ++ concat extras
     where
+      on f g x y = f (g x) (g y)
       getLabel n = case n of
                        Regular l -> l
                        Explicator l _ -> l
@@ -119,10 +122,10 @@ mergeExplicators annotateExpl p =
 
 -- Merge all residual exits into a single one and
 -- generalize the static output variables that differ between exits
-mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a Store -> (Program a Store, [(Name, SpecValue)])
+mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a SpecStore -> (Program a SpecStore, [(Name, SpecValue)])
 mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) =
   let (exits, rest) = L.partition isExit p
-      stores = map (storeToList . getExitStore) exits
+      stores = map (toList . getExitStore) exits
       ns = map fst $ head stores
       vals = map (map snd) stores
       tpls = zip ns $ L.transpose vals
@@ -139,15 +142,15 @@ mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp =
         Exit s -> s
         _ -> undefined
     initFix toFix b =
-      let getVal = findErr (getExitStore b)
+      let getVal n = toVal $ get n (getExitStore b)
           initSteps = map (\n -> Update n Xor (Const (getVal n))) toFix
       in b{body = body b ++ initSteps}
     annotateExit' b = annotateExit $ label b
     mergeBlocks' = mergeBlocks annotateExit' getExitStore
 
 -- Generalized block merging
-mergeBlocks :: (Block a Store -> Int -> Int -> a) -> (Block a Store -> Store) -> [Name] -> [(Block a Store, Int, Int)]
-                -> (Block a Store, Int, Int, [Store], [Block a Store])
+mergeBlocks :: (Block a SpecStore -> Int -> Int -> a) -> (Block a SpecStore -> SpecStore) -> [Name] -> [(Block a SpecStore, Int, Int)]
+                -> (Block a SpecStore, Int, Int, [SpecStore], [Block a SpecStore])
 mergeBlocks _ _ _ [] = undefined
 mergeBlocks _ getStore _ [(b, lb, ub)] = (b, lb, ub, [getStore b], [])
 mergeBlocks annotateLab getStore ns es =
@@ -157,11 +160,11 @@ mergeBlocks annotateLab getStore ns es =
       (lb, ub) = (min lb1 lb2, max ub1 ub2)
       (b, _, _) =  head es
       l' = annotateLab b lb ub
-      newName = (l', emptyStore)
+      newName = (l', emptyMap)
       newJump = Goto newName
       b1' = b1 { jump = newJump}
       b2' = b2 { jump = newJump}
-      vals = map (\store -> map (findErr store) ns) ss1
+      vals = map (\store -> map (\n -> toVal $ get n store) ns) ss1
       comps = map (zipWith (\n v -> Op Equal (Var n) (Const v)) ns) vals
       conjs = map (foldl1 (Op And)) comps
       expr = foldl1 (Op Or) conjs
@@ -248,12 +251,12 @@ compressPaths p =
 -- remove empty blocks that are not necessary
 removeEmptyBlocks :: (Ord a, Ord b) => [Block a b] -> [Block a b]
 removeEmptyBlocks p =
-  let (normal, empty) = L.partition isNeeded p
+  let (nonempty, removable) = L.partition isNeeded p
       relabelFroms = Map.fromList $ map (\b ->
-                      (name b, head . fromLabels $ from b)) empty
+                      (name b, head . fromLabels $ from b)) removable
       relabelJumps = Map.fromList $ map (\b ->
-                      (name b, head . jumpLabels $ jump b)) empty
-      jumpsFixed = map (mapJumpB (updateL relabelJumps)) normal
+                      (name b, head . jumpLabels $ jump b)) removable
+      jumpsFixed = map (mapJumpB (updateL relabelJumps)) nonempty
       fromsFixed = map (mapFromB (updateL relabelFroms)) jumpsFixed
   in fromsFixed
   where

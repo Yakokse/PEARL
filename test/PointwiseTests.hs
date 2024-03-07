@@ -6,14 +6,15 @@ import Test.Tasty.HUnit
 import Impl.Pointwise
 
 import AST
-import Values
 import Division
+import Impl.SpecValues
+import Impl.Maps
 
 testStep :: TestName -> Step -> Division -> (Division, Division) -> TestTree
 testStep n s d o = testCase n $ analyseStep d s @?= o
 
 xyStore :: Level -> Level -> Division
-xyStore x y = listToDiv [("x", x), ("y", y)]
+xyStore x y = fromList [("x", x), ("y", y)]
 
 tests :: TestTree
 tests = testGroup "All Uniform BTA Tests"

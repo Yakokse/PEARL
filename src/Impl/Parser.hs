@@ -5,7 +5,7 @@ import Values
 import Text.Parsec
 import Text.Parsec.Expr
 import Data.Functor (($>), void)
-
+import Impl.Maps
 
 type Parser = Parsec String ()
 
@@ -112,11 +112,11 @@ pConstant = symbol "'" *> pValue
 -- parse a string as a specialization specification
 parseSpec :: String -> EM Store
 parseSpec = parseStr pFile
-  where pFile = makeStore <$> (whitespace *> many pDeclaration)
+  where pFile = fromList <$> (whitespace *> many pDeclaration)
 
 -- parse a single declaration in a specification
-pDeclaration :: Parser (Name, SpecValue)
-pDeclaration = (,) <$> (pName <* symbol "=") <*> (Static <$> pConstant)
+pDeclaration :: Parser (Name, Value)
+pDeclaration = (,) <$> (pName <* symbol "=") <*> pConstant
 
 -- parse a label for the abstracted labels in AST
 pLabelName :: Parser (Label, ())

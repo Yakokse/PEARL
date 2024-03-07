@@ -19,6 +19,9 @@ import PrettyPrint
 import Wellformed
 import Inverter
 import Execute
+import Impl.Maps
+import Impl.SpecValues
+
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import System.Exit (die)
@@ -192,8 +195,8 @@ intMain InterpretOptions { intFile = filePath
      let (outStore, stats) = out
      trace v "Output store: "
      let outvals = filter (\(n, _) -> n `elem` output (fst prog))
-                    $ storeToList outStore
-     let outstr = map (\(n, val) -> n ++ ": " ++ prettyBTVal val) outvals
+                    $ toList outStore
+     let outstr = map (\(n, val) -> n ++ ": " ++ prettyVal val) outvals
      putStrLn (unlines outstr)
      trace v "Execution statistics: "
      putStrLn $ prettyStats stats
@@ -229,13 +232,13 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
               else specMain2 specOpts decl explicated store
      writeOutput v outputPath out
 
-btaUniform, btaPW :: NormProgram Label -> Division -> DivisionPW Label
+btaUniform, btaPW :: NormProgram Label -> Division -> PWDivision Label
 btaUniform = congruentUniformDiv
 btaPW p d =
   let initd = initPWDiv p d
   in makeCongruentPW p initd
 
-specMain2 :: SpecOptions -> VariableDecl -> Program' (Explicated Label) -> Store -> IO String
+specMain2 :: SpecOptions -> VariableDecl -> Program' (Explicated Label) -> SpecStore -> IO String
 specMain2 specOpts decl prog2 store =
   let v = specVerbose specOpts
   in
@@ -254,7 +257,7 @@ specMain2 specOpts decl prog2 store =
         printStaticOutput decl staticVals
         return $ prettyProg id prog
 
-specPostProcess :: Bool -> VariableDecl -> Program (Explicated Label) (Maybe Store)
+specPostProcess :: Bool -> VariableDecl -> Program (Explicated Label) (Maybe SpecStore)
                 -> IO (Program Label (), [(Name, SpecValue)])
 specPostProcess v origdecl (decl, prog) =
   do let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
@@ -263,7 +266,7 @@ specPostProcess v origdecl (decl, prog) =
      (folded, out) <- fromLEM "Folding" $ constFold prog
      trace v $ "Expressions reduced: " ++ show (length out)
      trace v "- Merging explicitors"
-     let cleanStores = mapProgStore (fromMaybe emptyStore) folded
+     let cleanStores = mapProgStore (fromMaybe emptyMap) folded
      let merged' = mergeExplicators (\l i1 i2 -> l ++ "_e" ++ show i1 ++ "_" ++ show i2) cleanStores
      let merged = mapLabel (serializeExpl id) merged'
      showLength merged
@@ -328,7 +331,7 @@ benchMain BenchOptions { benchFile     = inputPath
          res <- specialize' mode decl prog2 specstore
          (prog, outStatic) <- postprocess mode decl res
          (outRes, stats) <- run mode prog runstore
-         let combinedOut = updateWithStore (makeStore outStatic) outRes
+         let combinedOut = combine (toStore $ fromList outStatic) outRes
          verifyOutput mode origOut combinedOut
          fromEM ("wellformedness of residual prog " ++ mode) $
             wellformedProg prog
@@ -354,14 +357,15 @@ benchMain BenchOptions { benchFile     = inputPath
          specPostProcess False origdecl prog
     verifyOutput mode regularOut specOut =
       do trace v $ "Checking output " ++ mode
-         unless (all (\(n, val) -> val == find' n specOut) (storeToList regularOut))
+         unless (all (\(n, val) -> val == get n specOut) (toList regularOut))
             $ die "The regular and specialized output do not match"
     prettySize (_, prog) = "Total Blocks: " ++ show (length prog)
                         ++ ", Total Lines: " ++ show (sum $ map (length . body) prog)
 
-makeSpecStore :: VariableDecl -> Store -> Store
+makeSpecStore :: VariableDecl -> Store -> SpecStore
 makeSpecStore decl s =
-  let dynStore = makeStore . map (\n -> (n, Dynamic)) $ getVarsDecl decl
-      nilStore = makeStore . map (\n -> (n, Static Nil)) $ nonInput decl
-      store = dynStore `updateWithStore` nilStore `updateWithStore` s
+  let dynStore = fromList . map (\n -> (n, Dynamic)) $ getVarsDecl decl
+      nilStore = fromList . map (\n -> (n, Static Nil)) $ nonInput decl
+      statStore = mmap (\_ v -> Static v) s
+      store = statStore `combine` nilStore `combine` dynStore
   in store
