@@ -3,14 +3,16 @@ module UniformTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Preprocessing.Impl.Uniform
+import Maps
+import RL.AST
+
+import PE.SpecValues
+import PE.Preprocessing.Division
+
 import Control.Monad.State
 
-import RL.AST
-import Preprocessing.Division
+import PE.Preprocessing.Impl.Uniform
 
-import Specialization.SpecValues
-import Maps
 
 test :: (VariableDecl -> a -> ST b) ->
         TestName ->

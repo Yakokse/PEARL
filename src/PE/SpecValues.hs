@@ -1,8 +1,10 @@
-module Specialization.SpecValues where
+module PE.SpecValues where
 
 import Maps
 import Values
+
 import RL.AST
+
 import Data.List (union)
 
 data Level = BTStatic | BTDynamic

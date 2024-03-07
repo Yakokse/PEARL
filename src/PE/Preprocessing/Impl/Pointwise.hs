@@ -1,10 +1,12 @@
-module Preprocessing.Impl.Pointwise where
+module PE.Preprocessing.Impl.Pointwise where
 
-import RL.AST
-import Preprocessing.Division
 import Utils
 import Maps
-import Specialization.SpecValues
+
+import RL.AST
+
+import PE.SpecValues
+import PE.Preprocessing.Division
 
 -- create initial PW division for a given starting division
 -- all divisions are fully static except entry block

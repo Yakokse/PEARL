@@ -3,14 +3,15 @@ module AnnotateTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Preprocessing.Impl.Annotate
-
-import RL.AST
-import Preprocessing.AST2
-import Values
-import Preprocessing.Division
 import Maps
-import Specialization.SpecValues
+import Values
+import RL.AST
+
+import PE.AST2
+import PE.SpecValues
+import PE.Preprocessing.Division
+
+import PE.Preprocessing.Impl.Annotate
 
 test :: (Show b, Eq b) => TestName -> (a -> b) -> a -> b -> TestTree
 test n f i o = testCase n $ f i @?= o

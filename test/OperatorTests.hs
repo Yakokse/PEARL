@@ -3,9 +3,10 @@ module OperatorTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import RL.Operators
-import RL.AST
 import Values
+import RL.AST
+
+import RL.Operators
 
 tests :: TestTree
 tests = testGroup "All Operator Tests"

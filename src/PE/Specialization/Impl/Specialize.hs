@@ -1,16 +1,19 @@
-module Specialization.Impl.Specialize where
+module PE.Specialization.Impl.Specialize where
 
-import Control.Applicative ((<|>))
-
-import RL.AST
-import Preprocessing.AST2
 import Values
 import Utils
-import RL.Operators
-import PrettyPrint
-import Preprocessing.Division
-import Specialization.SpecValues
 import Maps
+
+import RL.AST
+import RL.Operators
+
+import PrettyPrint
+
+import PE.AST2
+import PE.SpecValues
+import PE.Preprocessing.Division
+
+import Control.Applicative ((<|>))
 
 type Point a = (a, SpecStore)
 type Pending a = [(Point a, Point a)]

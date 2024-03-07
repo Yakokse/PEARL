@@ -31,10 +31,11 @@ library
       Inversion.Impl.Inverter
       Inversion.Inverter
       Maps
+      Parsing.Impl.Common
       Parsing.Impl.Parser
       Parsing.Parser
+      PE.AST2
       PE.Preprocessing.Annotate
-      PE.Preprocessing.AST2
       PE.Preprocessing.BTA
       PE.Preprocessing.Division
       PE.Preprocessing.Explicicator
@@ -48,7 +49,7 @@ library
       PE.Specialization.Impl.Specialize
       PE.Specialization.PostProcessing
       PE.Specialization.Specialize
-      PE.Specialization.SpecValues
+      PE.SpecValues
       PrettyPrint
       RL.AST
       RL.Impl.Wellformed

@@ -1,7 +1,7 @@
 module RL.Operators where
 
-import RL.AST
 import Values
+import RL.AST
 
 -- definition of binary operators
 calc :: BinOp -> Value -> Value -> EM Value

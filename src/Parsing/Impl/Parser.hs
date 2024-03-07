@@ -1,13 +1,14 @@
 module Parsing.Impl.Parser where
 
-import RL.AST
 import Values
-import Text.Parsec
-import Text.Parsec.Expr
-import Data.Functor (($>), void)
 import Maps
 
-type Parser = Parsec String ()
+import RL.AST
+
+import Parsing.Impl.Common
+
+import Text.Parsec
+import Text.Parsec.Expr
 
 -- apply a parser to a string
 parseStr :: Parser a -> String -> EM a
@@ -56,7 +57,7 @@ pJump = choice
 -- parse a step
 pStep :: Parser Step
 pStep = choice
-  [ word "skip" $> Skip
+  [ Skip <$ word "skip"
   , Assert <$> (word "assert" *> symbol "(" *> pExpr <* symbol ")")
   , try pUpdate
   , Replacement <$> pPattern <*> (symbol "<-" *> pPattern)
@@ -67,9 +68,9 @@ pUpdate :: Parser Step
 pUpdate =
   Update <$> pName <*> pOp <*> pExpr
   where
-    pOp = choice [ symbol "+=" $> Add
-                 , symbol "-=" $> Sub
-                 , symbol "^=" $> Xor] <?> "Expecting reversible update"
+    pOp = choice [ Add <$ symbol "+="
+                 , Sub <$ symbol "-="
+                 , Xor <$ symbol "^="] <?> "Expecting reversible update"
 
 -- parse a pattern for a reversible replacement
 pPattern :: Parser Pattern
@@ -121,39 +122,3 @@ pDeclaration = (,) <$> (pName <* symbol "=") <*> pConstant
 -- parse a label for the abstracted labels in AST
 pLabelName :: Parser (Label, ())
 pLabelName = (,) <$> pName <*> return ()
-
--- parse a variable name
-pName :: Parser String
-pName =
-  lexeme . try $
-    do c <- letter; cs <- many pChar;
-       if c:cs `elem` restricted then fail "Restricted Word" else return $ c:cs
-  where
-    pChar = choice [alphaNum, char '_', char '\'']
-    restricted = ["from", "fi", "else", "goto", "if", "entry", "exit",
-                  "skip", "hd", "tl", "assert", "nil", "with"]
-
--- parse a number
-pNum :: Parser Word
-pNum = lexeme . try $ read <$> many1 digit
-
--- parse a specific word, fails if word is only partial
-word :: String -> Parser ()
-word s = lexeme . try $ string s *> notFollowedBy alphaNum
-
--- parse a symbol and ignore output
-symbol :: String -> Parser ()
-symbol s = lexeme . void $ string s
-
--- parse something then consume whitespace
-lexeme :: Parser a -> Parser a
-lexeme p = p <* whitespace
-
--- parse all whitespace, including comment
-whitespace :: Parser ()
-whitespace = many space *> optional (comment >> whitespace)
-
--- parse a comment
-comment :: Parser ()
-comment = void $ try (string "//") *> manyTill anyChar eol
-    where eol = void newline <|> eof

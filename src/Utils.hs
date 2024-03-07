@@ -1,8 +1,10 @@
 module Utils where
 
-import RL.AST
-import Preprocessing.AST2
 import Values
+import RL.AST
+
+import PE.AST2
+
 import Data.List (union)
 
 label :: Block a b -> a

@@ -1,4 +1,4 @@
-module Specialization.PostProcessing
+module PE.Specialization.PostProcessing
   ( constFold
   , mergeExplicators
   , mergeExits
@@ -7,4 +7,4 @@ module Specialization.PostProcessing
   , compressPaths
   , enumerateAnn) where
 
-import Specialization.Impl.PostProcessing
+import PE.Specialization.Impl.PostProcessing

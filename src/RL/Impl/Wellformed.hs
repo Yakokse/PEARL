@@ -1,12 +1,14 @@
 module RL.Impl.Wellformed where
 
-import RL.AST
-import Preprocessing.AST2
 import Utils
 import Values
-import Preprocessing.Division
 import Maps
-import Specialization.SpecValues
+
+import RL.AST
+
+import PE.AST2
+import PE.SpecValues
+import PE.Preprocessing.Division
 
 import qualified Data.Set as S
 

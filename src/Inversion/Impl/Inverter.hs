@@ -1,4 +1,5 @@
 module Inversion.Impl.Inverter where
+
 import RL.AST
 
 -- invert a program

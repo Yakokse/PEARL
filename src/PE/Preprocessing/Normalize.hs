@@ -1,3 +1,3 @@
-module Preprocessing.Normalize (normalize) where
+module PE.Preprocessing.Normalize (normalize) where
 
-import Preprocessing.Impl.Normalize
+import PE.Preprocessing.Impl.Normalize

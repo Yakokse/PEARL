@@ -1,16 +1,18 @@
-module Specialization.Impl.PostProcessing where
+module PE.Specialization.Impl.PostProcessing where
+
+import Utils
+import Values
+import Maps
 
 import RL.AST
-import Preprocessing.AST2
-import Utils
+import RL.Operators
+
+import PE.AST2
+import PE.SpecValues
+
 import qualified Data.List as L
 import qualified Data.Map.Strict as Map
-
-import Values
-import RL.Operators
 import Data.Maybe (fromMaybe, mapMaybe)
-import Maps
-import Specialization.SpecValues
 
 -- Constant folding of an expression
 -- Logging included

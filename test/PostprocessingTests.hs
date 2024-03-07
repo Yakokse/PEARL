@@ -3,7 +3,7 @@ module PostprocessingTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Specialization.Impl.PostProcessing
+import PE.Specialization.Impl.PostProcessing
 
 import RL.AST
 

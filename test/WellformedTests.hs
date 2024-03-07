@@ -3,9 +3,11 @@ module WellformedTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import RL.Impl.Wellformed
-import RL.AST
 import Values
+import RL.AST
+
+import RL.Impl.Wellformed
+
 
 wellformed :: (a -> EM b) -> TestName -> a -> TestTree
 wellformed f n x = testCase n $ case f x of Right _ -> return (); Left e -> assertFailure e

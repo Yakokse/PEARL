@@ -3,9 +3,11 @@ module ParserTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Parsing.Impl.Parser
-import RL.AST
 import Values
+import RL.AST
+
+import Parsing.Impl.Common
+import Parsing.Impl.Parser
 
 
 testPos :: (Eq a, Show a) => Parser a -> TestName -> String -> a -> TestTree

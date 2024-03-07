@@ -30,64 +30,17 @@ truthy = (/= falseV)
 boolify :: Bool -> Value
 boolify b = if b then trueV else falseV
 
--- find :: Name -> Store -> EM Value
--- find n s =
---   case Map.lookup n s of
---     Just v -> return v
---     -- Just _ -> Left $ "Variable \"" ++ n ++ "\" dynamic during lookup"
---     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
-
--- isDynIn :: Name -> Store -> EM ()
--- isDynIn n s =
---   case Map.lookup n s of
---     Just (Static _) -> Left $ "Variable \"" ++ n ++ "\" static during lookup"
---     Just Dynamic -> return ()
---     _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
-
--- find' :: Name -> Store -> SpecValue
--- find' = Map.findWithDefault Dynamic
-
 findErr ::  Store -> Name -> Value
 findErr s n =
   case Map.lookup n s of
     Just v -> v
     _ -> error $ "static variable " ++ n ++ " not found during lookup"
 
--- vars :: Store -> [Name]
--- vars = Map.keys
-
--- emptyStore :: Store
--- emptyStore = Map.empty
-
--- makeStore :: [(Name, SpecValue)] -> Store
--- makeStore = Map.fromList
-
--- storeToList :: Store -> [(Name, SpecValue)]
--- storeToList = Map.toAscList
-
--- update :: Name -> SpecValue -> Store -> Store
--- update = Map.insert
-
--- updateWithStore :: Store -> Store -> Store
--- updateWithStore s1 s2 = Map.union s2 s1
-
--- disjoint :: Store -> Store -> Bool
--- disjoint = Map.disjoint
-
--- without :: Store -> Name -> Store
--- without s n = Map.delete n s
-
--- withouts :: Store -> [Name] -> Store
--- withouts s ns = Map.filterWithKey (\k _ -> k `notElem` ns) s
-
 onlyIn :: Store -> [Name] -> Store
 onlyIn s ns = Map.filterWithKey (\k _ -> k `elem` ns) s
 
 mapStore :: (Name -> Value -> Value) -> Store -> Store
 mapStore = Map.mapWithKey
-
--- isIn :: Name -> Store -> Bool
--- isIn = Map.member
 
 remove :: [Name] -> Store -> Store
 remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)
@@ -100,8 +53,10 @@ instance Monad LEM where
     LEM $ case v of
       Left e -> (Left e, l)
       Right res -> let LEM (v', l') = f res in (v', l ++ l')
+
 instance Functor LEM where
   fmap = liftM
+
 instance Applicative LEM where
   pure a = LEM (Right a, []); (<*>) = ap
 

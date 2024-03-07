@@ -2,24 +2,27 @@ module Main (main) where
 
 import Utils
 import Values
+import Maps
+
 import RL.AST
 import RL.Wellformed
 
 import Parsing.Parser
-
-import Preprocessing.BTA
-import Preprocessing.Division
-import Preprocessing.AST2
-import Preprocessing.Normalize
-import Preprocessing.Explicicator
-import Preprocessing.Annotate
-import Specialization.Specialize
-import Specialization.PostProcessing
 import PrettyPrint
+
+import PE.AST2
+import PE.SpecValues
+import PE.Preprocessing.BTA
+import PE.Preprocessing.Division
+import PE.Preprocessing.Normalize
+import PE.Preprocessing.Explicicator
+import PE.Preprocessing.Annotate
+import PE.Specialization.Specialize
+import PE.Specialization.PostProcessing
+
 import Inversion.Inverter
+
 import Interpretation.Interpret
-import Maps
-import Specialization.SpecValues
 
 import Options.Applicative
 import Data.Maybe (fromMaybe)

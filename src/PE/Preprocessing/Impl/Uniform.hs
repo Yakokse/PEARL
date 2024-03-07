@@ -1,12 +1,15 @@
-module Preprocessing.Impl.Uniform where
+module PE.Preprocessing.Impl.Uniform where
+
+import Values
+import Utils
+import Maps
 
 import RL.AST
-import Values
-import Preprocessing.Division
-import Utils
+
+import PE.SpecValues
+import PE.Preprocessing.Division
+
 import qualified Control.Monad.State as S
-import Maps
-import Specialization.SpecValues
 
 type ST a = S.State Division a
 

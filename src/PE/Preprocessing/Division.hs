@@ -1,10 +1,12 @@
-module Preprocessing.Division where
+module PE.Preprocessing.Division where
 
-import Specialization.SpecValues
 import Values
-import RL.AST
-import Data.List (union)
 import Maps
+
+import RL.AST
+import PE.SpecValues
+
+import Data.List (union)
 
 type Division = Map Name Level
 type PWDivision l = Map l (Division, Division)

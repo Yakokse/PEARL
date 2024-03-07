@@ -1,11 +1,15 @@
 module Interpretation.Impl.Interpret where
 
-import RL.AST
-import RL.Operators
+
 import Values
 import Utils
-import PrettyPrint
 import Maps
+
+import RL.AST
+import RL.Operators
+
+import PrettyPrint
+
 
 import qualified Control.Monad.State as S
 

@@ -1,12 +1,14 @@
-module Preprocessing.Impl.Explicicator where
+module PE.Preprocessing.Impl.Explicicator where
 
-import Preprocessing.AST2
 import Utils
 import Values
-import Preprocessing.Division
-import Data.Maybe (catMaybes)
 import Maps
-import Specialization.SpecValues
+
+import PE.SpecValues
+import PE.AST2
+import PE.Preprocessing.Division
+
+import Data.Maybe (catMaybes)
 
 -- add explicators for a given RL2 program
 explicate :: Ord a => PWDivision a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
