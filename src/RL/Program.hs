@@ -61,9 +61,3 @@ getNExitBlock p = head $ filter isNExit p
 
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
-
-isNEntry :: NormBlock a -> Bool
-isNEntry = isFromEntry . nfrom
-
-isNExit :: NormBlock a -> Bool
-isNExit = isJumpExit . njump

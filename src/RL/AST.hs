@@ -139,6 +139,12 @@ isEntry = isFromEntry . from
 isExit :: Block a b -> Bool
 isExit = isJumpExit . jump
 
+isNEntry :: NormBlock a -> Bool
+isNEntry = isFromEntry . nfrom
+
+isNExit :: NormBlock a -> Bool
+isNExit = isJumpExit . njump
+
 isFromEntry :: ComeFrom a b -> Bool
 isFromEntry j = case j of Entry _ -> True; _ -> False
 

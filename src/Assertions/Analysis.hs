@@ -1,10 +1,13 @@
 module Assertions.Analysis where
 
--- import Assertions.Abstraction
--- import Inversion.Inverter
+import Utils.Maps
+import RL.Values
+import Inversion.Inverter
 
--- AbstractStore :: Name -> AValue
--- State = PW AbstractStore :: Label -> (StartStore, EndStore)
+import Assertions.Abstraction
+
+type AStore = Map Name AValue
+type State = Map Label (AStore, AStore)
 
 -- Workqueue
 -- initial stores: entry start = input = any, non-input = nil
@@ -21,5 +24,3 @@ module Assertions.Analysis where
 
 -- after fixpoint reached: remove assertions when trivial
 --                         blocks when trivial false assert / none
-
--- thought: operate on normalized or not, easier postproc but annoying preproc
