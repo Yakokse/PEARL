@@ -24,38 +24,38 @@ source-repository head
 
 library
   exposed-modules:
-      Annotate
       Assertions.Abstraction
       Assertions.Analysis
-      AST
-      AST2
-      BTA
-      Division
-      Execute
-      Explicicator
-      Impl.Annotate
-      Impl.Execute
-      Impl.Explicicator
-      Impl.Inverter
-      Impl.Maps
-      Impl.Normalize
-      Impl.Parser
-      Impl.Pointwise
-      Impl.PostProcessing
-      Impl.Specialize
-      Impl.SpecValues
-      Impl.Uniform
-      Impl.Wellformed
-      Inverter
-      Normalize
-      Operators
-      Parser
-      PostProcessing
+      Interpretation.Execute
+      Interpretation.Impl.Execute
+      Inversion.Impl.Inverter
+      Inversion.Inverter
+      Maps
+      Parsing.Impl.Parser
+      Parsing.Parser
+      Preprocessing.Annotate
+      Preprocessing.AST2
+      Preprocessing.BTA
+      Preprocessing.Division
+      Preprocessing.Explicicator
+      Preprocessing.Impl.Annotate
+      Preprocessing.Impl.Explicicator
+      Preprocessing.Impl.Normalize
+      Preprocessing.Impl.Pointwise
+      Preprocessing.Impl.Uniform
+      Preprocessing.Normalize
       PrettyPrint
-      Specialize
+      RL.AST
+      RL.Impl.Wellformed
+      RL.Operators
+      RL.Wellformed
+      Specialization.Impl.PostProcessing
+      Specialization.Impl.Specialize
+      Specialization.PostProcessing
+      Specialization.Specialize
+      Specialization.SpecValues
       Utils
       Values
-      Wellformed
   other-modules:
       Paths_PERevFlow
   hs-source-dirs:
