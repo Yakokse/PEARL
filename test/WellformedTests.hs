@@ -3,8 +3,8 @@ module WellformedTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Impl.Wellformed
-import AST
+import RL.Impl.Wellformed
+import RL.AST
 import Values
 
 wellformed :: (a -> EM b) -> TestName -> a -> TestTree

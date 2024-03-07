@@ -3,8 +3,8 @@ module OperatorTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Operators
-import AST
+import RL.Operators
+import RL.AST
 import Values
 
 tests :: TestTree

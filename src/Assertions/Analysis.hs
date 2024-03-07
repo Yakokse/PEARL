@@ -1,7 +1,7 @@
 module Assertions.Analysis where
 
 import Assertions.Abstraction
-import Inverter
+import Inversion.Inverter
 
 -- AbstractStore :: Name -> AValue
 -- State = PW AbstractStore :: Label -> (StartStore, EndStore)

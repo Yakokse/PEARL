@@ -1,3 +1,3 @@
-module Wellformed (wellformedProg, wellformedProg') where
+module RL.Wellformed (wellformedProg, wellformedProg') where
 
-import Impl.Wellformed
+import RL.Impl.Wellformed

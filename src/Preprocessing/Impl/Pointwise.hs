@@ -1,10 +1,10 @@
-module Impl.Pointwise where
+module Preprocessing.Impl.Pointwise where
 
-import AST
-import Division
+import RL.AST
+import Preprocessing.Division
 import Utils
-import Impl.Maps
-import Impl.SpecValues
+import Maps
+import Specialization.SpecValues
 
 -- create initial PW division for a given starting division
 -- all divisions are fully static except entry block

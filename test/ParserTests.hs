@@ -3,8 +3,8 @@ module ParserTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Impl.Parser
-import AST
+import Parsing.Impl.Parser
+import RL.AST
 import Values
 
 

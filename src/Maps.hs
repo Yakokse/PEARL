@@ -1,4 +1,4 @@
-module Impl.Maps where
+module Maps where
 
 import qualified Data.Map.Strict as Map
 

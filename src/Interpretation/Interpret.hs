@@ -1,3 +1,3 @@
-module Execute (runProgram, runProgram', prettyStats) where
+module Interpretation.Interpret (runProgram, runProgram', prettyStats) where
 
-import Impl.Execute
+import Interpretation.Impl.Interpret

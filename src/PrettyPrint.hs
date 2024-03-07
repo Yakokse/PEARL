@@ -1,12 +1,12 @@
 module PrettyPrint where
 
-import AST
-import AST2
+import RL.AST
+import Preprocessing.AST2
 import Data.List (intercalate)
 import Values
-import Impl.SpecValues
-import Division
-import Impl.Maps
+import Specialization.SpecValues
+import Preprocessing.Division
+import Maps
 
 type Print a = a -> String
 

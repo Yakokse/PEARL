@@ -1,5 +1,5 @@
-module Impl.Inverter where
-import AST
+module Inversion.Impl.Inverter where
+import RL.AST
 
 -- invert a program
 invertProg :: Program a b -> Program a b

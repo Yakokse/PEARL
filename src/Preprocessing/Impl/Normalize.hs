@@ -1,6 +1,6 @@
-module Impl.Normalize where
+module Preprocessing.Impl.Normalize where
 
-import AST
+import RL.AST
 import Utils
 
 -- normalize a program

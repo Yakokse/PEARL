@@ -1,3 +1,3 @@
-module Specialize (specialize) where
+module Specialization.Specialize (specialize) where
 
-import Impl.Specialize
+import Specialization.Impl.Specialize

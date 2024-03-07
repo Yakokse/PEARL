@@ -1,6 +1,6 @@
-module Operators where
+module RL.Operators where
 
-import AST
+import RL.AST
 import Values
 
 -- definition of binary operators

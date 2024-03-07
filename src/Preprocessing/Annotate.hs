@@ -1,3 +1,3 @@
-module Annotate (annotateProg) where
+module Preprocessing.Annotate (annotateProg) where
 
-import Impl.Annotate
+import Preprocessing.Impl.Annotate

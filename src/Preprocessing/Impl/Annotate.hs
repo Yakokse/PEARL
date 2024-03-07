@@ -1,10 +1,10 @@
-module Impl.Annotate where
+module Preprocessing.Impl.Annotate where
 
-import AST
-import AST2
-import Division
-import Impl.SpecValues
-import Impl.Maps
+import RL.AST
+import Preprocessing.AST2
+import Preprocessing.Division
+import Specialization.SpecValues
+import Maps
 
 -- Annotate a normalized program
 annotateProg :: Ord a => PWDivision a -> NormProgram a -> Program' a

@@ -1,9 +1,9 @@
-module AST2 where
+module Preprocessing.AST2 where
 
-import AST
+import RL.AST
 import Values
-import Impl.SpecValues
-import Division
+import Specialization.SpecValues
+import Preprocessing.Division
 
 type Program' label = [Block' label]
 

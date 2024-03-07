@@ -3,9 +3,9 @@ module PostprocessingTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Impl.PostProcessing
+import Specialization.Impl.PostProcessing
 
-import AST
+import RL.AST
 
 test :: (Show b, Eq b) => (a -> b) -> TestName -> a -> b -> TestTree
 test f n i o = testCase n $ f i @?= o

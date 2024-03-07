@@ -1,8 +1,8 @@
-module Impl.SpecValues where
+module Specialization.SpecValues where
 
-import Impl.Maps
+import Maps
 import Values
-import AST
+import RL.AST
 import Data.List (union)
 
 data Level = BTStatic | BTDynamic

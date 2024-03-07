@@ -1,7 +1,7 @@
 module Utils where
 
-import AST
-import AST2
+import RL.AST
+import Preprocessing.AST2
 import Values
 import Data.List (union)
 

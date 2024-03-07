@@ -1,27 +1,27 @@
 module Main (main) where
 
-import Options.Applicative
-
-import Values
-import Parser
-
-import BTA
-import Division
-import AST
-import AST2
-import Normalize
-import Explicicator
 import Utils
-import Annotate
-import Specialize
-import PostProcessing
-import PrettyPrint
-import Wellformed
-import Inverter
-import Execute
-import Impl.Maps
-import Impl.SpecValues
+import Values
+import RL.AST
+import RL.Wellformed
 
+import Parsing.Parser
+
+import Preprocessing.BTA
+import Preprocessing.Division
+import Preprocessing.AST2
+import Preprocessing.Normalize
+import Preprocessing.Explicicator
+import Preprocessing.Annotate
+import Specialization.Specialize
+import Specialization.PostProcessing
+import PrettyPrint
+import Inversion.Inverter
+import Interpretation.Interpret
+import Maps
+import Specialization.SpecValues
+
+import Options.Applicative
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import System.Exit (die)

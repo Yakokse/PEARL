@@ -3,12 +3,12 @@ module PointwiseTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Impl.Pointwise
+import Preprocessing.Impl.Pointwise
 
-import AST
-import Division
-import Impl.SpecValues
-import Impl.Maps
+import RL.AST
+import Preprocessing.Division
+import Specialization.SpecValues
+import Maps
 
 testStep :: TestName -> Step -> Division -> (Division, Division) -> TestTree
 testStep n s d o = testCase n $ analyseStep d s @?= o

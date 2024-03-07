@@ -1,11 +1,11 @@
-module Impl.Execute where
+module Interpretation.Impl.Interpret where
 
-import AST
-import Operators
+import RL.AST
+import RL.Operators
 import Values
 import Utils
 import PrettyPrint
-import Impl.Maps
+import Maps
 
 import qualified Control.Monad.State as S
 

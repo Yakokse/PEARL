@@ -1,3 +1,3 @@
-module Parser (parseProg, parseSpec) where
+module Parsing.Parser (parseProg, parseSpec) where
 
-import Impl.Parser
+import Parsing.Impl.Parser

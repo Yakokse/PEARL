@@ -1,3 +1,3 @@
-module Explicicator (explicate) where
+module Preprocessing.Explicicator (explicate) where
 
-import Impl.Explicicator
+import Preprocessing.Impl.Explicicator

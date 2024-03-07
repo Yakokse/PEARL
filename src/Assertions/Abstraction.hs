@@ -1,6 +1,6 @@
 module Assertions.Abstraction where
 
-import AST
+import RL.AST
 
 data AValue = Any | None | ANil | AAtom | APair AValue AValue
   deriving (Eq)

@@ -3,8 +3,8 @@ module InversionTests (tests) where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Impl.Inverter
-import AST
+import Inversion.Impl.Inverter
+import RL.AST
 
 testEq :: (Eq b, Show b) => (a -> b) -> TestName -> a -> b -> TestTree
 testEq f n x y = testCase n $ f x @?= y

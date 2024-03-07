@@ -1,4 +1,4 @@
-module BTA (congruentUniformDiv, initPWDiv, makeCongruentPW) where
+module Preprocessing.BTA (congruentUniformDiv, initPWDiv, makeCongruentPW) where
 
-import Impl.Uniform
-import Impl.Pointwise
+import Preprocessing.Impl.Uniform
+import Preprocessing.Impl.Pointwise

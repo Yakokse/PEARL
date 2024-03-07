@@ -1,11 +1,11 @@
-module Impl.Parser where
+module Parsing.Impl.Parser where
 
-import AST
+import RL.AST
 import Values
 import Text.Parsec
 import Text.Parsec.Expr
 import Data.Functor (($>), void)
-import Impl.Maps
+import Maps
 
 type Parser = Parsec String ()
 
