@@ -1,7 +1,10 @@
 module Assertions.Abstraction where
 
 import RL.AST
+import RL.Values
 
+-- None field vs Maybe
+-- Just Pair (Nothing, Just AAtom) vs Nothing?
 data AValue = Any | None | ANil | AAtom | APair AValue AValue
   deriving (Eq)
 
@@ -20,7 +23,7 @@ None `alub` v    = v
 v    `alub` None = v
 (APair v1 v2) `alub` (APair v1' v2') =
   APair (v1 `alub` v1') (v2 `alub` v2')
-v1   `alub` v2   = -- reflexivity, otherwise flat hierarchy
+v1   `alub` v2   = -- idempotence, otherwise flat hierarchy
   if v1 == v2 then v1 else Any
 
 -- greatest lower bound
@@ -31,7 +34,7 @@ None `aglb` _    = None
 _    `aglb` None = None
 (APair v1 v2) `aglb` (APair v1' v2') =
   APair (v1 `aglb` v1') (v2 `aglb` v2')
-v1   `aglb` v2   = -- reflexivity, otherwise flat hierarchy
+v1   `aglb` v2   = -- idempotence, otherwise flat hierarchy
   if v1 == v2 then v1 else None
 
 -- abstracted binary operators
@@ -43,16 +46,14 @@ aBinOp Mul v1 v2      = numericOp v1 v2
 aBinOp Div v1 v2      = numericOp v1 v2
 aBinOp Less v1 v2     = numericCmp v1 v2
 aBinOp Greater v1 v2  = numericCmp v1 v2
+aBinOp Equal ANil ANil = AAtom
 aBinOp Equal v1 v2 = -- If types match then true/nil else always nil
   if canEqual v1 v2 then Any else ANil
 aBinOp Cons v1 v2 = APair v1 v2 -- Exact information preserval
-aBinOp And ANil _ = ANil -- Will always be false
-aBinOp And _ ANil = ANil
-aBinOp And Any  _ = Any -- Either short-circuit or lhs
-aBinOp And _    v = v -- LHS always true, short-circuit to RHS
+aBinOp And v _  | canNil v = v -- nil -> nil, any -> any
+aBinOp And _ v  = v -- LHS always true, short-circuit to RHS
 aBinOp Or ANil v = v -- LHS false, short-circuit to RHS
-aBinOp Or Any _  = Any -- Either short-circuit or lhs
-aBinOp Or v   _  = v -- LHS always true, return it
+aBinOp Or v   _  = v -- any -> any, true val -> true val
 
 -- abstracted reversible operators
 aRevOp :: RevOp -> AValue -> AValue -> AValue
@@ -95,6 +96,13 @@ canEqual (APair v1 v2) (APair v1' v2') = -- Pairwise logic
   canEqual v1 v1' && canEqual v2 v2'
 canEqual v1 v2 = v1 == v2 -- v1 and v2 must be nil or an atom
 
+canNil :: AValue -> Bool
+canNil ANil        = True
+canNil Any         = True
+canNil None        = False
+canNil AAtom       = False
+canNil (APair _ _) = False
+
 -- abstracted unary operator
 aUnOp :: UnOp -> AValue -> AValue
 aUnOp _ None         = None  -- Propagate bot
@@ -105,3 +113,9 @@ aUnOp Tl (APair _ v) = v     -- Trivial
 aUnOp Tl _           = None  -- Value is never a pair
 aUnOp Not ANil       = AAtom -- Trivial true
 aUnOp Not _          = ANil  -- Value is never false
+
+aValue :: Value -> AValue
+aValue Nil = ANil
+aValue (Pair v1 v2) = APair (aValue v1) (aValue v2)
+aValue (Atom _) = AAtom
+aValue (Num _) = AAtom

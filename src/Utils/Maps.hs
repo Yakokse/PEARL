@@ -59,5 +59,8 @@ mfilter = Map.filter
 allWhere :: (n -> e -> Bool) -> Map n e -> [n]
 allWhere f m = keys $ Map.filterWithKey f m
 
+anyWhere :: (n -> e -> Bool) -> Map n e -> Bool
+anyWhere f = not . null . allWhere f
+
 mmap :: (n -> a -> b) -> Map n a -> Map n b
 mmap = Map.mapWithKey

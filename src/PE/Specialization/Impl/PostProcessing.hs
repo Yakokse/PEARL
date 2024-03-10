@@ -44,6 +44,7 @@ constFoldE (Op op e1 e2) = do
 
 -- Do constant folding in a program, removing blocks that fail assertions
 -- Logging included
+-- TODO: Remove, replace with assertion removal?
 constFold :: [Block a b] -> LEM [Block a b]
 constFold p = concat <$> mapM constFoldB p
   where
