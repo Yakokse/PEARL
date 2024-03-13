@@ -16,9 +16,6 @@ type PWDivision l = Map l (Division, Division)
 isType :: Name -> Level -> Division -> Bool
 isType n t d = get n d == t
 
-lubDiv :: [Division] -> Division
-lubDiv = combineWith lub
-
 boundedBy :: Name -> Level -> Division -> Division
 boundedBy = update lub
 

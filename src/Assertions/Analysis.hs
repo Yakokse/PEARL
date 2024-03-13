@@ -39,7 +39,7 @@ lubStore :: AStore -> AStore -> AStore
 lubStore s1 s2
   | anyWhere (const (== ANil)) s1 = s2
   | anyWhere (const (== ANil)) s2 = s1
-  | otherwise = combineWith alub [s1, s2]
+  | otherwise = combineWith alub s1 s2
 
 inferStep :: AStore -> Step -> AStore
 inferStep s Skip = s
@@ -62,8 +62,9 @@ inferConstruct s (QPair q1 q2) =
   in (APair av1 av2, s')
 
 inferDeconstruct :: AStore -> Pattern -> AValue -> AStore
-inferDeconstruct s (QConst v) av = -- How to handle mistake in deconstruct
-  if av == aValue v then s else undefined
+inferDeconstruct s (QConst _) _ = -- How to handle mistake in deconstruct
+  -- if av == aValue v then s else undefined
+  s
 inferDeconstruct s (QVar n) av =
   let av1 = get n s
   in if canNil av1 then set n av s

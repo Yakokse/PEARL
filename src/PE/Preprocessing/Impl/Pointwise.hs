@@ -31,11 +31,11 @@ workQueue prog pwdiv (l:ls) =
   let (d1, d2) = get l pwdiv
       b = getNBlock prog l
       parentDivs = map (\(l', ()) -> snd $ get l' pwdiv) $ fromLabels $ nfrom b
-      newDiv = lubDiv $ d1 : parentDivs
+      newDiv = combinesWith lub $ d1 : parentDivs
       (d1', d2') = analyseBlock newDiv b
       children = map fst $ jumpLabels $ njump b
       lsNew = if d2' == d2 then [] else children
-      pwdivNew = set l (lubDiv [d1, d1'], lubDiv [d2, d2']) pwdiv
+      pwdivNew = set l (combineWith lub d1 d1', combineWith lub d2 d2') pwdiv
   in workQueue prog pwdivNew $ ls ++ lsNew
 
 -- analyse a normalized block

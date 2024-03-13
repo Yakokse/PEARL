@@ -1,0 +1,7 @@
+(a b) -> (a b)
+
+init:
+	entry
+	a <- ('a . a)
+	('b . b) <- b
+	exit

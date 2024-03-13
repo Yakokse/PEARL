@@ -16,8 +16,11 @@ update = Map.insertWith
 combine :: Ord n => Map n e -> Map n e -> Map n e
 combine = Map.union
 
-combineWith :: Ord n => (e -> e -> e) -> [Map n e] -> Map n e
-combineWith = Map.unionsWith
+combineWith :: Ord n => (e -> e -> e) -> Map n e -> Map n e -> Map n e
+combineWith = Map.unionWith
+
+combinesWith :: Ord n => (e -> e -> e) -> [Map n e] -> Map n e
+combinesWith = Map.unionsWith
 
 sets :: Ord n => [n] -> e -> Map n e -> Map n e
 sets ns e m = foldl (\m' n -> set n e m') m ns
