@@ -67,13 +67,13 @@ inferDeconstruct s (QConst v) av = -- How to handle mistake in deconstruct
 inferDeconstruct s (QVar n) av =
   let av1 = get n s
   in if canNil av1 then set n av s
-     else undefined -- error, set to None?
+     else set n None s -- error, set to None?
 inferDeconstruct s (QPair q1 q2) av =
   let (av1, av2) =
         case av of
           APair av1' av2' -> (av1', av2')
           Any -> (Any, Any)
-          _ -> undefined -- error, set vars to None (none, none)?
+          _ -> (None, None) -- error, set vars to None (none, none)?
       s' = inferDeconstruct s q1 av1
   in inferDeconstruct s' q2 av2
 

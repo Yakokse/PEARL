@@ -79,13 +79,11 @@ createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) ->
 createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
 createExplicator p f src (dest, ns) idx = (dest, return (Block'
   { name' = Explicator (f src idx) ns
-  , initDiv = unexplicate . initDiv $ getBlockUnsafe' p dest
+  , initDiv = sets ns BTStatic . initDiv $ getBlockUnsafe' p dest
   , from' = From' $ Regular src
   , body' = map Generalize ns
   , jump' = Goto' $ Regular dest
   }))
-  where
-    unexplicate = sets ns (repeat BTStatic)
 
 -- annotate jump labels and distinguish between paths
 mapJumpInt :: (a -> Int -> b) -> Jump' a -> Jump' b

@@ -19,9 +19,8 @@ combine = Map.union
 combineWith :: Ord n => (e -> e -> e) -> [Map n e] -> Map n e
 combineWith = Map.unionsWith
 
-sets :: Ord n => [n] -> [e] -> Map n e -> Map n e
-sets ns es m = foldl (\m' (n, t) -> set n t m') m pairs
-  where pairs = zip ns es
+sets :: Ord n => [n] -> e -> Map n e -> Map n e
+sets ns e m = foldl (\m' n -> set n e m') m ns
 
 emptyMap :: Map n e
 emptyMap = Map.empty

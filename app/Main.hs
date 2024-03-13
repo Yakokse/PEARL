@@ -26,6 +26,8 @@ import Inversion.Inverter
 
 import Interpretation.Interpret
 
+import Assertions.Removal
+
 import Options.Applicative
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
@@ -36,6 +38,7 @@ data Options = Specialize SpecOptions
              | Invert InvertOptions
              | Interpret InterpretOptions
              | Bench BenchOptions
+             | Optimize OptimizeOptions
 
 data SpecOptions = SpecOptions
   { specInpFile   :: String
@@ -67,6 +70,12 @@ data BenchOptions = BenchOptions
   , benchVerbose :: Bool
   }
 
+-- flags for all steps etc
+data OptimizeOptions = OptimizeOptions
+  { optimInput :: String
+  , optimOutput :: String
+  , optimVerbose :: Bool
+  }
 
 specParser :: Parser Options
 specParser = Specialize <$> (SpecOptions
@@ -120,6 +129,15 @@ benchParser = Bench <$> (BenchOptions
   where
     strp = eitherReader $ return . words
 
+optimParser :: Parser Options
+optimParser = Optimize <$> (OptimizeOptions
+           <$> argument str (metavar "<Input RL file>")
+           <*> argument str (metavar "<Output RL file>")
+           <*> flag True False (long "verbose"
+                           <> short 'v'
+                           <> help "Show messages and info for each phase")
+           )
+
 optParser :: Parser Options
 optParser = hsubparser
               ( command "spec" (info specParser
@@ -130,12 +148,14 @@ optParser = hsubparser
                 (progDesc "Interpret an RL program"))
              <> command "bench" (info benchParser
                 (progDesc "Run various benchmarks on an RL program"))
+             <> command "optimize" (info optimParser
+                (progDesc "Optimize an RL program"))
               )
 
 optsParser :: ParserInfo Options
 optsParser = info (optParser <**> helper)
   ( fullDesc
-  <> progDesc "Various operations on RL programs (spec/invert/interpret/bench)"
+  <> progDesc "Various operations on RL programs\n (spec/invert/interpret/bench/optimize)"
   )
 
 trace :: Bool -> String -> IO ()
@@ -172,6 +192,7 @@ main = do
     Invert     opts -> invMain   opts
     Interpret  opts -> intMain   opts
     Bench      opts -> benchMain opts
+    Optimize   opts -> optimMain opts
   putStrLn "Program completed succesfully!"
 
 invMain :: InvertOptions -> IO ()
@@ -186,6 +207,16 @@ invMain InvertOptions { invInpFile = inputPath
      _ <- fromEM "performing wellformedness check of reverse prog"
               $ wellformedProg invProg
      let out = prettyProg id invProg
+     writeOutput v outputPath out
+
+optimMain :: OptimizeOptions -> IO ()
+optimMain OptimizeOptions { optimInput = inputPath
+                          , optimOutput = outputPath
+                          , optimVerbose = v} =
+  do prog <- parseFile "program" v parseProg inputPath
+     trace v "- Removing assertions"
+     let optimProg = removeAssertions prog
+     let out = prettyProg id optimProg
      writeOutput v outputPath out
 
 intMain :: InterpretOptions -> IO ()

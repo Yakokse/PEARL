@@ -55,7 +55,7 @@ analyseStep d (Replacement left right) =
       -- get the extended BTType for the LHS Pattern
       -- Variables from the RHS pattern are considered static
       -- since theyve been nil-cleared
-      dTemp = sets varsRight (repeat BTStatic) d
+      dTemp = sets varsRight BTStatic d
       pLeft = analysePat dTemp left
       -- Get the least upper bound of the two extended types
       p = pRight `qlub` pLeft
@@ -71,9 +71,9 @@ data BTPattern = QStatic | QDynamic | QCons BTPattern BTPattern
 
 updateTypes :: BTPattern -> Pattern -> Division -> Division
 updateTypes QStatic p d =
-  sets (getVarsPat p) (repeat BTStatic) d
+  sets (getVarsPat p) BTStatic d
 updateTypes QDynamic p d =
-  sets (getVarsPat p) (repeat BTDynamic) d
+  sets (getVarsPat p) BTDynamic d
 updateTypes (QCons q1 q2) (QPair p1 p2) d =
   updateTypes q2 p2 $ updateTypes q1 p1 d
 updateTypes q (QVar n) d = set n (patToLevel q) d

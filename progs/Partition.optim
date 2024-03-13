@@ -1,0 +1,11 @@
+(ys) -> (xs ys) with (x)
+
+init_1:
+	entry
+	(x . ys) <- ys
+	xs <- (x . xs)
+	(x . ys) <- ys
+	xs <- (x . xs)
+	(x . ys) <- ys
+	xs <- (x . xs)
+	exit

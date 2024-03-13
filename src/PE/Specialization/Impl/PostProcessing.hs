@@ -146,9 +146,13 @@ mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp =
       case jump b of
         Exit s -> s
         _ -> undefined
+    initStep b n =
+      let v = toVal $ get n (getExitStore b)
+      in case v of
+          Nil -> []
+          _ -> [Replacement (QVar n) (QConst v)]
     initFix toFix b =
-      let getVal n = toVal $ get n (getExitStore b)
-          initSteps = map (\n -> Update n Xor (Const (getVal n))) toFix
+      let initSteps = concatMap (initStep b) toFix
       in b{body = body b ++ initSteps}
     annotateExit' b = annotateExit $ label b
     mergeBlocks' = mergeBlocks annotateExit' getExitStore
