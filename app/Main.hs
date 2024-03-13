@@ -135,7 +135,7 @@ optParser = hsubparser
 optsParser :: ParserInfo Options
 optsParser = info (optParser <**> helper)
   ( fullDesc
-  <> progDesc "Various operations on RL programs (spec/invert/interpret)"
+  <> progDesc "Various operations on RL programs (spec/invert/interpret/bench)"
   )
 
 trace :: Bool -> String -> IO ()
