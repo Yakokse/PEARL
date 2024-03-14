@@ -16,8 +16,8 @@ update = Map.insertWith
 combine :: Ord n => Map n e -> Map n e -> Map n e
 combine = Map.union
 
-combineWith :: Ord n => (e -> e -> e) -> Map n e -> Map n e -> Map n e
-combineWith = Map.unionWith
+combineWith :: Ord n => (a -> b -> c) -> Map n a -> Map n b -> Map n c
+combineWith = Map.intersectionWith
 
 combinesWith :: Ord n => (e -> e -> e) -> [Map n e] -> Map n e
 combinesWith = Map.unionsWith
