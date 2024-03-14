@@ -49,6 +49,7 @@ data SpecOptions = SpecOptions
   , skipPost      :: Bool
   , specVerbose   :: Bool
   , specTrace     :: Bool
+  , specIgnore    :: [Name]
   }
 
 data InvertOptions = InvertOptions
@@ -97,7 +98,13 @@ specParser = Specialize <$> (SpecOptions
           <*> switch (long "trace"
                            <> short 't'
                            <> help "Show trace of specialization (Not recommended)")
+          <*> option strp (long "ignore"
+                            <> short 'i'
+                            <> help "Treat variables as dynamic"
+                            <> value [])
           )
+  where
+    strp = eitherReader $ return . words
 
 inverterParser :: Parser Options
 inverterParser = Invert <$> (InvertOptions
@@ -242,13 +249,15 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
                               , specOutFile = outputPath
                               , uniformBTA  = uniform
                               , specFile    = specPath
-                              , specVerbose = v} =
+                              , specVerbose = v
+                              , specIgnore  = ignores} =
   do prog <- parseFile "program" v parseProg inputPath
      let decl = fst prog
      _ <- fromEM "performing wellformedness check of input prog"
               $ wellformedProg prog
-     initStore <- parseFile "division and specilization data"
+     initStore' <- parseFile "division and specilization data"
                     v parseSpec specPath
+     let initStore = initStore' `withouts` ignores
      trace v "- Normalizing input program."
      let nprog = normalize "init" "stop" prog (\l i -> l ++ "_" ++ show i)
      trace v "- Creating initial binding."
@@ -256,7 +265,7 @@ specMain specOpts@SpecOptions { specInpFile = inputPath
      trace v $ "- Performing BTA " ++ if uniform then "(uniform)" else "(pointwise)"
      let btaFunc = if uniform then btaUniform else btaPW
      let congruentDiv = btaFunc nprog d
-     let store = makeSpecStore decl initStore
+     let store = makeSpecStore decl (startingDiv nprog congruentDiv) initStore
      trace v "- Annotating program"
      let prog2 = annotateProg congruentDiv nprog
      _ <- fromEM "wellformedness of 2 level lang. This should never happen. Please report."
@@ -337,6 +346,7 @@ printStaticOutput decl tpls =
     showSpecVal (Static v) = prettyVal v
     showSpecVal Dynamic = undefined
 
+-- todo: calc speedup
 benchMain :: BenchOptions -> IO ()
 benchMain BenchOptions { benchFile     = inputPath
                        , benchSpecFile = specPath
@@ -350,9 +360,8 @@ benchMain BenchOptions { benchFile     = inputPath
      let decl = fst prog
      let initStore = completeStore `withouts` dyn
      d <- fromEM "binding" $ makeDiv initStore decl
-     let specStore = makeSpecStore decl initStore
      let nprog = normalize' prog
-     let pipeline' = pipeline  nprog d decl specStore completeStore outInt
+     let pipeline' = pipeline nprog d decl completeStore initStore outInt
      (resUni, statsUni) <- pipeline' "UNI" btaUniform
      (resPW, statsPW) <- pipeline' "PW" btaPW
      putStrLn $ "-- Source program\n" ++ prettyStats statsInt
@@ -362,9 +371,10 @@ benchMain BenchOptions { benchFile     = inputPath
      putStrLn $ "-- Pointwise PE\n" ++ prettyStats statsPW
      putStrLn $ prettySize resPW
   where
-    pipeline nprog d decl specstore runstore origOut mode bta =
-      do prog2 <- preprocess mode bta nprog d
-         res <- specialize' mode decl prog2 specstore
+    pipeline nprog d decl runstore initSpec origOut mode bta =
+      do (prog2, startDiv) <- preprocess mode bta nprog d
+         let specStore = makeSpecStore decl startDiv initSpec
+         res <- specialize' mode decl prog2 specStore
          (prog, outStatic) <- postprocess mode decl res
          (outRes, stats) <- run mode prog runstore
          let combinedOut = combine (toStore $ fromList outStatic) outRes
@@ -378,7 +388,7 @@ benchMain BenchOptions { benchFile     = inputPath
          let p2 = annotateProg cdiv nprog
          fromEM "wellformedness of RL2 prog" (wellformedProg' cdiv p2)
          let expl = explicate cdiv p2 (\l i -> l ++ "_" ++ show i)
-         return expl
+         return (expl, startingDiv nprog cdiv)
     run mode p s =
       do trace v $ "Interpreting " ++ mode
          (res, _) <- fromLEM "execution" $ runProgram' p s
@@ -398,10 +408,10 @@ benchMain BenchOptions { benchFile     = inputPath
     prettySize (_, prog) = "Total Blocks: " ++ show (length prog)
                         ++ ", Total Lines: " ++ show (sum $ map (length . body) prog)
 
-makeSpecStore :: VariableDecl -> Store -> SpecStore
-makeSpecStore decl s =
-  let dynStore = fromList . map (\n -> (n, Dynamic)) $ allVars decl
-      nilStore = fromList . map (\n -> (n, Static Nil)) $ nonInput decl
-      statStore = mmap (\_ v -> Static v) s
-      store = statStore `combine` nilStore `combine` dynStore
+makeSpecStore :: VariableDecl -> Division -> Store -> SpecStore
+makeSpecStore decl d s =
+  let dynStore  = fromList . map (\n -> (n, Dynamic)) $ allVars decl
+      stats     = allWhere (\_ e -> e == BTStatic) d
+      statStore = fromList $ map (\n -> (n, Static $ lookup' Nil n s)) stats
+      store     = statStore `combine` dynStore
   in store

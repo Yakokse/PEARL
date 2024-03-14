@@ -1,30 +1,31 @@
 (Prog X) -> (Prog Y)
-with (i ProgRev Sign)
+with (i Prog' ProgRev Sign)
 
 init: entry
       Y <- '0
-      if Prog goto loop else stop
+      Prog' ^= Prog
+      if Prog' goto loop else stop
 
 loop: fi !ProgRev && Y = '0 from init else loopEnd
-       ((Sign . i) . Prog) <- Prog
+       ((Sign . i) . Prog') <- Prog'
        if Sign = 'Inv goto revOp else regOp
 
 loopJoin: fi Sign = 'Inv from revOpEnd else regOpEnd
            ProgRev <- ((Sign . i) . ProgRev)
-           if Prog goto loopEnd else loopReload
+           if Prog' goto loopEnd else loopReload
 
-loopReload: fi Prog from loopReload else loopJoin
+loopReload: fi Prog' from loopReload else loopJoin
              ((Sign . i) . ProgRev) <- ProgRev
-             Prog <- ((Sign . i) . Prog)
+             Prog' <- ((Sign . i) . Prog')
              if ProgRev goto loopReload else loopEnd
 
 loopEnd: fi ProgRev from loopJoin else loopReload
          if !ProgRev && X = '0 goto stop else loop
 
-stop: fi Prog from loopEnd else init
+stop: fi Prog' from loopEnd else init
+      Prog' ^= Prog
       '0 <- X
       exit
-
 regOp: from loop //call Op
        if i = 'Swap goto regSwap else regOp1
 

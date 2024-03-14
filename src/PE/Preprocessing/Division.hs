@@ -6,6 +6,7 @@ import Utils.Error
 import RL.AST
 import RL.Values
 import RL.Variables
+import RL.Program
 
 import PE.SpecValues
 
@@ -42,3 +43,9 @@ makeDiv store decl =
                   then return ()
                   else Left $ "Variable \"" ++ n ++ "\" not in input"
     isStatic n = n `isIn` store || n `notElem` input decl
+
+startingDiv :: (Ord a) => NormProgram a -> PWDivision a
+                              -> Division
+startingDiv (_, p) pwd =
+  let n = nname $ getNEntryBlock p
+  in fst $ get n pwd

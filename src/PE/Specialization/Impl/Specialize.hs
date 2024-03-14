@@ -123,10 +123,8 @@ annotate l (l', s) | l == l'   = (l, Just s)
 specJump :: SpecStore -> VariableDecl -> Jump' a
             -> EM (Jump a (Maybe SpecStore), [Point a])
 specJump s decl Exit' =
-  let checkable = staticNonOutput decl s
-      vals = map (`find` s) checkable
-  in
-  do vs <- sequence vals
+  do let checkable = staticNonOutput decl s
+     vs <- mapM (`find` s) checkable
      let pairs = zip checkable vs
      let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
      case offendingVars of
