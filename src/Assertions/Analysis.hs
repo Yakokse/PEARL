@@ -104,3 +104,21 @@ inferExpr s (Op op e1 e2) =
 inferExpr s (UOp op e) =
   do av <- inferExpr s e
      aUnOp op av
+
+inferAssertion :: AStore -> Expr -> Maybe AStore
+inferAssertion s (Var n) =
+  let av = get n s
+  in case av `aglb` ANonNil of
+      Just v -> return $ set n v s
+      Nothing -> Nothing
+inferAssertion s (Op And e1 e2) =
+  do s1 <- inferAssertion s e1
+     s2 <- inferAssertion s e2
+     return $ combineWith alub s1 s2
+inferAssertion s (Op Or e1 e2) =
+  do s1 <- inferAssertion s e1
+     let ms2 = inferAssertion s e2
+     case ms2 of
+      Just s2 -> sequence $ combineWith aglb s1 s2
+      Nothing -> return s1
+inferAssertion s _ = return s

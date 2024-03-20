@@ -59,5 +59,8 @@ getExitBlock p =
 getNExitBlock :: [NormBlock a] -> NormBlock a
 getNExitBlock p = head $ filter isNExit p
 
+getExitName :: [Block a b] -> (a, b)
+getExitName = name . head . filter isExit
+
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
