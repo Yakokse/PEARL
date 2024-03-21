@@ -224,7 +224,13 @@ optimMain OptimizeOptions { optimInput = inputPath
      trace v "- Removing assertions"
      let optimProg = removeAssertions prog
      let out = prettyProg id optimProg
+     trace v $ "Assertions removed: " ++ show (assCount prog - assCount optimProg)
+     trace v $ "Assertions remaining: " ++ show (assCount optimProg)
      writeOutput v outputPath out
+  where
+    assCount = sum . map (length . filter isAssertion . body) . snd
+    isAssertion (Assert _) = True
+    isAssertion _ = False
 
 intMain :: InterpretOptions -> IO ()
 intMain InterpretOptions { intFile = filePath
@@ -346,7 +352,6 @@ printStaticOutput decl tpls =
     showSpecVal (Static v) = prettyVal v
     showSpecVal Dynamic = undefined
 
--- todo: calc speedup
 benchMain :: BenchOptions -> IO ()
 benchMain BenchOptions { benchFile     = inputPath
                        , benchSpecFile = specPath
@@ -366,11 +371,19 @@ benchMain BenchOptions { benchFile     = inputPath
      (resPW, statsPW) <- pipeline' "PW" btaPW
      putStrLn $ "-- Source program\n" ++ prettyStats statsInt
      putStrLn $ prettySize prog
-     putStrLn $ "-- Uniform PE\n" ++ prettyStats statsUni
+     prettySpeed' "Uniform PE" statsInt statsUni
      putStrLn $ prettySize resUni
-     putStrLn $ "-- Pointwise PE\n" ++ prettyStats statsPW
+     prettySpeed' "Pointwise PE" statsInt statsPW
      putStrLn $ prettySize resPW
   where
+    prettySpeed' mode origStats newStats =
+      let origSpeed = totalSteps origStats
+          newSpeed = totalSteps newStats
+          speedup :: Float
+          speedup = fromIntegral origSpeed / fromIntegral newSpeed
+      in do putStrLn $ "-- " ++ mode
+            putStrLn $ prettyStats newStats
+            putStrLn $ "Speedup: " ++ take 5 (show speedup) ++ "x"
     pipeline nprog d decl runstore initSpec origOut mode bta =
       do (prog2, startDiv) <- preprocess mode bta nprog d
          let specStore = makeSpecStore decl startDiv initSpec

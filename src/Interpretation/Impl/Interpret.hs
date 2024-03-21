@@ -26,9 +26,13 @@ data Stats = Stats
   } deriving Show
 
 prettyStats :: Stats -> String
-prettyStats Stats{steps = s, jumps = j} =
-  "Total Steps: " ++ show s ++ ", Total Jumps: " ++ show j ++ ", Combined Total: " ++ show total
-    where total = s + j * 2
+prettyStats stats@Stats{steps = s, jumps = j} =
+  "Total Steps: " ++ show s
+  ++ ", Total Jumps: " ++ show j
+  ++ ", Combined Total: " ++ show (totalSteps stats)
+
+totalSteps :: Stats -> Int
+totalSteps Stats{steps = s, jumps = j} = s + j * 2
 
 -- Base stats for collection
 initStats :: Stats
