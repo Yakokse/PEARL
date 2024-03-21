@@ -4,9 +4,8 @@ import RL.AST
 import RL.Values
 import Control.Monad (guard)
 
-
--- None field vs Maybe
--- Just Pair (Nothing, Just AAtom) vs Nothing?
+-- Partial lattice, bottom is prepresented by Nothing in Maybe AValue
+-- So APair cannot contain bottom
 data AValue = Any | ANil | ANonNil | AAtom | APair AValue AValue
   deriving (Eq)
 
@@ -23,14 +22,6 @@ aShow v       = show v
 
 -- least upper bound
 alub :: AValue -> AValue -> AValue
--- Any  `alub` _    = Any
--- _    `alub` Any  = Any
--- ANonNil `alub` ANil = Any
--- ANil `alub` ANonNil = Any
--- ANonNil `alub` _ = ANonNil
--- _ `alub` ANonNil = ANonNil
--- (APair v1 v2) `alub` (APair v1' v2') =
---   APair (v1 `alub` v1') (v2 `alub` v2')
 a `alub` b =
   case (a, b) of
     (Any, _) -> Any
@@ -52,15 +43,6 @@ a `alub` b =
 
 -- greatest lower bound
 aglb :: AValue -> AValue -> Maybe AValue
--- Any  `aglb` v    = return v
--- v    `aglb` Any  = return v
--- (APair v1 v2) `aglb` (APair v1' v2') =
---   do v1'' <- v1 `aglb` v1'
---      v2'' <- v2 `aglb` v2'
---      return $ APair v1'' v2''
--- v1   `aglb` v2   =
---   if v1 == v2 then return v1 else Nothing
-
 a `aglb` b =
   case (a, b) of
     (Any, _) -> return b
@@ -120,13 +102,8 @@ numericOp v1 v2 =
   do assert $ canNum v1 && canNum v2
      return AAtom
 
--- Are there values of the two types that can be equal
+-- Are there values of the two abstracted values that can be equal
 canEqual :: AValue -> AValue -> Bool
--- canEqual Any _  = True -- One type is the universe and other is not empty
--- canEqual _ Any  = True
--- canEqual (APair v1 v2) (APair v1' v2') = -- Pairwise logic
---   canEqual v1 v1' && canEqual v2 v2'
--- canEqual v1 v2 = v1 == v2 -- v1 and v2 must be nil or an atom
 a `canEqual` b =
   case (a, b) of
     (Any, _) -> True
@@ -146,6 +123,7 @@ a `canEqual` b =
     (APair v1 v2, APair v1' v2') ->
       v1 `canEqual` v1' && v2 `canEqual` v2'
 
+-- can the abstract value be nil
 canNil :: AValue -> Bool
 canNil ANil        = True
 canNil Any         = True
@@ -153,6 +131,7 @@ canNil ANonNil     = False
 canNil AAtom       = False
 canNil (APair _ _) = False
 
+-- can the abstract value be numeric
 canNum :: AValue -> Bool
 canNum Any = True
 canNum AAtom = True
@@ -170,11 +149,13 @@ aUnOp Tl _           = Nothing  -- Value is never a pair
 aUnOp Not ANil       = return AAtom -- Trivial true
 aUnOp Not _          = return ANil  -- Value is never false
 
+-- abstraction
 aValue :: Value -> AValue
 aValue Nil = ANil
 aValue (Pair v1 v2) = APair (aValue v1) (aValue v2)
 aValue (Atom _) = AAtom
 aValue (Num _) = AAtom
 
+-- Get bottom when false
 assert :: Bool -> Maybe ()
 assert = guard

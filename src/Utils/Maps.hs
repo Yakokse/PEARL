@@ -40,6 +40,9 @@ fromList = Map.fromList
 disjoint :: Ord n =>  Map n e -> Map n e -> Bool
 disjoint = Map.disjoint
 
+onlyIn :: Ord n => Map n e -> [n] -> Map n e
+onlyIn s ns = Map.filterWithKey (\k _ -> k `elem` ns) s
+
 without :: Ord n => Map n e -> n -> Map n e
 without = flip Map.delete
 

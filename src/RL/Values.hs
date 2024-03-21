@@ -32,12 +32,3 @@ findErr s n =
   case Map.lookup n s of
     Just v -> v
     _ -> error $ "static variable " ++ n ++ " not found during lookup"
-
-onlyIn :: Store -> [Name] -> Store
-onlyIn s ns = Map.filterWithKey (\k _ -> k `elem` ns) s
-
-mapStore :: (Name -> Value -> Value) -> Store -> Store
-mapStore = Map.mapWithKey
-
-remove :: [Name] -> Store -> Store
-remove ns = Map.filterWithKey (\n _ -> n `notElem` ns)

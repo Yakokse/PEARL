@@ -11,7 +11,7 @@ import Assertions.Analysis
 
 import Inversion.Inverter
 
--- todo: propagate inverted state for analysis properly
+-- Detect and remove redundat assertions in a given program
 removeAssertions :: (Ord a, Ord b) => Program a b -> Program a b
 removeAssertions (decl, p) =
   let final = fixpoint initS
@@ -26,13 +26,17 @@ removeAssertions (decl, p) =
       let state1 = inferProg state p [entry]
           state2 = inferProg (invertState state) pInv [exit]
           newState = combineWith glbStore state1 (invertState state2)
-      in if state == newState then state else fixpoint newState
+      in if state == newState then newState else fixpoint newState
 
+-- Invert a given state for backwards inference
 invertState :: State a b -> State a b
 invertState = mmap . const $ fmap (\(a, b) -> (b,a))
 
 -- todo: logging
 -- remove blocks with statically enforced errors?
+
+-- Remove all redundant assertions in a given block
+-- Fold over all steps so we don't need to work on normalized blocks
 removeAssertionsBlock :: (Ord a, Ord b) => State a b -> Block a b
                                         -> Block a b
 removeAssertionsBlock state b =
@@ -51,6 +55,9 @@ removeAssertionsBlock state b =
       in (return s, res)
     iterStep (Just s) step = (inferStep s step, [step])
 
+-- Initial state for analysis
+-- non-Input/non-output variables in entry/exit are nil while input/output
+-- are any. Remaining points are Bottom
 initState :: (Ord a, Ord b) => Program a b -> State a b
 initState (decl, p) =
   let entry = getEntryName p
