@@ -21,8 +21,7 @@ lub _ _ = BTDynamic
 
 staticNonOutput :: VariableDecl -> SpecStore -> [Name]
 staticNonOutput d s =
-  let nonDyn = map (\n -> (n, get n s /= Dynamic)) $ nonOutput d
-  in map fst $ filter snd nonDyn
+  filter (\n -> get n s /= Dynamic) $ nonOutput d
 
 find :: Name -> SpecStore -> EM SpecValue
 find n s =
