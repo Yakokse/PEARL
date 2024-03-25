@@ -1,4 +1,5 @@
 (stat1 stat2 dyn) -> (stat1 stat2 dyn)
+// Attempt to replicate an old issue that is now fixed
 
 init: entry
       if dyn goto p1 else p2

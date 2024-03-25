@@ -1,0 +1,43 @@
+init: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%entry
+	skip
+	%goto init_1
+
+init_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from init
+	skip
+	%goto loop_1
+
+loop_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%fi %z
+		%from init_1
+		%else loop_4
+	x %+= %'1
+	%goto loop_2
+
+loop_2: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop_1
+	%(%x %. %y) %<- %(%y %. %x)
+	%goto loop_3
+
+loop_3: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop_2
+	y %+= %'1
+	%goto loop_4
+
+loop_4: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop_3
+	%(%x %. %y) %<- %(%y %. %x)
+	%if %z
+		%goto stop_1
+		%else loop_1
+
+stop_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop_4
+	skip
+	%goto stop
+
+stop: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from stop_1
+	skip
+	%exit
