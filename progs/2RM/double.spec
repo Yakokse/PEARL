@@ -1,4 +1,4 @@
-// Double a program
+// Double a number
 
 Prog = '((Inv . 1) . // x -= 1
         ((Inv . Swap) . // swap
