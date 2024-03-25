@@ -1,0 +1,52 @@
+init: x: BTStatic, y: BTDynamic, z: BTDynamic
+	%entry
+	skip
+	%goto init_1
+
+init_1: x: BTStatic, y: BTDynamic, z: BTDynamic
+	%from init
+	skip
+	%goto init_1_1_expl
+
+init_1_1_expl: x: BTStatic, y: BTDynamic, z: BTDynamic
+	%from init_1
+	generalize(x)
+	%goto loop1_1
+
+loop1_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%fi %z
+		%from init_1_1_expl
+		%else loop2_1
+	skip
+	%if %z
+		%goto swap_1
+		%else add_1
+
+swap_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop1_1
+	%(%x %. %y) %<- %(%y %. %x)
+	%goto loop2_1
+
+add_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop1_1
+	x %+= %y
+	%goto loop2_1
+
+loop2_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%fi %z
+		%from swap_1
+		%else add_1
+	skip
+	%if %z
+		%goto stop_1
+		%else loop1_1
+
+stop_1: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from loop2_1
+	skip
+	%goto stop
+
+stop: x: BTDynamic, y: BTDynamic, z: BTDynamic
+	%from stop_1
+	skip
+	%exit
