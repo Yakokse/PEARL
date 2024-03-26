@@ -141,13 +141,25 @@ canNum (APair _ _) = False
 
 -- abstracted unary operator
 aUnOp :: UnOp -> AValue -> Maybe AValue
-aUnOp _ Any          = return Any   -- Hd/tl can be anything, not as well
-aUnOp Hd (APair v _) = return v     -- Trivial
-aUnOp Hd _           = Nothing  -- Value is never a pair
-aUnOp Tl (APair _ v) = return v     -- Trivial
-aUnOp Tl _           = Nothing  -- Value is never a pair
-aUnOp Not ANil       = return AAtom -- Trivial true
-aUnOp Not _          = return ANil  -- Value is never false
+aUnOp Hd v =
+  case v of
+    Any          -> return Any
+    ANonNil      -> return Any
+    (APair v1 _) -> return v1
+    _            -> Nothing
+
+aUnOp Tl v =
+  case v of
+    Any          -> return Any
+    ANonNil      -> return Any
+    (APair _ v2) -> return v2
+    _            -> Nothing
+
+aUnOp Not v =
+  case v of
+    Any  -> return Any
+    ANil -> return AAtom
+    _    -> return ANil
 
 -- abstraction
 aValue :: Value -> AValue
