@@ -32,7 +32,7 @@ inferBlock :: (Ord a, Ord b) => State a b -> [Block a b] -> Block a b
                              -> (State a b, [(a, b)])
 inferBlock state prog
            Block{name = n, from = f, body = b, jump = j} =
-    let parents = map (inferTransition state prog n) $ fromLabels f
+    let parents = inferTransition state prog n f
         mOrigs = get n state
         origS1 = fst <$> mOrigs
         origS2 = snd <$> mOrigs
@@ -40,34 +40,54 @@ inferBlock state prog
         outStore = case initStore of
                     Just s -> foldM inferStep s b
                     Nothing -> Nothing
-        pending = if origS2 == outStore then []
-                      else jumpLabels j
+        pending = if origS2 == outStore
+                    then []
+                    else jumpLabels j
         resultPair = liftA2 (,) initStore outStore
         newState = set n resultPair state
     in (newState, pending)
 
-inferTransition :: (Ord a, Ord b) => State a b -> [Block a b] -> (a, b) -> (a, b)
-                                  -> Maybe AStore
-inferTransition state prog dest orig =
-  do let origJump = jump $ getBlockUnsafe prog orig
-     (_, origState) <- get orig state
-     case origJump of
-       If e l1 l2 | l1 == dest && l2 /= dest ->
-         inferAssertion origState e
-       If e l1 l2 | l1 /= dest && l2 == dest ->
-         inferAssertion origState (UOp Not e)
-       _ -> return origState
+-- Given a from-statement f, what are the predecessor stores
+-- extra refinement by all directions of expressions in control flow
+inferTransition :: (Ord a, Ord b) => State a b -> [Block a b] -> (a, b) -> ComeFrom a b
+                                  -> [Maybe AStore]
+inferTransition state prog dest f =
+  let origins = mapFrom (\l -> (inferJump l, snd l)) f
+  in case origins of
+      Entry _ -> []
+      From (s, _) -> [s]
+      Fi e (s1, _) (s2, _) ->
+        [ s1 >>= (`inferAssertion` e)
+        , s2 >>= (`inferAssertion` UOp Not e)]
+  where
+    inferJump orig =
+      do let origJump = jump $ getBlockUnsafe prog orig
+         (_, origState) <- get orig state
+         case origJump of
+           If e l1 l2 | l1 == dest && l2 /= dest ->
+             inferAssertion origState e
+           If e l1 l2 | l1 /= dest && l2 == dest ->
+             inferAssertion origState (UOp Not e)
+           _ -> return origState
 
--- glb in AStore lattice
-glbStore :: Maybe (AStore, AStore) -> Maybe (AStore, AStore) -> Maybe (AStore, AStore)
+-- glb of state lattice
+glbState :: Maybe (AStore, AStore) -> Maybe (AStore, AStore) -> Maybe (AStore, AStore)
+glbState Nothing _ = Nothing
+glbState _ Nothing = Nothing
+glbState (Just (s1, s2)) (Just (s1', s2')) =
+  do ms1 <- glbStore' s1 s1'
+     ms2 <- glbStore' s2 s2'
+     return (ms1, ms2)
+
+-- glb of store lattice
+glbStore :: Maybe AStore -> Maybe AStore -> Maybe AStore
 glbStore Nothing _ = Nothing
 glbStore _ Nothing = Nothing
-glbStore (Just (s1, s2)) (Just (s1', s2')) =
-  let s1'' = combineWith aglb s1 s1'
-      s2'' = combineWith aglb s2 s2'
-  in do ms1 <- sequence s1''
-        ms2 <- sequence s2''
-        return (ms1, ms2)
+glbStore (Just s1) (Just s2) = glbStore' s1 s2
+
+-- glb of strict store
+glbStore' :: AStore -> AStore -> Maybe AStore
+glbStore' s1 s2 = sequence $ combineWith aglb s1 s2
 
 -- lub in AStore lattice
 lubStore :: Maybe AStore -> Maybe AStore -> Maybe AStore
@@ -100,11 +120,11 @@ inferConstruct s (QPair q1 q2) =
 -- Deconstruct the abstract value, fails if impossible
 inferDeconstruct :: AStore -> Pattern -> AValue -> Maybe AStore
 inferDeconstruct s (QConst v) av =
-  do assert $ canEqual (aValue v) av
+  do assert $ aValue v `aglb` av /= Nothing
      return s
 inferDeconstruct s (QVar n) av =
   do let av1 = get n s
-     assert $ canNil av1
+     assert $ ANil `lteStrict` av1
      return $ set n av s
 inferDeconstruct s (QPair q1 q2) av =
   do (av1, av2) <-
@@ -137,9 +157,9 @@ inferAssertion s (Var n) =
       Just v -> return $ set n v s
       Nothing -> Nothing
 inferAssertion s (Op And e1 e2) =
-  do s1 <- inferAssertion s e1
-     s2 <- inferAssertion s e2
-     sequence $ combineWith aglb s1 s2
+  let ms1 = inferAssertion s e1
+      ms2 = inferAssertion s e2
+  in glbStore ms1 ms2
 inferAssertion s (Op Or e1 e2) =
   let ms1 = inferAssertion s e1
       ms2 = inferAssertion s e2

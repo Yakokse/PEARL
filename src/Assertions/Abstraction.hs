@@ -62,6 +62,33 @@ a `aglb` b =
     (APair v1 v2, APair v1' v2') ->
       APair <$> (v1 `aglb` v1') <*> (v2 `aglb` v2')
 
+lte :: Maybe AValue -> Maybe AValue -> Bool
+Nothing `lte` _ = True
+_ `lte` Nothing = False
+(Just a) `lte` (Just b) = a `lteStrict` b
+
+lteStrict :: AValue -> AValue -> Bool
+a `lteStrict` b =
+  case (a, b) of
+    (_, Any) -> True
+    (Any, _) -> False
+
+    (ANil, ANil) -> True
+    (ANil, _) -> False
+    (_, ANil) -> False
+
+    (ANonNil, ANonNil) -> True
+    (AAtom, ANonNil) -> True
+    (APair _ _, ANonNil) -> True
+    (ANonNil, _) -> False
+
+    (AAtom, AAtom) -> True
+    (AAtom, _) -> False
+    (_, AAtom) -> False
+
+    (APair v1 v2, APair v1' v2') ->
+      (v1 `lteStrict` v1') && (v2 `lteStrict` v2')
+
 -- abstracted binary operators
 aBinOp :: BinOp -> AValue -> AValue -> Maybe AValue
 aBinOp (ROp op) v1 v2 = aRevOp op v1 v2
@@ -71,10 +98,14 @@ aBinOp Less v1 v2     = numericCmp v1 v2
 aBinOp Greater v1 v2  = numericCmp v1 v2
 aBinOp Equal ANil ANil = return AAtom -- Trivial edge case
 aBinOp Equal v1 v2 = -- If types match then true/nil else always nil
-  if canEqual v1 v2 then return Any else return ANil
+  if v1 `aglb` v2 /= Nothing then return Any else return ANil
 aBinOp Cons v1 v2 = return $ APair v1 v2 -- Exact information preserval
-aBinOp And v _  | canNil v = return v -- nil -> nil, any -> any
-aBinOp And _ v  = return v -- LHS always true, short-circuit to RHS
+aBinOp And v1 v2 =
+  return $ case (v1, v2) of
+            (ANil, _) -> ANil -- always false
+            (_, ANil) -> ANil -- always false
+            (Any, _) -> Any -- Not known if lhs is true
+            _ -> v2 -- v1 must be <= nonNil, so true
 aBinOp Or ANil v = return v -- LHS false, short-circuit to RHS
 aBinOp Or v   _  = return v -- any -> any, true val -> true val
 
@@ -85,7 +116,7 @@ aRevOp Xor v ANil = return v
 aRevOp Xor Any _  = return Any -- Can either be nil or exact match
 aRevOp Xor _  Any = return Any
 aRevOp Xor v1 v2  = -- Non-nil vals must match
-  do assert $ v1 `canEqual` v2
+  do assert $ v1 `aglb` v2 /= Nothing
      return ANil -- If they are matchable non-nil vals, result must be nil
 aRevOp Add v1 v2 = numericOp v1 v2
 aRevOp Sub v1 v2 = numericOp v1 v2
@@ -93,66 +124,29 @@ aRevOp Sub v1 v2 = numericOp v1 v2
 -- All numeric comparisons take numbers and return true or nil
 numericCmp :: AValue -> AValue -> Maybe AValue
 numericCmp v1 v2 =
-  do assert $ canNum v1 && canNum v2
+  do assert $ AAtom `lteStrict` v1
+     assert $ AAtom `lteStrict` v2
      return Any
 
 -- All numeric operations take numbers and return a number
 numericOp :: AValue -> AValue -> Maybe AValue
 numericOp v1 v2 =
-  do assert $ canNum v1 && canNum v2
+  do assert $ AAtom `lteStrict` v1
+     assert $ AAtom `lteStrict` v2
      return AAtom
-
--- Are there values of the two abstracted values that can be equal
-canEqual :: AValue -> AValue -> Bool
-a `canEqual` b =
-  case (a, b) of
-    (Any, _) -> True
-    (_, Any) -> True
-
-    (ANil, ANil) -> True
-    (ANil, _) -> False
-    (_, ANil) -> False
-
-    (ANonNil, _) -> True
-    (_, ANonNil) -> True
-
-    (AAtom, AAtom) -> True
-    (AAtom, _) -> False
-    (_, AAtom) -> False
-
-    (APair v1 v2, APair v1' v2') ->
-      v1 `canEqual` v1' && v2 `canEqual` v2'
-
--- can the abstract value be nil
-canNil :: AValue -> Bool
-canNil ANil        = True
-canNil Any         = True
-canNil ANonNil     = False
-canNil AAtom       = False
-canNil (APair _ _) = False
-
--- can the abstract value be numeric
-canNum :: AValue -> Bool
-canNum Any = True
-canNum AAtom = True
-canNum ANonNil = True
-canNum ANil = False
-canNum (APair _ _) = False
 
 -- abstracted unary operator
 aUnOp :: UnOp -> AValue -> Maybe AValue
 aUnOp Hd v =
   case v of
-    Any          -> return Any
-    ANonNil      -> return Any
     (APair v1 _) -> return v1
+    _ | APair Any Any `lteStrict` v -> return Any
     _            -> Nothing
 
 aUnOp Tl v =
   case v of
-    Any          -> return Any
-    ANonNil      -> return Any
     (APair _ v2) -> return v2
+    _ | APair Any Any `lteStrict` v -> return Any
     _            -> Nothing
 
 aUnOp Not v =

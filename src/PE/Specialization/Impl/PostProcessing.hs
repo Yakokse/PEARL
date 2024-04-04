@@ -273,9 +273,11 @@ removeEmptyBlocks p =
     mapJumpB f b = b{jump = mapJump f $ jump b}
     mapFromB f b = b{from = mapFrom f $ from b}
     isNeeded Block{from = f, body = b, jump = j} =
-      let semanticFrom = case f of From _ -> False; _ -> True
-          semanticJump = case j of Goto _ -> False; _ -> True
-      in not (null b) || semanticFrom || semanticJump
+      let semanticBlock = case (f, j) of
+            (From l1, Goto l2) ->
+              l1 `elem` fromLabels (from $ getBlockUnsafe p l2)
+            _ -> True
+      in not (null b) || semanticBlock
 
 -- Transform the store annotations into integers.
 enumerateAnn :: Ord b => [Block a b] -> [Block a Int]

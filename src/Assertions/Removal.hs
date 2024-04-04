@@ -25,7 +25,7 @@ removeAssertions (decl, p) =
     fixpoint state =
       let state1 = inferProg state p [entry]
           state2 = inferProg (invertState state) pInv [exit]
-          newState = combineWith glbStore state1 (invertState state2)
+          newState = combineWith glbState state1 (invertState state2)
       in if state == newState then newState else fixpoint newState
 
 -- Invert a given state for backwards inference
@@ -50,8 +50,8 @@ removeAssertionsBlock state b =
     iterStep Nothing s = (Nothing, [s])
     iterStep (Just s) (Assert e) =
       let res = case inferExpr s e of
-                  Just av | canNil av -> [Assert e]
-                  _ -> []
+                  Just av -> [Assert e | av `aglb` ANil /= Nothing]
+                  _ -> [] -- Error handling?
       in (return s, res)
     iterStep (Just s) step = (inferStep s step, [step])
 
