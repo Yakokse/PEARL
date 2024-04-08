@@ -5,70 +5,72 @@ import Utils.Maps
 import RL.AST
 import RL.Program
 import RL.Values
+import RL.Variables
 
 import Assertions.Abstraction
 
 import qualified Data.List as List
 import Control.Monad (foldM)
-import Control.Applicative (Applicative(liftA2))
 
 -- Maybe AStore forms a lattice
 -- If any var is bot, whole astore is bot
 type AStore = Map Name AValue
-type State a b = Map (a,b) (Maybe (AStore, AStore))
+type State a b = Map (a,b) (Maybe AStore)
 
--- Fix-point iteration for state
-inferProg :: (Ord a, Ord b) => State a b -> [Block a b]
-                            -> [(a,b)]   -> State a b
-inferProg state _ [] = state
-inferProg state prog (l:ls) =
-  let b = getBlockUnsafe prog l
-      (state', pending) = inferBlock state prog b
-      ls' = List.union ls pending
-  in inferProg state' prog ls'
+
+inferProg :: (Ord a, Ord b) => Program a b -> State a b
+inferProg (decl, prog) =
+  let initState = fromList $ map (\b -> (name b, Nothing)) prog
+      entryLabel = getEntryName prog
+      finalState = fixPoint initState [entryLabel]
+  in finalState
+  where
+    fixPoint state [] = state
+    fixPoint state (l:ls) =
+      let b = getBlockUnsafe prog l
+          (state', pending) = inferBlock state (decl, prog) b
+          ls' = List.union ls pending
+      in fixPoint state' ls'
 
 -- Update state and return new pending points
-inferBlock :: (Ord a, Ord b) => State a b -> [Block a b] -> Block a b
+inferBlock :: (Ord a, Ord b) => State a b -> Program a b -> Block a b
                              -> (State a b, [(a, b)])
 inferBlock state prog
            Block{name = n, from = f, body = b, jump = j} =
-    let parents = inferTransition state prog n f
-        mOrigs = get n state
-        origS1 = fst <$> mOrigs
-        origS2 = snd <$> mOrigs
-        initStore = foldl lubStore origS1 parents
-        outStore = case initStore of
-                    Just s -> foldM inferStep s b
-                    Nothing -> Nothing
-        pending = if origS2 == outStore
+    let startStore = inferTransition state prog n f
+        oldStore = get n state
+        newStore = case startStore of
+                        Just s -> foldM inferStep s b
+                        Nothing -> Nothing
+        pending = if oldStore == newStore
                     then []
                     else jumpLabels j
-        resultPair = liftA2 (,) initStore outStore
-        newState = set n resultPair state
+        newState = set n newStore state
     in (newState, pending)
 
 -- Given a from-statement f, what are the predecessor stores
 -- extra refinement by all directions of expressions in control flow
-inferTransition :: (Ord a, Ord b) => State a b -> [Block a b] -> (a, b) -> ComeFrom a b
-                                  -> [Maybe AStore]
-inferTransition state prog dest f =
+inferTransition :: (Ord a, Ord b) => State a b -> Program a b -> (a, b) -> ComeFrom a b
+                                  -> Maybe AStore
+inferTransition state (decl, prog) dest f =
   let origins = mapFrom (\l -> (inferJump l, snd l)) f
-  in case origins of
-      Entry _ -> []
-      From (s, _) -> [s]
-      Fi e (s1, _) (s2, _) ->
-        [ s1 >>= (`inferAssertion` e)
-        , s2 >>= (`inferAssertion` UOp Not e)]
+      stores = case origins of
+                  Entry _ -> [inferDecl decl]
+                  From (s, _) -> [s]
+                  Fi e (s1, _) (s2, _) ->
+                    [ s1 >>= (`inferAssertion` e)
+                    , s2 >>= (`inferAssertion` UOp Not e)]
+  in foldl lubStore Nothing stores
   where
     inferJump orig =
       do let origJump = jump $ getBlockUnsafe prog orig
-         (_, origState) <- get orig state
+         origStore <- get orig state
          case origJump of
            If e l1 l2 | l1 == dest && l2 /= dest ->
-             inferAssertion origState e
+             inferAssertion origStore e
            If e l1 l2 | l1 /= dest && l2 == dest ->
-             inferAssertion origState (UOp Not e)
-           _ -> return origState
+             inferAssertion origStore (UOp Not e)
+           _ -> return origStore
 
 -- glb of state lattice
 glbState :: Maybe (AStore, AStore) -> Maybe (AStore, AStore) -> Maybe (AStore, AStore)
@@ -98,7 +100,7 @@ lubStore (Just s1) (Just s2) = return $ combineWith alub s1 s2
 -- Infer new store from step and store
 inferStep :: AStore -> Step -> Maybe AStore
 inferStep s Skip = return s
-inferStep s (Assert _) = return s -- Assertions do convey information, but we need to ignore it
+inferStep s (Assert e) = inferAssertion s e
 inferStep s (Update n op e) =
   do let av1 = get n s
      av2 <- inferExpr s e
@@ -149,7 +151,6 @@ inferExpr s (UOp op e) =
      aUnOp op av
 
 -- Infer from assertion/transition
--- We can't use it for assertions as we want to detect when they are redundant
 inferAssertion :: AStore -> Expr -> Maybe AStore
 inferAssertion s (Var n) =
   let av = get n s
@@ -176,3 +177,10 @@ inferAssertion s (UOp Not e) =
     (Op Or e1 e2)  -> inferAssertion s (Op And (UOp Not e1) (UOp Not e2))
     _ -> return s
 inferAssertion s _ = return s
+
+inferDecl :: VariableDecl -> Maybe AStore
+inferDecl decl =
+  let vars = allVars decl
+      allAny = fromList $ map (\n -> (n, Any)) vars
+      store = sets (nonInput decl) ANil allAny
+  in Just store

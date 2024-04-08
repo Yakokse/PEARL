@@ -96,7 +96,8 @@ aBinOp Mul v1 v2      = numericOp v1 v2
 aBinOp Div v1 v2      = numericOp v1 v2
 aBinOp Less v1 v2     = numericCmp v1 v2
 aBinOp Greater v1 v2  = numericCmp v1 v2
-aBinOp Equal ANil ANil = return AAtom -- Trivial edge case
+aBinOp Equal v1 v2 | singleton v1 && singleton v2 =
+  if v1 == v2 then return AAtom else return ANil -- Edge case since |Nil| = 1
 aBinOp Equal v1 v2 = -- If types match then true/nil else always nil
   if v1 `aglb` v2 /= Nothing then return Any else return ANil
 aBinOp Cons v1 v2 = return $ APair v1 v2 -- Exact information preserval
@@ -135,19 +136,25 @@ numericOp v1 v2 =
      assert $ AAtom `lteStrict` v2
      return AAtom
 
+-- Nil, (Nil, Nil), etc. are all unary sets
+singleton :: AValue -> Bool
+singleton ANil = True
+singleton (APair v1 v2) = singleton v1 && singleton v2
+singleton _ = False
+
 -- abstracted unary operator
 aUnOp :: UnOp -> AValue -> Maybe AValue
 aUnOp Hd v =
   case v of
     (APair v1 _) -> return v1
     _ | APair Any Any `lteStrict` v -> return Any
-    _            -> Nothing
+    _ -> Nothing
 
 aUnOp Tl v =
   case v of
     (APair _ v2) -> return v2
     _ | APair Any Any `lteStrict` v -> return Any
-    _            -> Nothing
+    _ -> Nothing
 
 aUnOp Not v =
   case v of
