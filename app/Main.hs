@@ -383,25 +383,32 @@ benchMain BenchOptions { benchFile     = inputPath
      prettySpeed' "Pointwise PE" statsInt statsPW
      putStrLn $ prettySize resPW
   where
-    prettySpeed' mode origStats newStats =
+    prettySpeed' mode origStats (newStats, newStatsO) =
       let origSpeed = totalSteps origStats
           newSpeed = totalSteps newStats
-          speedup :: Float
+          newSpeedO = totalSteps newStatsO
+          speedup, speedupO :: Float
           speedup = fromIntegral origSpeed / fromIntegral newSpeed
+          speedupO = fromIntegral origSpeed / fromIntegral newSpeedO
       in do putStrLn $ "-- " ++ mode
             putStrLn $ prettyStats newStats
             putStrLn $ "Speedup: " ++ take 5 (show speedup) ++ "x"
+            putStrLn $ "-- " ++ mode ++ " (Assertions removed)"
+            putStrLn $ prettyStats newStatsO
+            putStrLn $ "Speedup: " ++ take 5 (show speedupO) ++ "x"
     pipeline nprog d decl runstore initSpec origOut mode bta =
       do (prog2, startDiv) <- preprocess mode bta nprog d
          let specStore = makeSpecStore decl startDiv initSpec
          res <- specialize' mode decl prog2 specStore
          (prog, outStatic) <- postprocess mode decl res
          (outRes, stats) <- run mode prog runstore
+         let progOptim = removeAssertions prog
+         (_, statsOptim) <- run mode progOptim runstore
          let combinedOut = combine (toStore $ fromList outStatic) outRes
          verifyOutput mode origOut combinedOut
          fromEM ("wellformedness of residual prog " ++ mode) $
             wellformedProg prog
-         return (prog, stats)
+         return (progOptim, (stats, statsOptim))
     preprocess mode bta nprog d =
       do trace v $ "Preprocessing " ++ mode
          let cdiv = bta nprog d

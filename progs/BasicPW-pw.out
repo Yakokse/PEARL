@@ -2,6 +2,7 @@
 
 init_1:
 	entry
+	a <- '2
 	a += b
 	a += '1
 	exit
