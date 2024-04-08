@@ -26,7 +26,7 @@ import Inversion.Inverter
 
 import Interpretation.Interpret
 
-import Assertions.Removal
+import Assertions.AssertionRemoval
 
 import Options.Applicative
 import Data.Maybe (fromMaybe)
@@ -75,6 +75,7 @@ data BenchOptions = BenchOptions
 data OptimizeOptions = OptimizeOptions
   { optimInput :: String
   , optimOutput :: String
+  , optimBidirectional :: Bool
   , optimVerbose :: Bool
   }
 
@@ -140,6 +141,9 @@ optimParser :: Parser Options
 optimParser = Optimize <$> (OptimizeOptions
            <$> argument str (metavar "<Input RL file>")
            <*> argument str (metavar "<Output RL file>")
+           <*> flag False True (long "Bidirectional"
+                           <> short 'b'
+                           <> help "Use bidirectional analysis instead")
            <*> flag True False (long "verbose"
                            <> short 'v'
                            <> help "Show messages and info for each phase")
@@ -219,10 +223,13 @@ invMain InvertOptions { invInpFile = inputPath
 optimMain :: OptimizeOptions -> IO ()
 optimMain OptimizeOptions { optimInput = inputPath
                           , optimOutput = outputPath
+                          , optimBidirectional = useBidir
                           , optimVerbose = v} =
   do prog <- parseFile "program" v parseProg inputPath
-     trace v "- Removing assertions"
-     let optimProg = removeAssertions prog
+     let mode = if useBidir then " (BIDIRECTIONAL)" else ""
+     trace v $ "- Removing assertions" ++ mode
+     let removeAsserts = if useBidir then removeAssertions2 else removeAssertions
+     let optimProg = removeAsserts prog
      let out = prettyProg id optimProg
      trace v $ "Assertions removed: " ++ show (assCount prog - assCount optimProg)
      trace v $ "Assertions remaining: " ++ show (assCount optimProg)

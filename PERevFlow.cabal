@@ -24,9 +24,11 @@ source-repository head
 
 library
   exposed-modules:
-      Assertions.Abstraction
-      Assertions.Analysis
-      Assertions.Removal
+      Assertions.AssertionRemoval
+      Assertions.Impl.Abstraction
+      Assertions.Impl.Analysis
+      Assertions.Impl.Bidirectional
+      Assertions.Impl.Removal
       Interpretation.Impl.Interpret
       Interpretation.Interpret
       Inversion.Impl.Inverter

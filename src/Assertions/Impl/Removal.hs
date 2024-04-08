@@ -1,12 +1,12 @@
-module Assertions.Removal (removeAssertions) where
+module Assertions.Impl.Removal where
 
 import Utils.Maps
 
 import RL.AST
 import RL.Values
 
-import Assertions.Abstraction
-import Assertions.Analysis
+import Assertions.Impl.Abstraction
+import Assertions.Impl.Analysis
 
 import Inversion.Inverter
 
@@ -19,19 +19,6 @@ removeAssertions prog =
       state2 = inferProg prog2
       cleaned2 = removeAssertionsProg state2 prog2
   in invertProg cleaned2
-  -- let final = fixpoint initS
-  --     result = map (removeAssertionsBlock final) p
-  -- in (decl, result)
-  -- where
-  --   entry = getEntryName p
-  --   (_, pInv) = invertProg (decl, p)
-  --   exit = getEntryName pInv
-  --   initS = initState (decl, p)
-  --   fixpoint state =
-  --     let state1 = inferProg state p [entry]
-  --         state2 = inferProg (invertState state) pInv [exit]
-  --         newState = combineWith glbState state1 (invertState state2)
-  --     in if state == newState then newState else fixpoint newState
 
 removeAssertionsProg :: (Ord a, Ord b) => State a b -> Program a b
                                        -> Program a b

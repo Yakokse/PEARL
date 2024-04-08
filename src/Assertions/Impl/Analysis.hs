@@ -1,4 +1,4 @@
-module Assertions.Analysis where
+module Assertions.Impl.Analysis where
 
 import Utils.Maps
 
@@ -7,7 +7,7 @@ import RL.Program
 import RL.Values
 import RL.Variables
 
-import Assertions.Abstraction
+import Assertions.Impl.Abstraction
 
 import qualified Data.List as List
 import Control.Monad (foldM)
@@ -16,7 +16,6 @@ import Control.Monad (foldM)
 -- If any var is bot, whole astore is bot
 type AStore = Map Name AValue
 type State a b = Map (a,b) (Maybe AStore)
-
 
 inferProg :: (Ord a, Ord b) => Program a b -> State a b
 inferProg (decl, prog) =
@@ -71,15 +70,6 @@ inferTransition state (decl, prog) dest f =
            If e l1 l2 | l1 /= dest && l2 == dest ->
              inferAssertion origStore (UOp Not e)
            _ -> return origStore
-
--- glb of state lattice
-glbState :: Maybe (AStore, AStore) -> Maybe (AStore, AStore) -> Maybe (AStore, AStore)
-glbState Nothing _ = Nothing
-glbState _ Nothing = Nothing
-glbState (Just (s1, s2)) (Just (s1', s2')) =
-  do ms1 <- glbStore' s1 s1'
-     ms2 <- glbStore' s2 s2'
-     return (ms1, ms2)
 
 -- glb of store lattice
 glbStore :: Maybe AStore -> Maybe AStore -> Maybe AStore
