@@ -1,17 +1,19 @@
-(Start End Transitions S_left S S_right) -> (Start End Transitions S_left S S_right) with (Q Q1 Q2 S1 S2 Rules RulesRev Rule)
+(Start End Rules S_right) -> (Start End Rules S_right) with (Q Q1 Q2 S1 S2 S S_left RulesRev Rule Rules')
 
 init:
 	fi (Start = End)
 		from stop
 		else act1
+	Rules' ^= Rules
 	Q ^= Start
-	Rules ^= Transitions
+	'BLANK <- S
 	exit
 
 stop:
 	entry
-	Rules ^= Transitions
 	Q ^= End
+	S <- 'BLANK
+	Rules' ^= Rules
 	if (Start = End)
 		goto init
 		else act4
@@ -20,7 +22,7 @@ act1:
 	fi ((Q = Q1) && (S = S1))
 		from write
 		else act2
-	Rules <- ((Q1 . (S1 . (S2 . Q2))) . Rules)
+	Rules' <- ((Q1 . (S1 . (S2 . Q2))) . Rules')
 	if (!(RulesRev) && (Q = Start))
 		goto init
 		else act4
@@ -42,7 +44,7 @@ act2:
 		else act1
 
 act3:
-	fi Rules
+	fi Rules'
 		from act4
 		else reload
 	((Q1 . (S1 . (S2 . Q2))) . RulesRev) <- RulesRev
@@ -54,9 +56,9 @@ reload:
 	fi RulesRev
 		from reload
 		else act4
-	(Rule . Rules) <- Rules
+	(Rule . Rules') <- Rules'
 	RulesRev <- (Rule . RulesRev)
-	if Rules
+	if Rules'
 		goto reload
 		else act3
 

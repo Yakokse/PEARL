@@ -1,0 +1,147 @@
+(S_right) -> (S_right) with (S S_left)
+
+init_1:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto block1
+
+block1:
+	fi (S = '0)
+		from block21
+		else init_1
+	assert(!((S = 'SLASH)))
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto block2
+		else block4
+
+block2:
+	from block1
+	S ^= 'BLANK
+	goto block3
+
+block3:
+	fi (S_left = 'nil)
+		from block2
+		else block4
+	if (S_right = 'nil)
+		goto block5
+		else block6
+
+block5:
+	from block3
+	S ^= 'BLANK
+	goto block7
+
+block7:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from block5
+		else block6
+	if (S = 'BLANK)
+		goto block8
+		else block9
+
+block8:
+	from block7
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto block10
+
+block10:
+	fi (S = '1)
+		from block13
+		else block8
+	goto block11
+
+block11:
+	fi (S = '0)
+		from block12
+		else block10
+	assert(!((S = 'SLASH)))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto block14
+		else block15
+
+block14:
+	from block11
+	S ^= 'BLANK
+	goto block16
+
+block16:
+	fi (S_right = 'nil)
+		from block14
+		else block15
+	if (S_left = 'nil)
+		goto block17
+		else block18
+
+block17:
+	from block16
+	S ^= 'BLANK
+	goto block19
+
+block19:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from block17
+		else block18
+	if (S = 'BLANK)
+		goto block20
+		else block13
+
+block20:
+	from block19
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	'BLANK <- S
+	exit
+
+block13:
+	from block19
+	assert((S = '0))
+	S ^= '0
+	S ^= '1
+	goto block10
+
+block18:
+	from block16
+	(S . S_left) <- S_left
+	goto block19
+
+block15:
+	from block11
+	S_right <- (S . S_right)
+	goto block16
+
+block9:
+	from block7
+	if (S = '1)
+		goto block12
+		else block21
+
+block12:
+	from block9
+	S ^= '1
+	S ^= '0
+	goto block11
+
+block21:
+	from block9
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto block1
+
+block6:
+	from block3
+	(S . S_right) <- S_right
+	goto block7
+
+block4:
+	from block1
+	S_left <- (S . S_left)
+	goto block3
