@@ -396,6 +396,7 @@ benchMain BenchOptions { benchFile     = inputPath
             putStrLn $ "-- " ++ mode ++ " (Assertions removed)"
             putStrLn $ prettyStats newStatsO
             putStrLn $ "Speedup: " ++ take 5 (show speedupO) ++ "x"
+
     pipeline nprog d decl runstore initSpec origOut mode bta =
       do (prog2, startDiv) <- preprocess mode bta nprog d
          let specStore = makeSpecStore decl startDiv initSpec
@@ -409,6 +410,7 @@ benchMain BenchOptions { benchFile     = inputPath
          fromEM ("wellformedness of residual prog " ++ mode) $
             wellformedProg prog
          return (progOptim, (stats, statsOptim))
+
     preprocess mode bta nprog d =
       do trace v $ "Preprocessing " ++ mode
          let cdiv = bta nprog d
@@ -416,22 +418,28 @@ benchMain BenchOptions { benchFile     = inputPath
          fromEM "wellformedness of RL2 prog" (wellformedProg' cdiv p2)
          let expl = explicate cdiv p2 (\l i -> l ++ "_" ++ show i)
          return (expl, startingDiv nprog cdiv)
+
     run mode p s =
       do trace v $ "Interpreting " ++ mode
          (res, _) <- fromLEM "execution" $ runProgram' p s
          return res
+
     normalize' p = normalize "init" "stop" p (\l i -> l ++ "_" ++ show i)
+
     specialize' mode d p s =
       do trace v $ "Specializing " ++ mode
          (prog, _) <- fromLEM "specializing" $ specialize d p s (Regular "entry")
          return prog
+
     postprocess mode origdecl prog =
       do trace v $ "Postprocessing " ++ mode
          specPostProcess False origdecl prog
+
     verifyOutput mode regularOut specOut =
       do trace v $ "Checking output " ++ mode
          unless (all (\(n, val) -> val == get n specOut) (toList regularOut))
             $ die "The regular and specialized output do not match"
+
     prettySize (_, prog) = "Total Blocks: " ++ show (length prog)
                         ++ ", Total Lines: " ++ show (sum $ map (length . body) prog)
 
