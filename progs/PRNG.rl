@@ -11,20 +11,10 @@ loop: fi nums from loop1 else init
       tmp ^= seed
       nums <- (tmp . nums)
       (bit . seed) <- seed
-      if bit = '0 goto xor0 else xor1
+      bit ^= hd seed
+      goto append
 
-xor0: from loop
-      bit += hd seed
-      goto xor
-
-xor1: from loop
-      bit -= hd seed
-      goto xor
-
-xor: fi bit = hd seed from xor0 else xor1
-     goto append
-
-append: fi seedrev from append else xor
+append: fi seedrev from append else loop
         (seedb . seed) <- seed
         seedrev <- (seedb . seedrev)
         if seed goto append else append1
