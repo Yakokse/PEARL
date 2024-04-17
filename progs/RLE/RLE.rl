@@ -8,7 +8,6 @@ outer: fi chars from outerEnd else init
        n <- '1
        if text goto boolT else boolF
 
-
 inner: from boolT
        n += '1
        (temp . text) <- text
