@@ -47,6 +47,7 @@ data SpecOptions = SpecOptions
   , uniformBTA    :: Bool
   , skipSpecPhase :: Bool
   , skipPost      :: Bool
+  , specAssertRem :: Bool
   , specVerbose   :: Bool
   , specTrace     :: Bool
   , specIgnore    :: [Name]
@@ -93,6 +94,9 @@ specParser = Specialize <$> (SpecOptions
           <*> switch (long "skipPost"
                            <> short 'p'
                            <> help "Stop before post-processing, printing the initial residual program")
+          <*> flag False True (long "removeAssertions"
+                           <> short 'a'
+                           <> help "Remove assertions via abstract interpretation")
           <*> flag True False (long "verbose"
                            <> short 'v'
                            <> help "Show messages and info for each phase")
@@ -311,7 +315,10 @@ specMain2 specOpts decl prog2 store =
         return $ prettyProg id (resdecl, clean)
      else do
         trace v "- POST PROCESSING"
-        (prog, staticVals) <- specPostProcess v decl res
+        (prog', staticVals) <- specPostProcess v decl res
+        let prog = if specAssertRem specOpts
+                   then removeAssertions prog'
+                   else prog'
         printStaticOutput decl staticVals
         return $ prettyProg id prog
 
