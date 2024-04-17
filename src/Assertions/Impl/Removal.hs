@@ -48,23 +48,18 @@ removeAssertionsBlock startStore b =
       in (return s, res)
     iterStep (Just s) step = (inferStep s step, [step])
 
--- Either Expr AValue?
--- AValue for top -> Expr?
--- Bot in ops -> Expr?
 reduceExpr :: AStore -> Expr -> Maybe (Expr, AValue)
 reduceExpr _ (Const v) = return (Const v, aValue v)
 reduceExpr s (Var n)   = return (Var n, get n s)
-  -- let v = get n s
-  -- in if v `aglb` ANil /= Nothing
-  --   then return $ Var n
-  --   else Nothing
 reduceExpr s (UOp op e) =
   do (e', v) <- reduceExpr s e
      v' <- aUnOp op v
      let e'' = case (op, e') of
                 (Hd, Op Cons e1 _) -> e1
                 (Tl, Op Cons _ e2) -> e2
-                (Not, UOp Not e1)  -> e1
+                (Not, _) | v `lteStrict` ANil    -> Const trueV
+                (Not, _) | v `lteStrict` ANonNil -> Const Nil
+                (Not, UOp Not e1)                -> e1
                 _ -> UOp op e'
      return (e'', v')
 reduceExpr s (Op op e1 e2) =
@@ -77,7 +72,6 @@ reduceExpr s (Op op e1 e2) =
               And | v1 `lteStrict` ANil    -> Const Nil
               And | v2 `lteStrict` ANil    -> Const Nil
               Or  | v1 `lteStrict` ANonNil -> e1
-              Or  | v2 `lteStrict` ANonNil -> e2
               Or  | v1 `lteStrict` ANil    -> e2
               Or  | v2 `lteStrict` ANil    -> e1
               _ -> Op op e1' e2'

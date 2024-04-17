@@ -97,9 +97,13 @@ aBinOp Div v1 v2      = numericOp v1 v2
 aBinOp Less v1 v2     = numericCmp v1 v2
 aBinOp Greater v1 v2  = numericCmp v1 v2
 aBinOp Equal v1 v2 | singleton v1 && singleton v2 =
-  if v1 == v2 then return AAtom else return ANil -- Edge case since |Nil| = 1
+  if v1 == v2 -- Edge case when both abstract values only can contain a single value
+    then return AAtom
+    else return ANil
 aBinOp Equal v1 v2 = -- If types match then true/nil else always nil
-  if v1 `aglb` v2 /= Nothing then return Any else return ANil
+  if v1 `aglb` v2 /= Nothing
+    then return Any
+    else return ANil
 aBinOp Cons v1 v2 = return $ APair v1 v2 -- Exact information preserval
 aBinOp And v1 v2 =
   return $ case (v1, v2) of
@@ -107,8 +111,12 @@ aBinOp And v1 v2 =
             (_, ANil) -> ANil -- always false
             (Any, _) -> Any -- Not known if lhs is true
             _ -> v2 -- v1 must be <= nonNil, so true
-aBinOp Or ANil v = return v -- LHS false, short-circuit to RHS
-aBinOp Or v   _  = return v -- any -> any, true val -> true val
+aBinOp Or v1 v2 =
+  return $ case (v1, v2) of
+            (ANil, _) -> v2 -- trivial
+            (_, ANil) -> v1 -- trivial
+            (Any, _) | v2 `lteStrict` ANonNil -> ANonNil -- Value may still come from v1
+            (_, _) -> v1 -- either v1 is a true val, or it is any and v2 is false
 
 -- abstracted reversible operators
 aRevOp :: RevOp -> AValue -> AValue -> Maybe AValue
