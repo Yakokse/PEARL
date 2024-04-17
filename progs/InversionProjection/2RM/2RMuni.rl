@@ -1,5 +1,4 @@
-(Prog X) -> (Prog Y)
-with (i Prog' ProgRev Sign)
+(Prog X) -> (Prog Y) with (i Prog' ProgRev Sign)
 
 init: entry
       Y <- '0

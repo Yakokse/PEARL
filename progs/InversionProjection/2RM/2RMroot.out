@@ -1,0 +1,23 @@
+(X) -> (Y)
+
+init_1:
+	entry
+	Y <- '0
+	goto loop_1_10
+
+loop_1_10:
+	fi (Y = '0)
+		from init_1
+		else loop_1_10
+	(Y . X) <- (X . Y)
+	X += '1
+	(X . Y) <- (Y . X)
+	X -= Y
+	if (X = '0)
+		goto stop_1_10
+		else loop_1_10
+
+stop_1_10:
+	from loop_1_10
+	'0 <- X
+	exit
