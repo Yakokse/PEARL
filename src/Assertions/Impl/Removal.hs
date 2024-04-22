@@ -34,8 +34,8 @@ removeAssertionsBi prog =
   where
     invProg = invertProg prog
     fixpoint preState =
-     let postState = inferProg' prog preState
-         preState' = inferProg' invProg postState
+     let postState = inferProgWithoutAsserts prog preState
+         preState' = inferProgWithoutAsserts invProg postState
      in if preState == preState'
         then preState
         else fixpoint preState'
@@ -56,7 +56,7 @@ removeAssertionsProg preState (decl, pbody) =
       cleanBody = map cleanBlock pbody
   in (decl, cleanBody)
 
--- todo: logging, assertion PE
+-- todo: logging, bottom blocks?
 -- Remove all redundant assertions in a given block
 -- Fold over all steps so we don't need to work on normalized blocks
 removeAssertionsBlock :: Maybe AStore -> Block a b -> Block a b

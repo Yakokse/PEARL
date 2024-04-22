@@ -32,8 +32,8 @@ inferProg (decl, prog) preState =
           ls' = List.union ls pending
       in fixPoint newState ls'
 
-inferProg' :: (Ord a, Ord b) => Program a b -> State a b -> State a b
-inferProg' (decl, prog) = inferProg (decl, prog')
+inferProgWithoutAsserts :: (Ord a, Ord b) => Program a b -> State a b -> State a b
+inferProgWithoutAsserts (decl, prog) = inferProg (decl, prog')
   where
     notAssert (Assert _) = False
     notAssert _          = True
