@@ -27,7 +27,6 @@ library
       Assertions.AssertionRemoval
       Assertions.Impl.Abstraction
       Assertions.Impl.Analysis
-      Assertions.Impl.Bidirectional
       Assertions.Impl.Removal
       Interpretation.Impl.Interpret
       Interpretation.Interpret

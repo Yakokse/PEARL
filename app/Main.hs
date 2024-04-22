@@ -232,7 +232,7 @@ optimMain OptimizeOptions { optimInput = inputPath
   do prog <- parseFile "program" v parseProg inputPath
      let mode = if useBidir then " (BIDIRECTIONAL)" else ""
      trace v $ "- Removing assertions" ++ mode
-     let removeAsserts = if useBidir then removeAssertions2 else removeAssertions
+     let removeAsserts = if useBidir then removeAssertionsBi else removeAssertionsUni
      let optimProg = removeAsserts prog
      let out = prettyProg id optimProg
      trace v $ "Assertions removed: " ++ show (assCount prog - assCount optimProg)
@@ -317,7 +317,7 @@ specMain2 specOpts decl prog2 store =
         trace v "- POST PROCESSING"
         (prog', staticVals) <- specPostProcess v decl res
         let prog = if specAssertRem specOpts
-                   then removeAssertions prog'
+                   then removeAllAssertions prog'
                    else prog'
         printStaticOutput decl staticVals
         return $ prettyProg id prog
@@ -410,7 +410,7 @@ benchMain BenchOptions { benchFile     = inputPath
          res <- specialize' mode decl prog2 specStore
          (prog, outStatic) <- postprocess mode decl res
          (outRes, stats) <- run mode prog runstore
-         let progOptim = removeAssertions prog
+         let progOptim = removeAllAssertions prog
          (_, statsOptim) <- run mode progOptim runstore
          let combinedOut = combine (toStore $ fromList outStatic) outRes
          verifyOutput mode origOut combinedOut

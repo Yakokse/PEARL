@@ -17,39 +17,50 @@ import Control.Monad (foldM)
 type AStore = Map Name AValue
 type State a b = Map (a,b) (Maybe AStore)
 
-inferProg :: (Ord a, Ord b) => Program a b -> State a b
-inferProg (decl, prog) =
-  let initState = fromList $ map (\b -> (name b, Nothing)) prog
+inferProg :: (Ord a, Ord b) => Program a b -> State a b -> State a b
+inferProg (decl, prog) preState =
+  let postState = fromList $ map (\b -> (name b, Nothing)) prog
       entryLabel = getEntryName prog
-      finalState = fixPoint initState [entryLabel]
+      finalState = fixPoint postState [entryLabel]
   in finalState
   where
-    fixPoint state [] = state
-    fixPoint state (l:ls) =
+    fixPoint postState [] = postState
+    fixPoint postState (l:ls) =
       let b = getBlockUnsafe prog l
-          (state', pending) = inferBlock state (decl, prog) b
+          (newState, pending) =
+            inferBlock preState postState (decl, prog) b
           ls' = List.union ls pending
-      in fixPoint state' ls'
+      in fixPoint newState ls'
+
+inferProg' :: (Ord a, Ord b) => Program a b -> State a b -> State a b
+inferProg' (decl, prog) = inferProg (decl, prog')
+  where
+    notAssert (Assert _) = False
+    notAssert _          = True
+    removeAssertion b = b{body = filter notAssert $ body b}
+    prog' = map removeAssertion prog
 
 -- Update state and return new pending points
-inferBlock :: (Ord a, Ord b) => State a b -> Program a b -> Block a b
+inferBlock :: (Ord a, Ord b) => State a b -> State a b
+                             -> Program a b -> Block a b
                              -> (State a b, [(a, b)])
-inferBlock state prog
+inferBlock preState postState prog
            Block{name = n, from = f, body = b, jump = j} =
-    let startStore = inferTransition state prog n f
-        oldStore = get n state
+    let startStore' = inferTransition postState prog n f
+        startStore = get n preState `glbStore` startStore'
         newStore = case startStore of
                         Just s -> foldM inferStep s b
                         Nothing -> Nothing
-        pending = if oldStore == newStore
+        pending = if get n postState == newStore
                     then []
                     else jumpLabels j
-        newState = set n newStore state
+        newState = set n newStore postState
     in (newState, pending)
 
 -- Given a from-statement f, what are the predecessor stores
 -- extra refinement by all directions of expressions in control flow
-inferTransition :: (Ord a, Ord b) => State a b -> Program a b -> (a, b) -> ComeFrom a b
+inferTransition :: (Ord a, Ord b) => State a b -> Program a b
+                                  -> (a, b) -> ComeFrom a b
                                   -> Maybe AStore
 inferTransition state (decl, prog) dest f =
   let origins = mapFrom (\l -> (inferJump l, snd l)) f

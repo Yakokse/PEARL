@@ -43,7 +43,7 @@ p5_1_1_e1_2_expl_6:
 		from p5_1_2
 		else p5_1_3
 	assert(!(dyn))
-	stat1 += dyn
+	stat1 += '7 // Modified from dyn because absint is too good
 	stat2 ^= '2
 	goto stop_x1_2_6
 

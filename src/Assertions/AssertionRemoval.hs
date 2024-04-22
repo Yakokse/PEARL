@@ -1,4 +1,3 @@
-module Assertions.AssertionRemoval (removeAssertions, removeAssertions2) where
+module Assertions.AssertionRemoval (removeAssertionsUni, removeAssertionsBi, removeAllAssertions) where
 
 import Assertions.Impl.Removal
-import Assertions.Impl.Bidirectional

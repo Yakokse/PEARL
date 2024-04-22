@@ -4,28 +4,56 @@ import Utils.Maps
 
 import RL.AST
 import RL.Values
+import RL.Variables
 
 import Assertions.Impl.Abstraction
 import Assertions.Impl.Analysis
 
 import Inversion.Inverter
 
--- Detect and remove redundat assertions in a given program
-removeAssertions :: (Ord a, Ord b) => Program a b -> Program a b
-removeAssertions prog =
-  let state1 = inferProg prog
-      cleaned1 = removeAssertionsProg state1 prog
+removeAllAssertions :: (Ord a, Ord b) => Program a b -> Program a b
+removeAllAssertions = removeAssertionsUni . removeAssertionsBi
+
+-- Detect and remove redundant assertions in a given program
+removeAssertionsUni :: (Ord a, Ord b) => Program a b -> Program a b
+removeAssertionsUni prog =
+  let preState = initPreState prog
+      state1 = inferProg prog preState
+      cleaned1 = removeAssertionsProg (postToPre prog state1) prog
       prog2 = invertProg cleaned1
-      state2 = inferProg prog2
-      cleaned2 = removeAssertionsProg state2 prog2
+      state2 = inferProg prog2 preState
+      cleaned2 = removeAssertionsProg (postToPre prog2 state2) prog2
   in invertProg cleaned2
+
+removeAssertionsBi :: (Ord a, Ord b) => Program a b -> Program a b
+removeAssertionsBi prog =
+  let preState = initPreState prog
+      final = fixpoint preState
+      result = removeAssertionsProg final prog
+  in result
+  where
+    invProg = invertProg prog
+    fixpoint preState =
+     let postState = inferProg' prog preState
+         preState' = inferProg' invProg postState
+     in if preState == preState'
+        then preState
+        else fixpoint preState'
+
+postToPre :: (Ord a, Ord b) => Program a b -> State a b
+                            -> State a b
+postToPre prog state =
+  let preStore b = inferTransition state prog (name b) (from b)
+      preStores = map (\b -> (name b, preStore b)) $ snd prog
+  in fromList preStores
 
 removeAssertionsProg :: (Ord a, Ord b) => State a b -> Program a b
                                        -> Program a b
-removeAssertionsProg state prog@(decl, pbody) =
-  let startStore b = inferTransition state prog (name b) (from b)
-      startStores = map startStore pbody
-      cleanBody = zipWith removeAssertionsBlock startStores pbody
+removeAssertionsProg preState (decl, pbody) =
+  let cleanBlock b =
+        let initStore = get (name b) preState
+        in removeAssertionsBlock initStore b
+      cleanBody = map cleanBlock pbody
   in (decl, cleanBody)
 
 -- todo: logging, assertion PE
@@ -76,3 +104,9 @@ reduceExpr s (Op op e1 e2) =
               Or  | v2 `lteStrict` ANil    -> e1
               _ -> Op op e1' e2'
      return (e, v)
+
+initPreState :: (Ord a, Ord b) => Program a b -> State a b
+initPreState (decl, prog) =
+  let anyStore = fromList $ map (\n -> (n, Any)) $ allVars decl
+      preState = fromList $ map (\b -> (name b, Just anyStore)) prog
+  in preState
