@@ -59,12 +59,7 @@ emptyBlockTests = testGroup "removeEmptyBlocks Tests"
   , testP "Non-empty remains" [middleBNormal] [middleBNormal]
   , testP "Split remains" [splitB] [splitB]
   , testP "Merge remains" [mergeB] [mergeB]
-  , testP "Regular and empty removed" [middleBEmpty] []
-  , testP "Correct re-naming of jumps" [entryB, middleBEmpty]
-          [entryB{jump = jump middleBEmpty}]
-  , testP "Correct re-naming of froms" [middleBEmpty, exitB]
-          [exitB{from = from middleBEmpty}]
-  , testP "In total" [entryB, middleBEmpty, exitB]
+  , testP "Removeable and correct renaming" [entryB, middleBEmpty, exitB]
           [ entryB{jump = jump middleBEmpty}
           , exitB{from = from middleBEmpty}]
   , testP "Rename in conditionals"
