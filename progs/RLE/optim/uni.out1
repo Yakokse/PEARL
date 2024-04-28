@@ -1,0 +1,87 @@
+(chars text) -> (text) with (c temp)
+
+init_1:
+	entry
+	assert(chars)
+	assert(!(text))
+	(c . chars) <- chars
+	if text
+		goto boolT_1_2
+		else outer_1_2
+
+boolT_1_2:
+	from init_1
+	assert(!((hd(text) = c)))
+	goto outer_1_2
+
+outer_1_2:
+	fi text
+		from boolT_1_2
+		else init_1
+	text <- (c . text)
+	assert(chars)
+	assert(text)
+	(c . chars) <- chars
+	if text
+		goto boolT_1_4
+		else inner_1_4
+
+boolT_1_4:
+	from outer_1_2
+	assert(!((hd(text) = c)))
+	goto inner_1_4
+
+inner_1_4:
+	fi text
+		from boolT_1_4
+		else outer_1_2
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	assert(text)
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	assert(text)
+	text <- (c . text)
+	assert(chars)
+	assert(text)
+	(c . chars) <- chars
+	if text
+		goto boolT_1_8
+		else inner_1_8
+
+boolT_1_8:
+	from inner_1_4
+	assert(!((hd(text) = c)))
+	goto inner_1_8
+
+inner_1_8:
+	fi text
+		from boolT_1_8
+		else inner_1_4
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	assert(text)
+	text <- (c . text)
+	assert(chars)
+	assert(text)
+	(c . chars) <- chars
+	if text
+		goto boolT_1_11
+		else outer_1_11
+
+boolT_1_11:
+	from inner_1_8
+	assert(!((hd(text) = c)))
+	goto outer_1_11
+
+outer_1_11:
+	fi text
+		from boolT_1_11
+		else inner_1_8
+	text <- (c . text)
+	assert(!(chars))
+	assert(text)
+	exit

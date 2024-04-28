@@ -134,7 +134,7 @@ benchParser = Bench <$> (BenchOptions
            <$> argument str (metavar "<Input RL file>")
            <*> argument str (metavar "<Spec file>")
            <*> argument strp (metavar "<List of dynamic input vars>")
-           <*> flag True False (long "verbose"
+           <*> flag False True (long "verbose"
                            <> short 'v'
                            <> help "Show messages and info for each phase")
            )
@@ -384,7 +384,7 @@ benchMain BenchOptions { benchFile     = inputPath
      (resUni, statsUni) <- pipeline' "UNI" btaUniform
      (resPW, statsPW) <- pipeline' "PW" btaPW
      putStrLn $ "-- Source program\n" ++ prettyStats statsInt
-     putStrLn $ prettySize prog
+     putStrLn $ prettySize (prog, prog)
      prettySpeed' "Uniform PE" statsInt statsUni
      putStrLn $ prettySize resUni
      prettySpeed' "Pointwise PE" statsInt statsPW
@@ -416,7 +416,7 @@ benchMain BenchOptions { benchFile     = inputPath
          verifyOutput mode origOut combinedOut
          fromEM ("wellformedness of residual prog " ++ mode) $
             wellformedProg prog
-         return (progOptim, (stats, statsOptim))
+         return ((prog, progOptim), (stats, statsOptim))
 
     preprocess mode bta nprog d =
       do trace v $ "Preprocessing " ++ mode
@@ -447,8 +447,10 @@ benchMain BenchOptions { benchFile     = inputPath
          unless (all (\(n, val) -> val == get n specOut) (toList regularOut))
             $ die "The regular and specialized output do not match"
 
-    prettySize (_, prog) = "Total Blocks: " ++ show (length prog)
-                        ++ ", Total Lines: " ++ show (sum $ map (length . body) prog)
+    prettySize ((_, prog), (_, progOptim)) = "Total Blocks: " ++ show (length prog)
+                        ++ ", Total Lines: " ++ show (sum (map (length . body) progOptim) + 2 * length prog)
+                        ++ ", Asserts removed: " ++ show (asserts prog - asserts progOptim ) ++ "/" ++ show (asserts prog)
+    asserts = sum . map (length . filter (\s -> case s of Assert _ -> True; _ -> False) . body)
 
 makeSpecStore :: VariableDecl -> Division -> Store -> SpecStore
 makeSpecStore decl d s =
