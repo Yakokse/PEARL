@@ -46,7 +46,7 @@ inferBlock :: (Ord a, Ord b) => State a b -> State a b
                              -> (State a b, [(a, b)])
 inferBlock preState postState prog
            Block{name = n, from = f, body = b, jump = j} =
-    let startStore' = inferTransition postState prog n f
+    let startStore' = inferFrom postState prog n f
         startStore = get n preState `glbStore` startStore'
         newStore = case startStore of
                         Just s -> foldM inferStep s b
@@ -57,30 +57,32 @@ inferBlock preState postState prog
         newState = set n newStore postState
     in (newState, pending)
 
--- Given a from-statement f, what are the predecessor stores
--- extra refinement by all directions of expressions in control flow
-inferTransition :: (Ord a, Ord b) => State a b -> Program a b
-                                  -> (a, b) -> ComeFrom a b
-                                  -> Maybe AStore
-inferTransition state (decl, prog) dest f =
-  let origins = mapFrom (\l -> (inferJump l, snd l)) f
-      stores = case origins of
-                  Entry _ -> [inferDecl decl]
-                  From (s, _) -> [s]
-                  Fi e (s1, _) (s2, _) ->
-                    [ s1 >>= (`inferAssertion` e)
-                    , s2 >>= (`inferAssertion` UOp Not e)]
-  in foldl lubStore Nothing stores
-  where
-    inferJump orig =
-      do let origJump = jump $ getBlockUnsafe prog orig
-         origStore <- get orig state
-         case origJump of
-           If e l1 l2 | l1 == dest && l2 /= dest ->
-             inferAssertion origStore e
-           If e l1 l2 | l1 /= dest && l2 == dest ->
-             inferAssertion origStore (UOp Not e)
-           _ -> return origStore
+inferFrom :: (Ord a, Ord b) => State a b -> Program a b
+                            -> (a, b) -> ComeFrom a b
+                            -> Maybe AStore
+inferFrom _ (decl, _) _ (Entry _) = inferDecl decl
+
+inferFrom state (_, prog) l (From l1) =
+  let origS = get l1 state
+      j = jump $ getBlockUnsafe prog l1
+  in inferJump origS l j
+inferFrom state (_, prog) l (Fi e l1 l2) =
+  let origS1 = getjump l1
+      origS2 = getjump l2
+      inferred1 = inferAssertion' origS1 e
+      inferred2 = inferAssertion' origS2 (UOp Not e)
+  in inferred1 `lubStore` inferred2
+  where getjump orig =
+          let origS = get orig state
+              j = jump $ getBlockUnsafe prog orig
+          in inferJump origS l j
+
+inferJump :: (Ord a, Ord b) => Maybe AStore -> (a,b) -> Jump a b -> Maybe AStore
+inferJump store _ (Goto _) = store
+inferJump store dest (If e l1 _)
+  | l1 == dest = inferAssertion' store e
+  | otherwise  = inferAssertion' store (UOp Not e)
+inferJump _ _ (Exit _) = undefined
 
 -- glb of store lattice
 glbStore :: Maybe AStore -> Maybe AStore -> Maybe AStore
@@ -178,6 +180,10 @@ inferAssertion s (UOp Not e) =
     (Op Or e1 e2)  -> inferAssertion s (Op And (UOp Not e1) (UOp Not e2))
     _ -> return s
 inferAssertion s _ = return s
+
+inferAssertion' :: Maybe AStore -> Expr -> Maybe AStore
+inferAssertion' Nothing _ = Nothing
+inferAssertion' (Just s) e = inferAssertion s e
 
 inferDecl :: VariableDecl -> Maybe AStore
 inferDecl decl =

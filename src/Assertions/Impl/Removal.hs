@@ -43,7 +43,7 @@ removeAssertionsBi prog =
 postToPre :: (Ord a, Ord b) => Program a b -> State a b
                             -> State a b
 postToPre prog state =
-  let preStore b = inferTransition state prog (name b) (from b)
+  let preStore b = inferFrom state prog (name b) (from b)
       preStores = map (\b -> (name b, preStore b)) $ snd prog
   in fromList preStores
 
