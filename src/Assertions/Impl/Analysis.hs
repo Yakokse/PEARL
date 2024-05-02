@@ -67,15 +67,14 @@ inferFrom state (_, prog) l (From l1) =
       j = jump $ getBlockUnsafe prog l1
   in inferJump origS l j
 inferFrom state (_, prog) l (Fi e l1 l2) =
-  let origS1 = getjump l1
-      origS2 = getjump l2
-      inferred1 = inferAssertion' origS1 e
-      inferred2 = inferAssertion' origS2 (UOp Not e)
-  in inferred1 `lubStore` inferred2
-  where getjump orig =
+  let inferJump' orig e' =
           let origS = get orig state
               j = jump $ getBlockUnsafe prog orig
-          in inferJump origS l j
+              origS' = inferJump origS l j
+          in inferAssertion' origS' e'
+      inferred1 = inferJump' l1 e
+      inferred2 = inferJump' l2 (UOp Not e)
+  in inferred1 `lubStore` inferred2
 
 inferJump :: (Ord a, Ord b) => Maybe AStore -> (a,b) -> Jump a b -> Maybe AStore
 inferJump store _ (Goto _) = store
