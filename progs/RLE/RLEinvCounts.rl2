@@ -1,0 +1,104 @@
+init: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTStatic
+	%entry
+	skip
+	%goto stop_1
+
+stop_1: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTStatic
+	%from init
+	skip
+	%if %chars
+		%goto stop_1_1_expl
+		%else stop_1_2_expl
+
+stop_1_1_expl: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTStatic
+	%from stop_1
+	generalize(text)
+	%goto outerEnd_1
+
+stop_1_2_expl: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTStatic
+	%from stop_1
+	generalize(text)
+	%goto init_1
+
+outer_1: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%fi %text
+		%from boolT_1
+		%else boolF_1
+	'1 <- n
+	%goto outer_2
+
+outer_2: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from outer_1
+	%text %<- %(drop(c) %. %text)
+	%if %chars
+		%goto outerEnd_1
+		%else init_1
+
+inner_1: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTDynamic, text: BTDynamic
+	%fi %text
+		%from boolT_1_2_expl
+		%else boolF_1_2_expl
+	temp %^= %c
+	%goto inner_2
+
+inner_2: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTDynamic, text: BTDynamic
+	%from inner_1
+	%text %<- %(drop(temp) %. %text)
+	%goto inner_3
+
+inner_3: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from inner_2
+	n -= '1
+	%goto boolT_1
+
+boolT_1: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%fi %(%hd(%text) %= %c)
+		%from inner_3
+		%else outerEnd_2
+	skip
+	if (n = '1)
+		goto outer_1
+		else boolT_1_2_expl
+
+boolT_1_2_expl: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from boolT_1
+	generalize(temp)
+	%goto inner_1
+
+boolF_1: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from outerEnd_2
+	skip
+	if (n = '1)
+		goto outer_1
+		else boolF_1_2_expl
+
+boolF_1_2_expl: c: BTDynamic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from boolF_1
+	generalize(temp)
+	%goto inner_1
+
+outerEnd_1: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%fi %text
+		%from outer_2
+		%else stop_1_1_expl
+	(n . counts) <- counts
+	%goto outerEnd_2
+
+outerEnd_2: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from outerEnd_1
+	%(drop(c) %. %chars) %<- %chars
+	%if %text
+		%goto boolT_1
+		%else boolF_1
+
+init_1: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%fi %text
+		%from outer_2
+		%else stop_1_2_expl
+	skip
+	%goto stop
+
+stop: c: BTStatic, chars: BTDynamic, counts: BTStatic, n: BTStatic, temp: BTStatic, text: BTDynamic
+	%from init_1
+	skip
+	%exit

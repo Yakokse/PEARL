@@ -1,4 +1,5 @@
 (chars) -> (text) with (c temp)
+// specialized w.r.t count
 
 init_1:
 	entry

@@ -1,9 +1,8 @@
-(counts text) -> (text) with (c n temp)
-// specialized w.r.t. chars
+(counts) -> (text) with (n temp)
+// Inlined explications when obvious
 
 init_1:
 	entry
-	assert(!(text))
 	(n . counts) <- counts
 	if text
 		goto boolT_1_21
@@ -22,8 +21,7 @@ outer_1_21:
 		from boolT_1_21
 		else boolF_1_21
 	'1 <- n
-	c <- 'd
-	text <- (c . text)
+	text <- ('d . text)
 	(n . counts) <- counts
 	if text
 		goto boolT_1_19
@@ -42,8 +40,7 @@ outer_1_19:
 		from boolT_1_19
 		else boolF_1_19
 	'1 <- n
-	c <- 'c
-	text <- (c . text)
+	text <- ('c . text)
 	(n . counts) <- counts
 	if text
 		goto boolT_1_17
@@ -62,8 +59,7 @@ outer_1_17:
 		from boolT_1_17
 		else boolF_1_17
 	'1 <- n
-	c <- 'b
-	text <- (c . text)
+	text <- ('b . text)
 	(n . counts) <- counts
 	if text
 		goto boolT_1_15
@@ -82,16 +78,14 @@ outer_1_15:
 		from boolT_1_15
 		else boolF_1_15
 	'1 <- n
-	c <- 'a
-	text <- (c . text)
+	text <- ('a . text)
 	exit
 
 inner_1_15:
 	fi text
 		from boolT_1_15
 		else boolF_1_15
-	temp <- 'a
-	text <- (temp . text)
+	text <- ('a . text)
 	n -= '1
 	goto boolT_1_15
 
@@ -105,8 +99,7 @@ inner_1_17:
 	fi text
 		from boolT_1_17
 		else boolF_1_17
-	temp <- 'b
-	text <- (temp . text)
+	text <- ('b . text)
 	n -= '1
 	goto boolT_1_17
 
@@ -120,8 +113,7 @@ inner_1_19:
 	fi text
 		from boolT_1_19
 		else boolF_1_19
-	temp <- 'c
-	text <- (temp . text)
+	text <- ('c . text)
 	n -= '1
 	goto boolT_1_19
 
@@ -135,8 +127,7 @@ inner_1_21:
 	fi text
 		from boolT_1_21
 		else boolF_1_21
-	temp <- 'd
-	text <- (temp . text)
+	text <- ('d . text)
 	n -= '1
 	goto boolT_1_21
 
