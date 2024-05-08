@@ -1,0 +1,25 @@
+(chars) -> (text) with (c temp)
+
+init_1:
+	entry
+	(c . chars) <- chars
+	text <- (c . text)
+	(c . chars) <- chars
+	assert(!((hd(text) = c)))
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	text <- (c . text)
+	(c . chars) <- chars
+	assert(!((hd(text) = c)))
+	temp ^= c
+	text <- (temp . text)
+	assert((hd(text) = c))
+	text <- (c . text)
+	(c . chars) <- chars
+	assert(!((hd(text) = c)))
+	text <- (c . text)
+	exit

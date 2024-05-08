@@ -204,21 +204,29 @@ changeConditionals :: (Eq a, Eq b) => [Block a b] -> [Block a b]
 changeConditionals prog = map changeCond prog
   where
     changeCond b =
-      let (f, assFrom) = checkFrom $ from b
-          (j, assJump) = checkJump $ jump b
+      let (f, assFrom) = checkFrom (name b) $ from b
+          (j, assJump) = checkJump (name b)$ jump b
       in b {from = f, jump = j, body = assFrom ++ body b ++ assJump}
-    checkFrom f = case f of
-      Fi e l1 l2 | not $ l2 `nameIn` prog ->
+    checkFrom l f = case f of
+      Fi e l1 l2 | not $ isValidF l l2 ->
         (From l1, [Assert e])
-      Fi e l1 l2 | not $ l1 `nameIn` prog ->
+      Fi e l1 l2 | not $ isValidF l l1 ->
         (From l2, [Assert (UOp Not e)])
       _ -> (f , [])
-    checkJump j = case j of
-      If e l1 l2 | not $ l2 `nameIn` prog ->
+    checkJump l j = case j of
+      If e l1 l2 | not $ isValidJ l l2 ->
         (Goto l1, [Assert e])
-      If e l1 l2 | not $ l1 `nameIn` prog ->
+      If e l1 l2 | not $ isValidJ l l1 ->
         (Goto l2, [Assert (UOp Not e)])
       _ -> (j , [])
+    isValidJ orig dest =
+      case getBlock prog dest of
+        Just b -> orig `elem` fromLabels (from b)
+        Nothing -> False
+    isValidF dest orig =
+      case getBlock prog orig of
+        Just b -> dest `elem` jumpLabels (jump b)
+        Nothing -> False
 
 -- Compress blocks that chain together
 compressPaths :: (Ord a, Ord b) => [Block a b] -> [Block a b]
@@ -275,7 +283,9 @@ removeEmptyBlocks p =
     isNeeded Block{from = f, body = b, jump = j} =
       let semanticBlock = case (f, j) of
             (From l1, Goto l2) ->
-              l1 `elem` fromLabels (from $ getBlockUnsafe p l2)
+              case getBlock p l2 of
+                Nothing -> False
+                Just b' -> l1 `elem` fromLabels (from b')
             _ -> True
       in not (null b) || semanticBlock
 

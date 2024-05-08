@@ -31,6 +31,13 @@ prettyStats stats@Stats{steps = s, jumps = j} =
   ++ ", Total Jumps: " ++ show j
   ++ ", Combined Total: " ++ show (totalSteps stats)
 
+prettyStats2 :: Stats -> Stats -> String
+prettyStats2 stats1@Stats{steps = s1, jumps = j1} stats2@Stats{steps = s2, jumps = j2} =
+  "Total Steps: " ++ show s1 ++ brace (show s2)
+      ++ ", Total Jumps: " ++ show j1 ++ brace (show j2)
+      ++ ", Combined Total: " ++ show (totalSteps stats1) ++ brace (show $ totalSteps stats2)
+  where brace s = " (" ++ s ++ ")"
+
 totalSteps :: Stats -> Int
 totalSteps Stats{steps = s, jumps = j} = s + j * 2
 

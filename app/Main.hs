@@ -390,19 +390,6 @@ benchMain BenchOptions { benchFile     = inputPath
      prettySpeed' "Pointwise PE" statsInt statsPW
      putStrLn $ prettySize resPW
   where
-    prettySpeed' mode origStats (newStats, newStatsO) =
-      let origSpeed = totalSteps origStats
-          newSpeed = totalSteps newStats
-          newSpeedO = totalSteps newStatsO
-          speedup, speedupO :: Float
-          speedup = fromIntegral origSpeed / fromIntegral newSpeed
-          speedupO = fromIntegral origSpeed / fromIntegral newSpeedO
-      in do putStrLn $ "-- " ++ mode
-            putStrLn $ prettyStats newStats
-            putStrLn $ "Speedup: " ++ take 5 (show speedup) ++ "x"
-            putStrLn $ "-- " ++ mode ++ " (Assertions removed)"
-            putStrLn $ prettyStats newStatsO
-            putStrLn $ "Speedup: " ++ take 5 (show speedupO) ++ "x"
 
     pipeline nprog d decl runstore initSpec origOut mode bta =
       do (prog2, startDiv) <- preprocess mode bta nprog d
@@ -447,8 +434,22 @@ benchMain BenchOptions { benchFile     = inputPath
          unless (all (\(n, val) -> val == get n specOut) (toList regularOut))
             $ die "The regular and specialized output do not match"
 
-    prettySize ((_, prog), (_, progOptim)) = "Total Blocks: " ++ show (length prog)
-                        ++ ", Total Lines: " ++ show (sum (map (length . body) progOptim) + 2 * length prog)
+    prettySpeed' mode origStats (newStats, newStatsO) =
+      let origSpeed = totalSteps origStats
+          newSpeed = totalSteps newStats
+          newSpeedO = totalSteps newStatsO
+          speedup, speedupO :: Float
+          speedup = fromIntegral origSpeed / fromIntegral newSpeed
+          speedupO = fromIntegral origSpeed / fromIntegral newSpeedO
+      in do putStrLn $ "-- " ++ mode
+            putStrLn $ prettyStats2 newStats newStatsO
+            putStrLn $ "Speedup: " ++ take 5 (show speedup) ++ "x" ++ brace (take 5 (show speedupO) ++ "x")
+
+    brace s = " (" ++ s ++ ")"
+    blocks = show . length
+    lineCount p = show $ sum (map (length . body) p) + 2 * length p
+    prettySize ((_, prog), (_, progOptim)) = "Total Blocks: " ++ blocks prog ++ brace (blocks progOptim)
+                        ++ ", Total Lines: " ++ lineCount prog ++ brace (lineCount progOptim)
                         ++ ", Asserts removed: " ++ show (asserts prog - asserts progOptim ) ++ "/" ++ show (asserts prog)
     asserts = sum . map (length . filter (\s -> case s of Assert _ -> True; _ -> False) . body)
 

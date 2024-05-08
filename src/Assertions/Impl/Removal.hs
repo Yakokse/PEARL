@@ -10,6 +10,10 @@ import Assertions.Impl.Abstraction
 import Assertions.Impl.Analysis
 
 import Inversion.Inverter
+import PE.Specialization.PostProcessing
+
+import Data.Maybe (maybeToList)
+import Control.Monad (foldM)
 
 removeAllAssertions :: (Ord a, Ord b) => Program a b -> Program a b
 removeAllAssertions = removeAssertionsUni . removeAssertionsBi
@@ -49,32 +53,48 @@ postToPre prog state =
 
 removeAssertionsProg :: (Ord a, Ord b) => State a b -> Program a b
                                        -> Program a b
-removeAssertionsProg preState (decl, pbody) =
+removeAssertionsProg preState (decl, pblocks) =
   let cleanBlock b =
         let initStore = get (name b) preState
-        in removeAssertionsBlock initStore b
-      cleanBody = map cleanBlock pbody
+        in maybeToList $ removeAssertionsBlock initStore b
+      cleaning = compressPaths .
+                 changeConditionals .
+                 removeDeadBlocks .
+                 concatMap cleanBlock
+      cleanBody = cleaning . cleaning $ pblocks
   in (decl, cleanBody)
 
--- todo: logging, bottom blocks?
 -- Remove all redundant assertions in a given block
 -- Fold over all steps so we don't need to work on normalized blocks
-removeAssertionsBlock :: Maybe AStore -> Block a b -> Block a b
-removeAssertionsBlock startStore b =
-  let cleaned = foldl (\(store, acc) step ->
-                          let (store', step') = iterStep store step
-                          in (store', acc ++ step'))
+removeAssertionsBlock :: Maybe AStore -> Block a b -> Maybe (Block a b)
+removeAssertionsBlock Nothing _ = Nothing
+removeAssertionsBlock (Just startStore) b =
+  let remove = foldM (\(store, acc) step ->
+                          do (store', step') <- iterStep store step
+                             return (store', acc ++ step'))
                       (startStore, [])
-      body' = snd . cleaned $ body b
-  in b{body = body'}
+      updateBlock (s, steps) =
+        let (j, js) = iterJump s $ jump b
+        in return b{body = steps ++ js, jump = j}
+  in remove (body b) >>= updateBlock
   where
-    iterStep Nothing s = (Nothing, [s])
-    iterStep (Just s) (Assert e) =
-      let res = case reduceExpr s e of
-                  Just (e', v) -> [Assert e' | v `aglb` ANil /= Nothing]
-                  Nothing -> [Assert e] -- Bottom case
-      in (return s, res)
-    iterStep (Just s) step = (inferStep s step, [step])
+    iterJump s (If e l1 l2)
+      | inferAssertion s e == Nothing
+          = (Goto l2, [Assert (UOp Not e)])
+      | inferAssertion s (UOp Not e) == Nothing
+          = (Goto l1, [Assert e])
+      | otherwise = (If e l1 l2, [])
+    iterJump _ j = (j, [])
+    iterStep s (Assert e) =
+      case reduceExpr s e of
+          Just (_, ANil) -> Nothing
+          Just (e', v) ->
+            do s' <- inferAssertion s e
+               let res = [Assert e' | v `aglb` ANil /= Nothing]
+               return (s', res)
+          Nothing -> Nothing -- Bottom case
+    iterStep s step = do s' <- inferStep s step
+                         return (s', [step])
 
 reduceExpr :: AStore -> Expr -> Maybe (Expr, AValue)
 reduceExpr _ (Const v) = return (Const v, aValue v)
