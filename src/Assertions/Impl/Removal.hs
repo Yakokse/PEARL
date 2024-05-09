@@ -74,17 +74,15 @@ removeAssertionsBlock (Just startStore) b =
                              return (store', acc ++ step'))
                       (startStore, [])
       updateBlock (s, steps) =
-        let (j, js) = iterJump s $ jump b
-        in return b{body = steps ++ js, jump = j}
+        let j = iterJump s $ jump b
+        in return b{body = steps, jump = j}
   in remove (body b) >>= updateBlock
   where
     iterJump s (If e l1 l2)
-      | inferAssertion s e == Nothing
-          = (Goto l2, [Assert (UOp Not e)])
-      | inferAssertion s (UOp Not e) == Nothing
-          = (Goto l1, [Assert e])
-      | otherwise = (If e l1 l2, [])
-    iterJump _ j = (j, [])
+      | inferExpr s e `lte` Just ANonNil = Goto l1
+      | inferExpr s e `lte` Just ANil    = Goto l2
+      | otherwise = If e l1 l2
+    iterJump _ j = j
     iterStep s (Assert e) =
       case reduceExpr s e of
           Just (_, ANil) -> Nothing

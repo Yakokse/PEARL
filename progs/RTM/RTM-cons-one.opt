@@ -1,0 +1,36 @@
+(S_right) -> (S_right) with (S S_left)
+
+left1_1_10:
+	fi (S_right = 'nil)
+		from left_1b_1_10
+		else left_1p_1_10
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	'BLANK <- S
+	exit
+
+left_1b_1_10:
+	from init_1
+	S ^= 'BLANK
+	goto left1_1_10
+
+init_1:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= '1
+	assert((S = '1))
+	assert(!((S = 'SLASH)))
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto left_1b_1_10
+		else left_1p_1_10
+
+left_1p_1_10:
+	from init_1
+	S_right <- (S . S_right)
+	goto left1_1_10
