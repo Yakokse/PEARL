@@ -1,0 +1,145 @@
+(S_right) -> (S_right) with (S S_left)
+
+init_1:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto write_1_118
+
+write_1_118:
+	fi (S = '0)
+		from write_1_97
+		else init_1
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto left_2b_1_31
+		else left_2p_1_31
+
+left_2b_1_31:
+	from write_1_118
+	S ^= 'BLANK
+	goto left1_1_31
+
+left1_1_31:
+	fi (S_left = 'nil)
+		from left_2b_1_31
+		else left_2p_1_31
+	if (S_right = 'nil)
+		goto left_1b_1_31
+		else left_1p_1_31
+
+left_1b_1_31:
+	from left1_1_31
+	S ^= 'BLANK
+	goto left_1_31
+
+left_1_31:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from left_1b_1_31
+		else left_1p_1_31
+	if (S = 'BLANK)
+		goto write1_1_38
+		else write_1_38
+
+write1_1_38:
+	from left_1_31
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto write_1_89
+
+write_1_89:
+	fi (S = '1)
+		from write_1_58
+		else write1_1_38
+	goto write_1_99
+
+write_1_99:
+	fi (S = '0)
+		from write1_1_97
+		else write_1_89
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto right_2b_1_51
+		else right_2p_1_51
+
+right_2b_1_51:
+	from write_1_99
+	S ^= 'BLANK
+	goto right1_1_51
+
+right1_1_51:
+	fi (S_right = 'nil)
+		from right_2b_1_51
+		else right_2p_1_51
+	if (S_left = 'nil)
+		goto right_1b_1_51
+		else right_1p_1_51
+
+right_1b_1_51:
+	from right1_1_51
+	S ^= 'BLANK
+	goto right_1_51
+
+right_1_51:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from right_1b_1_51
+		else right_1p_1_51
+	if (S = 'BLANK)
+		goto write1_1_58
+		else write_1_58
+
+write1_1_58:
+	from right_1_51
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	'BLANK <- S
+	exit
+
+write_1_58:
+	from right_1_51
+	assert((S = '0))
+	S ^= '0
+	S ^= '1
+	goto write_1_89
+
+right_1p_1_51:
+	from right1_1_51
+	(S . S_left) <- S_left
+	goto right_1_51
+
+right_2p_1_51:
+	from write_1_99
+	S_right <- (S . S_right)
+	goto right1_1_51
+
+write_1_38:
+	from left_1_31
+	if (S = '1)
+		goto write1_1_97
+		else write_1_97
+
+write1_1_97:
+	from write_1_38
+	S ^= '1
+	S ^= '0
+	goto write_1_99
+
+write_1_97:
+	from write_1_38
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto write_1_118
+
+left_1p_1_31:
+	from left1_1_31
+	(S . S_right) <- S_right
+	goto left_1_31
+
+left_2p_1_31:
+	from write_1_118
+	S_left <- (S . S_left)
+	goto left1_1_31

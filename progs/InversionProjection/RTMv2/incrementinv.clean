@@ -1,0 +1,145 @@
+(S_right) -> (S_right) with (S S_left)
+
+state6:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto state5
+
+state5:
+	fi (S = '0)
+		from state4_00
+		else state6
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto state5_R1
+		else state5_R2
+
+state5_R1:
+	from state5
+	S ^= 'BLANK
+	goto state5_R3
+
+state5_R3:
+	fi (S_left = 'nil)
+		from state5_R1
+		else state5_R2
+	if (S_right = 'nil)
+		goto state5_R4
+		else state5_R5
+
+state5_R4:
+	from state5_R3
+	S ^= 'BLANK
+	goto state4
+
+state4:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from state5_R4
+		else state5_R5
+	if (S = 'BLANK)
+		goto state4_BB
+		else state4_1
+
+state4_BB:
+	from state4
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto state3
+
+state3:
+	fi (S = '1)
+		from state2_01
+		else state4_BB
+	goto state3_1
+
+state3_1:
+	fi (S = '0)
+		from state4_10
+		else state3
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto state3_L1
+		else state3_L2
+
+state3_L1:
+	from state3_1
+	S ^= 'BLANK
+	goto state3_L3
+
+state3_L3:
+	fi (S_right = 'nil)
+		from state3_L1
+		else state3_L2
+	if (S_left = 'nil)
+		goto state3_L4
+		else state3_L5
+
+state3_L4:
+	from state3_L3
+	S ^= 'BLANK
+	goto state2
+
+state2:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from state3_L4
+		else state3_L5
+	if (S = 'BLANK)
+		goto state1
+		else state2_01
+
+state1:
+	from state2
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	'BLANK <- S
+	exit
+
+state2_01:
+	from state2
+	assert((S = '0))
+	S ^= '0
+	S ^= '1
+	goto state3
+
+state3_L5:
+	from state3_L3
+	(S . S_left) <- S_left
+	goto state2
+
+state3_L2:
+	from state3_1
+	S_right <- (S . S_right)
+	goto state3_L3
+
+state4_1:
+	from state4
+	if (S = '1)
+		goto state4_10
+		else state4_00
+
+state4_10:
+	from state4_1
+	S ^= '1
+	S ^= '0
+	goto state3_1
+
+state4_00:
+	from state4_1
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto state5
+
+state5_R5:
+	from state5_R3
+	(S . S_right) <- S_right
+	goto state4
+
+state5_R2:
+	from state5
+	S_left <- (S . S_left)
+	goto state5_R3

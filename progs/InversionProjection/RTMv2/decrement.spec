@@ -1,16 +1,17 @@
 // Describe the TM
-Start = '1
-End = '6
+Start = '6
+End = '1
+
 Rules =
- '((1 . ((BLANK . BLANK) . 2)) .
-  ((2 . (RIGHT           . 3)) .
-  ((3 . ((0 .     1    ) . 4)) .
-  ((3 . ((1 .     0    ) . 2)) .
-  ((3 . ((BLANK . BLANK) . 4)) .
-  ((4 . (LEFT            . 5)) .
-  ((5 . ((0 .     0    ) . 4)) .
-  ((5 . ((BLANK . BLANK) . 6)) .
+ '((6 . ((BLANK . BLANK) . 5)) .
+  ((4 . ((0     . 0    ) . 5)) .
+  ((5 . (RIGHT           . 4)) .
+  ((4 . ((BLANK . BLANK) . 3)) .
+  ((2 . ((0     . 1    ) . 3)) .
+  ((4 . ((1     . 0    ) . 3)) .
+  ((3 . (LEFT            . 2)) .
+  ((2 . ((BLANK . BLANK) . 1)) .
    nil))))))))
 
 // Tape for full specialization
-S_right = '(0 . (0 . (1 .  nil)))
+// S_right = '(0 . (0 . (1 .  nil)))
