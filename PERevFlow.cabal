@@ -32,6 +32,7 @@ library
       Interpretation.Interpret
       Inversion.Impl.Inverter
       Inversion.Inverter
+      Normalize
       Parsing.Impl.Common
       Parsing.Impl.Program
       Parsing.Impl.Spec

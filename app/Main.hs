@@ -22,6 +22,8 @@ import PE.Preprocessing.Wellformed2
 import PE.Specialization.Specialize
 import PE.Specialization.PostProcessing
 
+import Normalize
+
 import Inversion.Inverter
 
 import Interpretation.Interpret
@@ -39,6 +41,7 @@ data Options = Specialize SpecOptions
              | Interpret InterpretOptions
              | Bench BenchOptions
              | Optimize OptimizeOptions
+             | Normalize NormalizeOptions
 
 data SpecOptions = SpecOptions
   { specInpFile   :: String
@@ -78,6 +81,11 @@ data OptimizeOptions = OptimizeOptions
   , optimOutput :: String
   , optimBidirectional :: Bool
   , optimVerbose :: Bool
+  }
+
+data NormalizeOptions = NormalizeOptions
+  { normInput :: String
+  , normOutput :: String
   }
 
 specParser :: Parser Options
@@ -153,6 +161,12 @@ optimParser = Optimize <$> (OptimizeOptions
                            <> help "Show messages and info for each phase")
            )
 
+normParser :: Parser Options
+normParser = Normalize <$> (NormalizeOptions
+          <$> argument str (metavar "<Input RL file>")
+          <*> argument str (metavar "<Output RL file>")
+          )
+
 optParser :: Parser Options
 optParser = hsubparser
               ( command "spec" (info specParser
@@ -165,6 +179,8 @@ optParser = hsubparser
                 (progDesc "Run various benchmarks on an RL program"))
              <> command "optimize" (info optimParser
                 (progDesc "Optimize an RL program"))
+             <> command "normalize" (info normParser
+                (progDesc "Normalize an RL program"))
               )
 
 optsParser :: ParserInfo Options
@@ -208,6 +224,7 @@ main = do
     Interpret  opts -> intMain   opts
     Bench      opts -> benchMain opts
     Optimize   opts -> optimMain opts
+    Normalize  opts -> normMain  opts
   putStrLn "Program completed succesfully!"
 
 invMain :: InvertOptions -> IO ()
@@ -223,6 +240,19 @@ invMain InvertOptions { invInpFile = inputPath
               $ wellformedProg invProg
      let out = prettyProg id invProg
      writeOutput v outputPath out
+
+normMain :: NormalizeOptions -> IO ()
+normMain NormalizeOptions { normInput = inputPath
+                          , normOutput = outputPath} =
+  do prog <- parseFile "program" True parseProg inputPath
+     _ <- fromEM "performing wellformedness check of input prog"
+              $ wellformedProg prog
+     trace True "- Normalizing program."
+     let normProg = normalizeProgram prog
+     _ <- fromEM "performing wellformedness check of normalized prog"
+              $ wellformedProg normProg
+     let out = prettyProg id normProg
+     writeOutput True outputPath out
 
 optimMain :: OptimizeOptions -> IO ()
 optimMain OptimizeOptions { optimInput = inputPath
