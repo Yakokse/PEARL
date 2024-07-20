@@ -1,0 +1,23 @@
+(x) -> (x y)
+
+stop:
+	fi x
+		from A
+		else B
+	exit
+
+A:
+	from init
+	y <- '2
+	goto stop
+
+init:
+	entry
+	if x
+		goto A
+		else B
+
+B:
+	from init
+	y <- '1
+	goto stop
