@@ -1,4 +1,4 @@
-(Start End Rules S_right) -> (Start End Rules S_right) with (Q Q1 Q2 S1 S2 S S_left RulesRev Rule R)
+(Start Final Rules S_right) -> (Start Final Rules S_right) with (Q Q1 Q2 S1 S2 S S_left RulesRev Rule R)
 
 init:
 	from act1
@@ -37,7 +37,7 @@ reload:
 		else act2
 
 act3:
-	fi (!(RulesRev) && (Q = End))
+	fi (!(RulesRev) && (Q = Final))
 		from stop
 		else act1
 	if !(RulesRev)
@@ -47,7 +47,7 @@ act3:
 stop:
 	entry
 	S ^= 'BLANK
-	Q ^= End
+	Q ^= Final
 	goto act3
 
 symbol:

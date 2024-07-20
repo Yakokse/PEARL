@@ -1,5 +1,5 @@
-(Start End Rules S_right)
-    -> (Start End Rules S_right)
+(Start Final Rules S_right)
+    -> (Start Final Rules S_right)
     with (Q Q1 Q2 S1 S2 S S_left
           RulesRev Rule R)
 
@@ -30,11 +30,11 @@ reload: fi Rules
 
 act3: fi !RulesRev
          from reload else act2
-      if !RulesRev && Q = End
+      if !RulesRev && Q = Final
          goto stop else act1
 
 stop: from act3
-      Q ^= End
+      Q ^= Final
       S ^= 'BLANK
       exit
 
