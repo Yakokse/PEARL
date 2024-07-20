@@ -4,26 +4,19 @@
           RulesRev Rule R)
 
 init: entry
-      S <- 'BLANK
+      S ^= 'BLANK
       Q ^= Start
-      if Start = End
-         goto stop else act1
-
-stop: fi Start = End
-         from init else act3
-      'BLANK <- S
-      Q ^= End
-      exit
+      goto act1
 
 act1: fi !RulesRev && Q = Start
          from init else act3
       (Rule . Rules) <- Rules
       (Q1 . (R . Q2)) <- Rule
       if R = 'LEFT || R = 'RIGHT
-         goto move else write
+         goto shft else symbol
 
 act2: fi R = 'LEFT || R = 'RIGHT
-         from move3 else write2
+         from shft3 else symbol2
       Rule <- (Q1 . (R . Q2))
       RulesRev <- (Rule . RulesRev)
       if Rules goto act3 else reload
@@ -40,33 +33,38 @@ act3: fi !RulesRev
       if !RulesRev && Q = End
          goto stop else act1
 
-write: from act1
-       (S1 . S2) <- R
-       if Q = Q1 && S = S1
-          goto write1 else write2
+stop: from act3
+      Q ^= End
+      S ^= 'BLANK
+      exit
 
-write1: from write
-        Q ^= Q1
-        Q ^= Q2
-        S ^= S1
-        S ^= S2
-        goto write2
+symbol: from act1
+        (S1 . S2) <- R
+        if Q = Q1 && S = S1
+           goto write else symbol2
 
-write2: fi Q = Q2 && S = S2
-           from write1 else write
-        R <- (S1 . S2)
-        goto act2
+write: from symbol
+       Q ^= Q1
+       Q ^= Q2
+       S ^= S1
+       S ^= S2
+       goto symbol2
 
-move: from act1
-      if Q = Q1 goto move1 else move3
+symbol2: fi Q = Q2 && S = S2
+           from write else symbol
+         R <- (S1 . S2)
+         goto act2
 
-move1: from move
+shft: from act1
+      if Q = Q1 goto shft1 else shft3
+
+shft1: from shft
        Q ^= Q1
        Q ^= Q2
        if R = 'LEFT
           goto left else right
 
-left: from move1
+left: from shft1
       if S_right = 'nil && S = 'BLANK
          goto left_1b else left_1p
 
@@ -93,9 +91,9 @@ left_2p: from left1
 
 left2: fi S_left = 'nil && S = 'BLANK
           from left_2b else left_2p
-       goto move2
+       goto shft2
 
-right: from move1
+right: from shft1
        if S_left = 'nil && S = 'BLANK
           goto right_1b else right_1p
 
@@ -122,12 +120,12 @@ right_2p: from right1
 
 right2: fi S_right = 'nil && S = 'BLANK
            from right_2b else right_2p
-        goto move2
+        goto shft2
 
-move2: fi R = 'LEFT
+shft2: fi R = 'LEFT
           from left2 else right2
-       goto move3
+       goto shft3
 
-move3: fi Q = Q2
-          from move2 else move
+shft3: fi Q = Q2
+          from shft2 else shft
        goto act2

@@ -1,25 +1,15 @@
 (Start End Rules S_right) -> (Start End Rules S_right) with (Q Q1 Q2 S1 S2 S S_left RulesRev Rule R)
 
 init:
-	fi (Start = End)
-		from stop
-		else act1
+	from act1
 	Q ^= Start
-	'BLANK <- S
+	S ^= 'BLANK
 	exit
-
-stop:
-	entry
-	Q ^= End
-	S <- 'BLANK
-	if (Start = End)
-		goto init
-		else act3
 
 act1:
 	fi ((R = 'LEFT) || (R = 'RIGHT))
-		from move
-		else write
+		from shft
+		else symbol
 	Rule <- (Q1 . (R . Q2))
 	Rules <- (Rule . Rules)
 	if (!(RulesRev) && (Q = Start))
@@ -33,8 +23,8 @@ act2:
 	(Rule . RulesRev) <- RulesRev
 	(Q1 . (R . Q2)) <- Rule
 	if ((R = 'LEFT) || (R = 'RIGHT))
-		goto move3
-		else write2
+		goto shft3
+		else symbol2
 
 reload:
 	fi RulesRev
@@ -54,47 +44,53 @@ act3:
 		goto reload
 		else act2
 
-write:
+stop:
+	entry
+	S ^= 'BLANK
+	Q ^= End
+	goto act3
+
+symbol:
 	fi ((Q = Q1) && (S = S1))
-		from write1
-		else write2
+		from write
+		else symbol2
 	R <- (S1 . S2)
 	goto act1
 
-write1:
-	from write2
+write:
+	from symbol2
 	S ^= S2
 	S ^= S1
 	Q ^= Q2
 	Q ^= Q1
-	goto write
+	goto symbol
 
-write2:
+symbol2:
 	from act2
 	(S1 . S2) <- R
 	if ((Q = Q2) && (S = S2))
-		goto write1
-		else write
+		goto write
+		else symbol
 
-move:
+shft:
 	fi (Q = Q1)
-		from move1
-		else move3
+		from shft1
+		else shft3
 	goto act1
 
-move1:
+shft1:
 	fi (R = 'LEFT)
 		from left
 		else right
 	Q ^= Q2
 	Q ^= Q1
-	goto move
+	goto shft
 
 left:
 	fi ((S_right = 'nil) && (S = 'BLANK))
 		from left_1b
 		else left_1p
-	goto move1
+	goto shft1
 
 left_1b:
 	from left1
@@ -125,7 +121,7 @@ left_2p:
 	goto left1
 
 left2:
-	from move2
+	from shft2
 	if ((S_left = 'nil) && (S = 'BLANK))
 		goto left_2b
 		else left_2p
@@ -134,7 +130,7 @@ right:
 	fi ((S_left = 'nil) && (S = 'BLANK))
 		from right_1b
 		else right_1p
-	goto move1
+	goto shft1
 
 right_1b:
 	from right1
@@ -165,19 +161,19 @@ right_2p:
 	goto right1
 
 right2:
-	from move2
+	from shft2
 	if ((S_right = 'nil) && (S = 'BLANK))
 		goto right_2b
 		else right_2p
 
-move2:
-	from move3
+shft2:
+	from shft3
 	if (R = 'LEFT)
 		goto left2
 		else right2
 
-move3:
+shft3:
 	from act2
 	if (Q = Q2)
-		goto move2
-		else move
+		goto shft2
+		else shft
