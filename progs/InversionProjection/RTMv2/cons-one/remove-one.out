@@ -1,0 +1,51 @@
+(S_right) -> (S_right) with (S S_left)
+
+init_1:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto right_1b_1_15
+		else right_1p_1_15
+
+right_1b_1_15:
+	from init_1
+	S ^= 'BLANK
+	goto right1_1_15
+
+right1_1_15:
+	fi (S_left = 'nil)
+		from right_1b_1_15
+		else right_1p_1_15
+	if (S_right = 'nil)
+		goto right_2b_1_15
+		else right_2p_1_15
+
+right_2b_1_15:
+	from right1_1_15
+	S ^= 'BLANK
+	goto right2_1_15
+
+right2_1_15:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from right_2b_1_15
+		else right_2p_1_15
+	assert((S = '1))
+	S ^= '1
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	exit
+
+right_2p_1_15:
+	from right1_1_15
+	(S . S_right) <- S_right
+	goto right2_1_15
+
+right_1p_1_15:
+	from init_1
+	S_left <- (S . S_left)
+	goto right1_1_15

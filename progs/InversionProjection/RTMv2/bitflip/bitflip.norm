@@ -1,0 +1,163 @@
+(S_right) -> (S_right) with (S S_left)
+
+Block_0:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto Block_1
+
+Block_1:
+	fi (S = '1)
+		from Block_12
+		else Block_0
+	goto Block_2
+
+Block_2:
+	fi (S = '0)
+		from Block_13
+		else Block_1
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto Block_3
+		else Block_4
+
+Block_3:
+	from Block_2
+	S ^= 'BLANK
+	goto Block_5
+
+Block_4:
+	from Block_2
+	S_left <- (S . S_left)
+	goto Block_5
+
+Block_5:
+	fi (S_left = 'nil)
+		from Block_3
+		else Block_4
+	if (S_right = 'nil)
+		goto Block_6
+		else Block_7
+
+Block_6:
+	from Block_5
+	S ^= 'BLANK
+	goto Block_8
+
+Block_7:
+	from Block_5
+	(S . S_right) <- S_right
+	goto Block_8
+
+Block_8:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from Block_6
+		else Block_7
+	if (S = 'BLANK)
+		goto Block_9
+		else Block_10
+
+Block_9:
+	from Block_8
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto Block_11
+
+Block_10:
+	from Block_8
+	if (S = '1)
+		goto Block_12
+		else Block_13
+
+Block_11:
+	fi (S = '1)
+		from Block_23
+		else Block_9
+	goto Block_14
+
+Block_12:
+	from Block_10
+	S ^= '1
+	S ^= '1
+	goto Block_1
+
+Block_13:
+	from Block_10
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto Block_2
+
+Block_14:
+	fi (S = '0)
+		from Block_24
+		else Block_11
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto Block_15
+		else Block_16
+
+Block_15:
+	from Block_14
+	S ^= 'BLANK
+	goto Block_17
+
+Block_16:
+	from Block_14
+	S_right <- (S . S_right)
+	goto Block_17
+
+Block_17:
+	fi (S_right = 'nil)
+		from Block_15
+		else Block_16
+	if (S_left = 'nil)
+		goto Block_18
+		else Block_19
+
+Block_18:
+	from Block_17
+	S ^= 'BLANK
+	goto Block_20
+
+Block_19:
+	from Block_17
+	(S . S_left) <- S_left
+	goto Block_20
+
+Block_20:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from Block_18
+		else Block_19
+	if (S = 'BLANK)
+		goto Block_21
+		else Block_22
+
+Block_21:
+	from Block_20
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	exit
+
+Block_22:
+	from Block_20
+	if (S = '0)
+		goto Block_23
+		else Block_24
+
+Block_23:
+	from Block_22
+	S ^= '0
+	S ^= '1
+	goto Block_11
+
+Block_24:
+	from Block_22
+	assert((S = '1))
+	S ^= '1
+	S ^= '0
+	goto Block_14

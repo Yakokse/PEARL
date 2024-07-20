@@ -1,0 +1,163 @@
+(S_right) -> (S_right) with (S S_left)
+
+init_1:
+	entry
+	S <- 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto symbol_1_131
+
+symbol_1_131:
+	fi (S = '0)
+		from symbol_1_110
+		else init_1
+	if ((S_left = 'nil) && (S = 'BLANK))
+		goto left_2b_1_33
+		else left_2p_1_33
+
+left_2b_1_33:
+	from symbol_1_131
+	S ^= 'BLANK
+	goto left1_1_33
+
+left1_1_33:
+	fi (S_left = 'nil)
+		from left_2b_1_33
+		else left_2p_1_33
+	if (S_right = 'nil)
+		goto left_1b_1_33
+		else left_1p_1_33
+
+left_1b_1_33:
+	from left1_1_33
+	S ^= 'BLANK
+	goto left_1_33
+
+left_1_33:
+	fi ((S_right = 'nil) && (S = 'BLANK))
+		from left_1b_1_33
+		else left_1p_1_33
+	if (S = 'BLANK)
+		goto symbol1_1_40
+		else symbol_1_40
+
+symbol1_1_40:
+	from left_1_33
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	goto symbol_1_96
+
+symbol_1_96:
+	fi (S = '2)
+		from symbol_1_63
+		else symbol1_1_40
+	goto symbol_1_106
+
+symbol_1_106:
+	fi (S = '1)
+		from symbol1_1_104
+		else symbol_1_96
+	goto symbol_1_112
+
+symbol_1_112:
+	fi (S = '0)
+		from symbol1_1_110
+		else symbol_1_106
+	if ((S_right = 'nil) && (S = 'BLANK))
+		goto right_2b_1_56
+		else right_2p_1_56
+
+right_2b_1_56:
+	from symbol_1_112
+	S ^= 'BLANK
+	goto right1_1_56
+
+right1_1_56:
+	fi (S_right = 'nil)
+		from right_2b_1_56
+		else right_2p_1_56
+	if (S_left = 'nil)
+		goto right_1b_1_56
+		else right_1p_1_56
+
+right_1b_1_56:
+	from right1_1_56
+	S ^= 'BLANK
+	goto right_1_56
+
+right_1_56:
+	fi ((S_left = 'nil) && (S = 'BLANK))
+		from right_1b_1_56
+		else right_1p_1_56
+	if (S = 'BLANK)
+		goto symbol1_1_63
+		else symbol_1_63
+
+symbol1_1_63:
+	from right_1_56
+	S ^= 'BLANK
+	S ^= 'BLANK
+	assert((S = 'BLANK))
+	S ^= 'BLANK
+	exit
+
+symbol_1_63:
+	from right_1_56
+	assert((S = '0))
+	S ^= '0
+	S ^= '2
+	goto symbol_1_96
+
+right_1p_1_56:
+	from right1_1_56
+	(S . S_left) <- S_left
+	goto right_1_56
+
+right_2p_1_56:
+	from symbol_1_112
+	S_right <- (S . S_right)
+	goto right1_1_56
+
+symbol_1_40:
+	from left_1_33
+	if (S = '2)
+		goto symbol1_1_104
+		else symbol_1_104
+
+symbol1_1_104:
+	from symbol_1_40
+	S ^= '2
+	S ^= '1
+	goto symbol_1_106
+
+symbol_1_104:
+	from symbol_1_40
+	if (S = '1)
+		goto symbol1_1_110
+		else symbol_1_110
+
+symbol1_1_110:
+	from symbol_1_104
+	S ^= '1
+	S ^= '0
+	goto symbol_1_112
+
+symbol_1_110:
+	from symbol_1_104
+	assert((S = '0))
+	S ^= '0
+	S ^= '0
+	goto symbol_1_131
+
+left_1p_1_33:
+	from left1_1_33
+	(S . S_right) <- S_right
+	goto left_1_33
+
+left_2p_1_33:
+	from symbol_1_131
+	S_left <- (S . S_left)
+	goto left1_1_33
