@@ -41,17 +41,17 @@ stop: from act3
 symbol: from act1
         (S1 . S2) <- R
         if Q = Q1 && S = S1
-           goto write else symbol2
+           goto symbol1 else symbol2
 
-write: from symbol
-       Q ^= Q1
-       Q ^= Q2
-       S ^= S1
-       S ^= S2
-       goto symbol2
+symbol1: from symbol
+         Q ^= Q1
+         Q ^= Q2
+         S ^= S1
+         S ^= S2
+         goto symbol2
 
 symbol2: fi Q = Q2 && S = S2
-           from write else symbol
+           from symbol1 else symbol
          R <- (S1 . S2)
          goto act2
 

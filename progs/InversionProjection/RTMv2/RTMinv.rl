@@ -52,12 +52,12 @@ stop:
 
 symbol:
 	fi ((Q = Q1) && (S = S1))
-		from write
+		from symbol1
 		else symbol2
 	R <- (S1 . S2)
 	goto act1
 
-write:
+symbol1:
 	from symbol2
 	S ^= S2
 	S ^= S1
@@ -69,7 +69,7 @@ symbol2:
 	from act2
 	(S1 . S2) <- R
 	if ((Q = Q2) && (S = S2))
-		goto write
+		goto symbol1
 		else symbol
 
 shft:
