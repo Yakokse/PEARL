@@ -1,6 +1,6 @@
 // Describe the TM
 Start = '1
-End = '6
+Final = '6
 Rules =
  '((1 . ((BLANK . BLANK) . 2)) .
   ((2 . (RIGHT           . 3)) .
