@@ -1,5 +1,5 @@
-# Partial evaluation of Unstructured Reversible programs.
-A specializer, inverter, and interpreter for RL.
+# A Partial Evaluator for A Reversible Language.
+A specializer, inverter, (abstract) interpreter, and normalizer for ARL.
 Based on [previous work](https://dl.acm.org/doi/10.1145/3635800.3636967).
 
 ## Dependencies
