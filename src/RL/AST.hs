@@ -122,7 +122,7 @@ mapProgram f g = map changeBlock
       , jump = appJump $ jump b
       }
     appName (l, s) = (f l s, g s)
-    appFrom (Entry p s) = Entry p (g s)
+    appFrom (Entry p s) = Entry p (g s)  --TODO: is correct?
     appFrom (From (l, s)) = From (f l s, g s)
     appFrom (Fi e (l1, s1) (l2, s2)) = Fi e (f l1 s1, g s1) (f l2 s2, g s2)
     appJump (Exit p s) = Exit p (g s)
