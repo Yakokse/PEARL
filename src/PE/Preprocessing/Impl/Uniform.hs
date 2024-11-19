@@ -17,7 +17,7 @@ type ST a = S.State Division a
 -- Create a congruent uniform division for a program
 congruentUniformDiv :: Ord a => NormProgram a -> Division -> PWDivision a
 congruentUniformDiv p d =
-  undefined -- TODO: fix
+   undefined --TODO: fix when adding PE support for processes
   -- let congruentDiv = makeCongruent (decl, p) d
   --     ls = map nname p
   --     pairs = map (\l -> (l, (congruentDiv, congruentDiv))) ls
