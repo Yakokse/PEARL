@@ -4,10 +4,13 @@ import RL.AST
 
 -- invert a program
 invertProg :: Program a b -> Program a b
-invertProg (decl, p) = (invertDecl decl, map invertBlock p)
+invertProg  = map invertProc
 
-invertDecl :: VariableDecl -> VariableDecl
-invertDecl decl = decl {input = output decl, output = input decl}
+
+-- invert a proc
+invertProc :: Process a b -> Process a b
+invertProc = undefined --TODO: implement
+
 
 -- invert a block
 invertBlock :: Block a b -> Block a b
@@ -19,13 +22,13 @@ invertBlock Block {name = l, from = f, body = b, jump = j} = Block
 
 -- invert a come-from
 invertFrom :: ComeFrom a b -> Jump a b
-invertFrom (Entry s)          = Exit s
+invertFrom (Entry p s)          = Exit p s -- TODO: correct?
 invertFrom (From l)         = Goto l
 invertFrom (Fi e l1 l2) = If e l1 l2
 
 -- invert a jump
 invertJump :: Jump a b -> ComeFrom a b
-invertJump (Exit s)           = Entry s
+invertJump (Exit p s)           = Entry p s --TODO: correct?
 invertJump (Goto l)         = From l
 invertJump (If e l1 l2) = Fi e l1 l2
 

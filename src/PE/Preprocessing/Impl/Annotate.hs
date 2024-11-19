@@ -45,19 +45,21 @@ annotateStep _ _ Skip = Skip' BTStatic
 
 -- Annotate a come-from
 annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
-annotateFrom _ (Entry ()) = Entry'
-annotateFrom _ (From (l, ())) = From' l
-annotateFrom d (Fi e (l1, ()) (l2, ())) =
-  let (e', btType) = annotateExp d e
-  in Fi' btType e' l1 l2
+annotateFrom = undefined -- TODO: fix
+-- annotateFrom _ (Entry ()) = Entry'
+-- annotateFrom _ (From (l, ())) = From' l
+-- annotateFrom d (Fi e (l1, ()) (l2, ())) =
+--   let (e', btType) = annotateExp d e
+--   in Fi' btType e' l1 l2
 
 -- Annotate a jump
 annotateJump :: Division -> Jump a () -> Jump' a
-annotateJump _ (Exit ()) = Exit'
-annotateJump _ (Goto (l, ())) = Goto' l
-annotateJump d (If e (l1, ()) (l2, ())) =
-  let (e', btType) = annotateExp d e
-  in If' btType e' l1 l2
+annotateJump = undefined -- TODO: fix
+-- annotateJump _ (Exit ()) = Exit'
+-- annotateJump _ (Goto (l, ())) = Goto' l
+-- annotateJump d (If e (l1, ()) (l2, ())) =
+--   let (e', btType) = annotateExp d e
+--   in If' btType e' l1 l2
 
 -- Annotate patterns with precision
 annotatePats :: Division -> Division -> Pattern -> Pattern -> (Pattern', Pattern', Level)

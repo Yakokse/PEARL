@@ -16,15 +16,10 @@ parseProg = parseStr pProg
 
 -- parse a program
 pProg :: Parser (Program Label ())
-pProg = (,) <$> (whitespace *> pDecl) <*> many1 pBlock
+pProg = many1 pProcess
 
--- parse a variable declaration
-pDecl :: Parser VariableDecl
-pDecl =
-  VariableDecl <$> pNames <*> (symbol "->" *> pNames)
-               <*> option [] (word "with" *> pNames)
-  where pNames = symbol "(" *> many pName <* symbol ")"
-
+pProcess :: Parser (Process Label ())
+pProcess = undefined
 -- parse a block
 pBlock :: Parser (Block Label ())
 pBlock = Block <$> (pLabelName <* symbol ":")
@@ -35,16 +30,20 @@ pBlock = Block <$> (pLabelName <* symbol ":")
 -- parse a come-from
 pFrom :: Parser (ComeFrom Label ())
 pFrom = choice
-  [ Entry () <$ word "entry"
-  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
+  [ 
+    -- TODO: fix
+    -- Entry () <$ word "entry"
+  Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
   , From <$> (word "from" *> pLabelName)
   ] <?> "Expecting a from"
 
 -- parse a jump
 pJump :: Parser (Jump Label ())
 pJump = choice
-  [ Exit () <$ word "exit"
-  , If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
+  [ 
+    --TODO: fix
+    --Exit () <$ word "exit"
+  If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
   , Goto <$> (word "goto" *> pLabelName)
   ] <?> "Expecting a jump"
 

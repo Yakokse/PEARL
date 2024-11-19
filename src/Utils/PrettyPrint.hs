@@ -49,7 +49,10 @@ prettyStore :: Store -> String
 prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . toList
 
 prettyProg :: Print a -> Program a () -> String
-prettyProg f (decl, p)= prettyDecl decl ++ intercalate "\n" (concatMap (prettyBlock f) p)
+prettyProg f  p= intercalate "\n" (concatMap (prettyProcess f) p)
+
+prettyProcess :: Print a -> Process a () -> [String]
+prettyProcess = undefined -- TODO
 
 prettyDecl :: VariableDecl -> String
 prettyDecl d =
@@ -70,7 +73,7 @@ prettyFrom f (Fi e (l1, ()) (l2, ())) =
   [ "fi " ++ prettyExpr e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]
-prettyFrom _ (Entry ()) = ["entry"]
+prettyFrom _ (Entry p ()) = ["entry( " ++ prettyPat p ++ ")"]
 
 prettyJump :: Print a -> Jump a () -> [String]
 prettyJump f (Goto (l, ()))= ["goto " ++ f l]
@@ -78,7 +81,7 @@ prettyJump f (If e (l1, ()) (l2, ())) =
   [ "if " ++ prettyExpr e
   , "\tgoto " ++ f l1
   , "\telse " ++ f l2]
-prettyJump _ (Exit ()) = ["exit"]
+prettyJump _ (Exit p ()) = ["exit( " ++ prettyPat p ++ " )"]
 
 prettyStep :: Step -> String
 prettyStep (Update n rop e) = n ++ " " ++ prettyROp rop ++ "= " ++ prettyExpr e

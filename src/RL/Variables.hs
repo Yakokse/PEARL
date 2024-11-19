@@ -4,7 +4,7 @@ import RL.AST
 import RL.Values
 
 import Data.List (union)
-
+-- TODO: fix these
 nonInput :: VariableDecl -> [Name]
 nonInput decl = filter (`notElem` input decl) $ allVars decl
 

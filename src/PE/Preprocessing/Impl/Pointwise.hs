@@ -12,17 +12,19 @@ import PE.Preprocessing.Division
 -- create initial PW division for a given starting division
 -- all divisions are fully static except entry block
 initPWDiv :: Ord a => NormProgram a -> Division -> PWDivision a
-initPWDiv (decl, prog) d =
-  let lStart = nname $ getNEntryBlock prog
-      ls = map nname prog
-      dstatic = makeStaticDiv decl
-      actualDiv l = (l, if l == lStart then (d, dstatic) else dup dstatic)
-      pairs = map actualDiv ls
-  in fromList pairs
+initPWDiv = undefined --TODO: fix when adding PE support for processes
+-- initPWDiv (decl, prog) d =
+--   let lStart = nname $ getNEntryBlock prog
+--       ls = map nname prog
+--       dstatic = makeStaticDiv decl
+--       actualDiv l = (l, if l == lStart then (d, dstatic) else dup dstatic)
+--       pairs = map actualDiv ls
+--   in fromList pairs
 
 -- make PW division congruent
 makeCongruentPW :: Ord a => NormProgram a -> PWDivision a -> PWDivision a
-makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog
+makeCongruentPW = undefined --TODO: fix when adding PE support for processes
+-- makeCongruentPW (_, prog) d = workQueue prog d $ map nname prog
 
 -- fix-point iteration powered by a work-queue
 workQueue :: Ord a => [NormBlock a] -> PWDivision a -> [a] -> PWDivision a

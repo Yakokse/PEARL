@@ -64,3 +64,9 @@ getExitName = name . head . filter isExit
 
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
+
+getEntryProcess :: [Process a b] -> EM (Process a b)
+getEntryProcess p =
+  case p of
+    [] -> Left "No processes found"
+    (h:rs) -> Right h

@@ -46,6 +46,7 @@ makeDiv store decl =
 
 startingDiv :: (Ord a) => NormProgram a -> PWDivision a
                               -> Division
-startingDiv (_, p) pwd =
-  let n = nname $ getNEntryBlock p
-  in fst $ get n pwd
+startingDiv p pwd =
+  undefined -- TODO: fix
+  -- let n = nname $ getNEntryBlock p
+  -- in fst $ get n pwd

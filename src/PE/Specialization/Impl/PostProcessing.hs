@@ -144,7 +144,7 @@ mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp =
   where
     getExitStore b =
       case jump b of
-        Exit s -> s
+        Exit p s -> s --TODO: handle exit pattern
         _ -> undefined
     initStep b n =
       let v = toVal $ get n (getExitStore b)

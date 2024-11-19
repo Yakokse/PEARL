@@ -2,13 +2,21 @@ module RL.AST where
 
 import RL.Values
 
-type Program label store = (VariableDecl, [Block label store])
+type Program label store = [Process label store]
 
+--TODO: remove when implementing support for PE with processes
 data VariableDecl = VariableDecl
   { input  :: [Name]
   , output :: [Name]
   , temp   :: [Name]
   } deriving (Eq, Show, Read)
+
+
+data Process label store = Process 
+  { pname :: ProcessName
+  , pbody :: [Block label store]
+  }
+  deriving (Eq, Show, Read)
 
 data Block label store = Block
   { name :: (label, store)
@@ -21,13 +29,13 @@ data Block label store = Block
 data ComeFrom label store =
     From (label, store)
   | Fi Expr (label, store) (label, store)
-  | Entry store
+  | Entry Pattern store
   deriving (Eq, Show, Read)
 
 data Jump label store =
     Goto (label, store)
   | If Expr (label, store) (label, store)
-  | Exit store
+  | Exit Pattern store
   deriving (Eq, Show, Read)
 
 data Step =
@@ -48,6 +56,8 @@ data Pattern =
     QConst Value
   | QVar Name
   | QPair Pattern Pattern
+  | QCall ProcessName Pattern
+  | QUncall ProcessName Pattern
   deriving (Eq, Show, Read)
 
 data BinOp =
@@ -74,7 +84,13 @@ data UnOp =
   | Not
   deriving (Eq, Show, Read)
 
-type NormProgram label = (VariableDecl, [NormBlock label])
+type NormProgram label = [NormProcess label]
+data NormProcess label = NormProcess 
+  { npname :: ProcessName
+  , npbody :: [NormBlock label]
+  }
+  deriving (Eq, Show, Read)
+
 data NormBlock label = NormBlock
   { nname :: label
   , nfrom :: ComeFrom label ()
@@ -106,10 +122,10 @@ mapProgram f g = map changeBlock
       , jump = appJump $ jump b
       }
     appName (l, s) = (f l s, g s)
-    appFrom (Entry s) = Entry (g s)
+    appFrom (Entry p s) = Entry p (g s)
     appFrom (From (l, s)) = From (f l s, g s)
     appFrom (Fi e (l1, s1) (l2, s2)) = Fi e (f l1 s1, g s1) (f l2 s2, g s2)
-    appJump (Exit s) = Exit (g s)
+    appJump (Exit p s) = Exit p (g s)
     appJump (Goto (l, s)) = Goto (f l s, g s)
     appJump (If e (l1, s1) (l2, s2)) = If e (f l1 s1, g s1) (f l2 s2, g s2)
 
@@ -124,12 +140,12 @@ mapBlock f b = b
   }
 
 mapFrom :: ((a, b) -> (c, b)) -> ComeFrom a b -> ComeFrom c b
-mapFrom _ (Entry s) = Entry s
+mapFrom _ (Entry p s) = Entry p s
 mapFrom f (From l) = From (f l)
 mapFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
 
 mapJump :: ((a, b) -> (c, b)) -> Jump a b -> Jump c b
-mapJump _ (Exit s) = Exit s
+mapJump _ (Exit p s) = Exit p s
 mapJump f (Goto l) = Goto (f l)
 mapJump f (If e l1 l2) = If e (f l1) (f l2)
 
@@ -146,17 +162,17 @@ isNExit :: NormBlock a -> Bool
 isNExit = isJumpExit . njump
 
 isFromEntry :: ComeFrom a b -> Bool
-isFromEntry j = case j of Entry _ -> True; _ -> False
+isFromEntry j = case j of Entry _ _ -> True; _ -> False
 
 isJumpExit :: Jump a b -> Bool
-isJumpExit j = case j of Exit _ -> True; _ -> False
+isJumpExit j = case j of Exit _ _-> True; _ -> False
 
 fromLabels :: ComeFrom a b -> [(a, b)]
-fromLabels (Entry _) = []
+fromLabels (Entry _ _) = []
 fromLabels (From l) = [l]
 fromLabels (Fi _ l1 l2) = [l1, l2]
 
 jumpLabels :: Jump a b -> [(a, b)]
-jumpLabels (Exit _) = []
+jumpLabels (Exit _ _) = []
 jumpLabels (Goto l) = [l]
 jumpLabels (If _ l1 l2) = [l1, l2]

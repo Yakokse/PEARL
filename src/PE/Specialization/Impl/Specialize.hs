@@ -95,23 +95,24 @@ specBlock entry decl s b origin =
 
 specFrom :: Eq a => a -> SpecStore -> ComeFrom' a -> (a, SpecStore)
                  -> EM (ComeFrom a (Maybe SpecStore))
-specFrom _ _ (From' l) origin
-  | l `isFrom` origin = return (From (l, Just . snd $ origin))
-  | otherwise         = Left "Invalid jump to an unconditional from."
-specFrom x s Entry' (l, _)
-  | l == x    = return $ Entry $ Just s
-  | otherwise = Left "Invalid jump to entry block."
-specFrom _ s (Fi' BTStatic e l1 l2) origin =
-  do v <- getValue e s
-     let l = if truthy v then l1 else l2
-     if l `isFrom` origin
-      then return . From $ annotate l origin
-      else Left "Jump not from expected block."
-specFrom _ s (Fi' BTDynamic e l1 l2) origin
-  | l1 `isFrom` origin || l2 `isFrom` origin =
-    do e' <- getExpr e s
-       return $ Fi e' (annotate l1 origin) (annotate l2 origin)
-  | otherwise = Left "Jump not from either of the expected blocks."
+specFrom = undefined --TODO: fix when adding PE support for processes
+-- specFrom _ _ (From' l) origin
+--   | l `isFrom` origin = return (From (l, Just . snd $ origin))
+--   | otherwise         = Left "Invalid jump to an unconditional from."
+-- specFrom x s Entry' (l, _)
+--   | l == x    = return $ Entry $ Just s
+--   | otherwise = Left "Invalid jump to entry block."
+-- specFrom _ s (Fi' BTStatic e l1 l2) origin =
+--   do v <- getValue e s
+--      let l = if truthy v then l1 else l2
+--      if l `isFrom` origin
+--       then return . From $ annotate l origin
+--       else Left "Jump not from expected block."
+-- specFrom _ s (Fi' BTDynamic e l1 l2) origin
+--   | l1 `isFrom` origin || l2 `isFrom` origin =
+--     do e' <- getExpr e s
+--        return $ Fi e' (annotate l1 origin) (annotate l2 origin)
+--   | otherwise = Left "Jump not from either of the expected blocks."
 
 isFrom :: Eq a => a -> (a, SpecStore) -> Bool
 isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
@@ -122,25 +123,26 @@ annotate l (l', s) | l == l'   = (l, Just s)
 
 specJump :: SpecStore -> VariableDecl -> Jump' a
             -> EM (Jump a (Maybe SpecStore), [Point a])
-specJump s decl Exit' =
-  do let checkable = staticNonOutput decl s
-     vs <- mapM (`find` s) checkable
-     let pairs = zip checkable vs
-     let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
-     case offendingVars of
-      [] -> return (Exit (Just s), [])
-      ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
-specJump s _ (Goto' l) =
-   return (Goto (l, Just s), [(l, s)])
-specJump s _ (If' BTDynamic e l1 l2) =
-  do e' <- getExpr e s;
-     return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)])
-specJump s _ (If' BTStatic e l1 l2) =
-  do v <- getValue e s
-     return $
-      if truthy v
-        then (Goto (l1, Just s), [(l1, s)])
-        else (Goto (l2, Just s), [(l2, s)])
+specJump = undefined --TODO: fix when adding PE support for processes
+-- specJump s decl Exit' =
+--   do let checkable = staticNonOutput decl s
+--      vs <- mapM (`find` s) checkable
+--      let pairs = zip checkable vs
+--      let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
+--      case offendingVars of
+--       [] -> return (Exit (Just s), [])
+--       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
+-- specJump s _ (Goto' l) =
+--    return (Goto (l, Just s), [(l, s)])
+-- specJump s _ (If' BTDynamic e l1 l2) =
+--   do e' <- getExpr e s;
+--      return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)])
+-- specJump s _ (If' BTStatic e l1 l2) =
+--   do v <- getValue e s
+--      return $
+--       if truthy v
+--         then (Goto (l1, Just s), [(l1, s)])
+--         else (Goto (l2, Just s), [(l2, s)])
 
 specSteps :: SpecStore -> [Step'] -> EM (SpecStore, [Step])
 specSteps s [] = return (s, [])
