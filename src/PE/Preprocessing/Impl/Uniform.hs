@@ -34,7 +34,7 @@ makeCongruent p = fixed (S.execState $ checkProg p)
 -- The Division is preserved in the state-monad for fewer arguments passed
 -- and the division will grow increasingly dynamic throughout the iteration
 checkProg :: NormProgram a -> ST ()
-checkProg p = undefined -- TODO: fix
+checkProg p  = undefined --TODO: fix when adding PE support for processes
     -- mapM_ (checkBlock decl) p
 
 -- Iterate through block
