@@ -22,49 +22,52 @@ type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
 specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> SpecStore -> a -> LEM (Program a (Maybe SpecStore))
-specialize decl prog s entry =
-  do
-     b <- raise $ getEntry' prog
-     let pending = [((b,s), (entry, emptyMap))]
-     res <- specProg entry decl prog pending [] []
-     decl' <- raise $ specDecl decl prog -- specDecl decl
-     return (decl', reverse res) -- Reverse for nicer ordering of blocks
+specialize = undefined --TODO: fix when adding PE support for processes
+-- specialize decl prog s entry =
+--   do
+--      b <- raise $ getEntry' prog
+--      let pending = [((b,s), (entry, emptyMap))]
+--      res <- specProg entry decl prog pending [] []
+--      decl' <- raise $ specDecl decl prog -- specDecl decl
+--      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
 specDecl :: VariableDecl -> Program' a -> EM VariableDecl
-specDecl decl p =
-  do inBlock <- getEntryBlock' p
-     outBlock <- getExitBlock' p
-     let inDiv = initDiv inBlock
-     let outDiv = initDiv outBlock
-     let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
-     let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
-     let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ allVars decl
-     let tmp = filter (\n -> any (isDynInB n) p) potentialTemp
-     return VariableDecl { input = inp, output = out, temp = tmp }
-  where
-    isDynInB n b = isType n BTDynamic (initDiv b)
+specDecl = undefined --TODO: fix when adding PE support for processes
+-- specDecl decl p =
+--   do inBlock <- getEntryBlock' p
+--      outBlock <- getExitBlock' p
+--      let inDiv = initDiv inBlock
+--      let outDiv = initDiv outBlock
+--      let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
+--      let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
+--      let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ allVars decl
+--      let tmp = filter (\n -> any (isDynInB n) p) potentialTemp
+--      return VariableDecl { input = inp, output = out, temp = tmp }
+--   where
+--     isDynInB n b = isType n BTDynamic (initDiv b)
 
 specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]
-specProg _ _ _ [] _ res =
-  do logM "Specialization done."; return res
-specProg entry decl prog (p:ps) seen res
-  | p `elem` seen =
-    do logM $ "REPEAT POINT: " ++ prettyAnn show (fst p)
-       specProg entry decl prog ps seen res
-  | otherwise =
-    do logM $ prettyAnn show (fst p)
-       let (current@(l, s), origin) = p
-       b <- raise $ getBlockErr' prog l
-       case specBlock entry decl s b origin of
-        Left e -> logM ("ERROR: " ++ e ) >>
-                  logM ("IN POINT: " ++ prettyAnn show (fst p)) >>
-                    specProg entry decl prog ps seen res
-        Right (b', p') -> do
-          let pnew = map (\x -> (x, current)) p'
-          let seen' = p : seen
-          res' <- merge b' res
-          specProg entry decl prog (pnew ++ ps) seen' res'
+specProg = undefined --TODO: fix when adding PE support for processes
+-- specProg _ _ _ [] _ res =
+--   do logM "Specialization done."; return res
+-- specProg entry decl prog (p:ps) seen res
+--   | p `elem` seen =
+--     do logM $ "REPEAT POINT: " ++ prettyAnn show (fst p)
+--        specProg entry decl prog ps seen res
+--   | otherwise =
+--     do logM $ prettyAnn show (fst p)
+--        let (current@(l, s), origin) = p
+--        b <- raise $ getBlockErr' prog l
+--        case specBlock entry decl s b origin of
+--         Left e -> logM ("ERROR: " ++ e ) >>
+--                   logM ("IN POINT: " ++ prettyAnn show (fst p)) >>
+--                     specProg entry decl prog ps seen res
+--         Right (b', p') -> do
+--           let pnew = map (\x -> (x, current)) p'
+--           let seen' = p : seen
+--           res' <- merge b' res
+--           specProg entry decl prog (pnew ++ ps) seen' res'
 
 merge :: (Eq a, Show a) => Block a (Maybe SpecStore) -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]

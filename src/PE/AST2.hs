@@ -6,10 +6,12 @@ import RL.Values
 import PE.SpecValues
 import PE.Preprocessing.Division
 
-type Program' label = [Block' label]
+type Program' label = [Process' label]
 
 data Explicated label = Regular label | Explicator label [Name]
   deriving (Eq, Show, Read)
+
+data Process' label = Process'{} --TODO: fix when adding PE support for processes
 
 data Block' label = Block'
   { name' :: label
@@ -56,7 +58,10 @@ data Expr' =
   deriving (Eq, Show, Read)
 
 mapProg' :: (a -> b) -> Program' a -> Program' b
-mapProg' f = map (mapBlock' f)
+mapProg' f = map (mapProcess' f)
+
+mapProcess' :: (a -> b) -> Process' a -> Process' b
+mapProcess' = undefined --TODO: fix when adding PE support for processes
 
 mapBlock' :: (a -> b) -> Block' a -> Block' b
 mapBlock' f b = b

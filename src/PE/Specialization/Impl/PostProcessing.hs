@@ -128,34 +128,35 @@ mergeExplicators annotateExpl p =
 -- Merge all residual exits into a single one and
 -- generalize the static output variables that differ between exits
 mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a SpecStore -> (Program a SpecStore, [(Name, SpecValue)])
-mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) =
-  let (exits, rest) = L.partition isExit p
-      stores = map (toList . getExitStore) exits
-      ns = map fst $ head stores
-      vals = map (map snd) stores
-      tpls = zip ns $ L.transpose vals
-      toFix =  map fst $ filter (\(_,vs) -> any (head vs /=) vs) tpls
-      initialized = map (initFix toFix) exits
-      explGroups = zipWith (\b i -> (b, i, i)) initialized [1..]
-      (exit, _, _, _, extras) = mergeBlocks' toFix explGroups
-      newDecl = VariableDecl inp (out ++ toFix) (filter (`notElem` toFix) tmp)
-      finalState = filter (\(n,_) -> n `notElem` toFix && n `elem` output origdecl) $ head stores
-  in ((newDecl, rest ++ extras ++ [exit] ), finalState)
-  where
-    getExitStore b =
-      case jump b of
-        Exit p s -> s --TODO: handle exit pattern
-        _ -> undefined
-    initStep b n =
-      let v = toVal $ get n (getExitStore b)
-      in case v of
-          Nil -> []
-          _ -> [Replacement (QVar n) (QConst v)]
-    initFix toFix b =
-      let initSteps = concatMap (initStep b) toFix
-      in b{body = body b ++ initSteps}
-    annotateExit' b = annotateExit $ label b
-    mergeBlocks' = mergeBlocks annotateExit' getExitStore
+mergeExits = undefined --TODO: fix when adding PE support for processes
+-- mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) =
+--   let (exits, rest) = L.partition isExit p
+--       stores = map (toList . getExitStore) exits
+--       ns = map fst $ head stores
+--       vals = map (map snd) stores
+--       tpls = zip ns $ L.transpose vals
+--       toFix =  map fst $ filter (\(_,vs) -> any (head vs /=) vs) tpls
+--       initialized = map (initFix toFix) exits
+--       explGroups = zipWith (\b i -> (b, i, i)) initialized [1..]
+--       (exit, _, _, _, extras) = mergeBlocks' toFix explGroups
+--       newDecl = VariableDecl inp (out ++ toFix) (filter (`notElem` toFix) tmp)
+--       finalState = filter (\(n,_) -> n `notElem` toFix && n `elem` output origdecl) $ head stores
+--   in ((newDecl, rest ++ extras ++ [exit] ), finalState)
+--   where
+--     getExitStore b =
+--       case jump b of
+--         Exit p s -> s --TODO: handle exit pattern
+--         _ -> undefined
+--     initStep b n =
+--       let v = toVal $ get n (getExitStore b)
+--       in case v of
+--           Nil -> []
+--           _ -> [Replacement (QVar n) (QConst v)]
+--     initFix toFix b =
+--       let initSteps = concatMap (initStep b) toFix
+--       in b{body = body b ++ initSteps}
+--     annotateExit' b = annotateExit $ label b
+--     mergeBlocks' = mergeBlocks annotateExit' getExitStore
 
 -- Generalized block merging
 mergeBlocks :: (Block a SpecStore -> Int -> Int -> a) -> (Block a SpecStore -> SpecStore) -> [Name] -> [(Block a SpecStore, Int, Int)]
@@ -256,7 +257,7 @@ compressPaths p =
             in chain : chainBlocks (new ++ ls) (l : seen)
           Nothing -> chainBlocks ls seen
     getChain b = case jump b of
-      Exit _ -> ([b], [])
+      Exit _ _ -> ([b], []) --TODO: handle exit pattern
       If _ l1 l2 -> ([b], [l1, l2])
       Goto l -> case getBlock p l of
                   Just b'@Block {from = From l'} | name b == l' ->

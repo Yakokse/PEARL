@@ -136,7 +136,10 @@ prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ ")"
 prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String
-prettyProg' f p = intercalate "\n" (concatMap (prettyBlock' f) p)
+prettyProg' f p = intercalate "\n" (concatMap (prettyProcess' f) p)
+
+prettyProcess' :: Print a -> Process' a -> [String]
+prettyProcess' = undefined --TODO: fix when adding PE support for processes
 
 prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b =

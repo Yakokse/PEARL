@@ -13,24 +13,26 @@ import Data.Maybe (catMaybes)
 
 -- add explicators for a given RL2 program
 explicate :: Ord a => PWDivision a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
-explicate pwd p f =
-  let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
-      (renames, blocks) = (concat renames', concat blocks')
-  in fixComeFroms renames blocks
+explicate = undefined --TODO: fix when adding PE support for processes
+-- explicate pwd p f =
+--   let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
+--       (renames, blocks) = (concat renames', concat blocks')
+--   in fixComeFroms renames blocks
 
 -- fix come-froms for blocks where an explicator was inserted before it
 fixComeFroms :: Ord a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
                      -> Program' (Explicated a)
-fixComeFroms [] bs = bs
-fixComeFroms ((l, (target, replace)) : ls) bs =
-  let bs' = map (\b -> if name' b == l then fixBlock b else b) bs
-  in fixComeFroms ls bs'
-  where
-    fixBlock b@Block'{from' = k} = b{from' = fixFrom k}
-    fixLabel l' = if l' == target then replace else l'
-    fixFrom Entry' = Entry'
-    fixFrom (From' l') = From' (fixLabel l')
-    fixFrom (Fi' e t l1 l2) = Fi' e t (fixLabel l1) (fixLabel l2)
+fixComeFroms = undefined --TODO: fix when adding PE support for processes
+-- fixComeFroms [] bs = bs
+-- fixComeFroms ((l, (target, replace)) : ls) bs =
+--   let bs' = map (\b -> if name' b == l then fixBlock b else b) bs
+--   in fixComeFroms ls bs'
+--   where
+--     fixBlock b@Block'{from' = k} = b{from' = fixFrom k}
+--     fixLabel l' = if l' == target then replace else l'
+--     fixFrom Entry' = Entry'
+--     fixFrom (From' l') = From' (fixLabel l')
+--     fixFrom (Fi' e t l1 l2) = Fi' e t (fixLabel l1) (fixLabel l2)
 
 -- "Explicate" a single block
 -- returning the block along with possible explicators
@@ -76,14 +78,15 @@ toBeExplicated pwd d j =
 -- integer used to distinguish between branches
 createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) -> Int
                          -> (a, Maybe (Block' (Explicated a)))
-createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
-createExplicator p f src (dest, ns) idx = (dest, return (Block'
-  { name' = Explicator (f src idx) ns
-  , initDiv = sets ns BTStatic . initDiv $ getBlockUnsafe' p dest
-  , from' = From' $ Regular src
-  , body' = map Generalize ns
-  , jump' = Goto' $ Regular dest
-  }))
+createExplicator = undefined --TODO: fix when adding PE support for processes
+-- createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
+-- createExplicator p f src (dest, ns) idx = (dest, return (Block'
+--   { name' = Explicator (f src idx) ns
+--   , initDiv = sets ns BTStatic . initDiv $ getBlockUnsafe' p dest
+--   , from' = From' $ Regular src
+--   , body' = map Generalize ns
+--   , jump' = Goto' $ Regular dest
+--   }))
 
 -- annotate jump labels and distinguish between paths
 mapJumpInt :: (a -> Int -> b) -> Jump' a -> Jump' b

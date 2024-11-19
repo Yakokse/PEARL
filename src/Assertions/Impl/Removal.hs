@@ -46,23 +46,25 @@ removeAssertionsBi prog =
 
 postToPre :: (Ord a, Ord b) => Program a b -> State a b
                             -> State a b
-postToPre prog state =
-  let preStore b = inferFrom state prog (name b) (from b)
-      preStores = map (\b -> (name b, preStore b)) $ snd prog
-  in fromList preStores
+postToPre = undefined --TODO: fix when adding PE support for processes
+-- postToPre prog state =
+--   let preStore b = inferFrom state prog (name b) (from b)
+--       preStores = map (\b -> (name b, preStore b)) $ snd prog
+--   in fromList preStores
 
 removeAssertionsProg :: (Ord a, Ord b) => State a b -> Program a b
                                        -> Program a b
-removeAssertionsProg preState (decl, pblocks) =
-  let cleanBlock b =
-        let initStore = get (name b) preState
-        in maybeToList $ removeAssertionsBlock initStore b
-      cleaning = compressPaths .
-                 changeConditionals .
-                 removeDeadBlocks .
-                 concatMap cleanBlock
-      cleanBody = cleaning . cleaning $ pblocks
-  in (decl, cleanBody)
+removeAssertionsProg = undefined --TODO: fix when adding PE support for processes
+-- removeAssertionsProg preState (decl, pblocks) =
+--   let cleanBlock b =
+--         let initStore = get (name b) preState
+--         in maybeToList $ removeAssertionsBlock initStore b
+--       cleaning = compressPaths .
+--                  changeConditionals .
+--                  removeDeadBlocks .
+--                  concatMap cleanBlock
+--       cleanBody = cleaning . cleaning $ pblocks
+--   in (decl, cleanBody)
 
 -- Remove all redundant assertions in a given block
 -- Fold over all steps so we don't need to work on normalized blocks
@@ -124,7 +126,8 @@ reduceExpr s (Op op e1 e2) =
      return (e, v)
 
 initPreState :: (Ord a, Ord b) => Program a b -> State a b
-initPreState (decl, prog) =
-  let anyStore = fromList $ map (\n -> (n, Any)) $ allVars decl
-      preState = fromList $ map (\b -> (name b, Just anyStore)) prog
-  in preState
+initPreState = undefined --TODO: fix when adding PE support for processes
+-- initPreState (decl, prog) =
+--   let anyStore = fromList $ map (\n -> (n, Any)) $ allVars decl
+--       preState = fromList $ map (\b -> (name b, Just anyStore)) prog
+--   in preState
