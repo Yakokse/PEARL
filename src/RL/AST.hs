@@ -145,7 +145,7 @@ mapFrom f (From l) = From (f l)
 mapFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
 
 mapJump :: ((a, b) -> (c, b)) -> Jump a b -> Jump c b
-mapJump _ (Exit p s) = Exit p s
+mapJump _ (Exit p s) = Exit p s --TODO: is correct?
 mapJump f (Goto l) = Goto (f l)
 mapJump f (If e l1 l2) = If e (f l1) (f l2)
 
