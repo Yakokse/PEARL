@@ -140,7 +140,7 @@ mapBlock f b = b
   }
 
 mapFrom :: ((a, b) -> (c, b)) -> ComeFrom a b -> ComeFrom c b
-mapFrom _ (Entry p s) = Entry p s
+mapFrom _ (Entry p s) = Entry p s --TODO: is correct?
 mapFrom f (From l) = From (f l)
 mapFrom f (Fi e l1 l2) = Fi e (f l1) (f l2)
 
