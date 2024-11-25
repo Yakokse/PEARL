@@ -16,11 +16,12 @@ type ST a = S.State Division a
 
 -- Create a congruent uniform division for a program
 congruentUniformDiv :: Ord a => NormProgram a -> Division -> PWDivision a
-congruentUniformDiv (decl, p) d =
-  let congruentDiv = makeCongruent (decl, p) d
-      ls = map nname p
-      pairs = map (\l -> (l, (congruentDiv, congruentDiv))) ls
-  in fromList pairs
+congruentUniformDiv p d =
+   undefined --TODO: fix when adding PE support for procedures
+  -- let congruentDiv = makeCongruent (decl, p) d
+  --     ls = map nname p
+  --     pairs = map (\l -> (l, (congruentDiv, congruentDiv))) ls
+  -- in fromList pairs
 
 -- Fix-point iteration for division
 makeCongruent :: NormProgram a -> Division -> Division
@@ -33,7 +34,8 @@ makeCongruent p = fixed (S.execState $ checkProg p)
 -- The Division is preserved in the state-monad for fewer arguments passed
 -- and the division will grow increasingly dynamic throughout the iteration
 checkProg :: NormProgram a -> ST ()
-checkProg (decl, p) = mapM_ (checkBlock decl) p
+checkProg p  = undefined --TODO: fix when adding PE support for procedures
+    -- mapM_ (checkBlock decl) p
 
 -- Iterate through block
 -- Only check step as control flow does not affect BTA

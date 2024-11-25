@@ -10,8 +10,11 @@ import PE.Preprocessing.Division
 
 -- Annotate a normalized program
 annotateProg :: Ord a => PWDivision a -> NormProgram a -> Program' a
-annotateProg d (_, p)= map (annotateBlock d) p
+annotateProg d = map (annotateProcess d)
 
+-- Annotate a normalized process
+annotateProcess :: Ord a => PWDivision a -> NormProcess a -> Process' a
+annotateProcess = undefined --TODO: fix when adding PE support for procedures
 -- Annotate a normalized block
 annotateBlock :: Ord a => PWDivision a -> NormBlock a -> Block' a
 annotateBlock pwd b =
@@ -45,19 +48,21 @@ annotateStep _ _ Skip = Skip' BTStatic
 
 -- Annotate a come-from
 annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
-annotateFrom _ (Entry ()) = Entry'
-annotateFrom _ (From (l, ())) = From' l
-annotateFrom d (Fi e (l1, ()) (l2, ())) =
-  let (e', btType) = annotateExp d e
-  in Fi' btType e' l1 l2
+annotateFrom  = undefined --TODO: fix when adding PE support for procedures
+-- annotateFrom _ (Entry ()) = Entry'
+-- annotateFrom _ (From (l, ())) = From' l
+-- annotateFrom d (Fi e (l1, ()) (l2, ())) =
+--   let (e', btType) = annotateExp d e
+--   in Fi' btType e' l1 l2
 
 -- Annotate a jump
 annotateJump :: Division -> Jump a () -> Jump' a
-annotateJump _ (Exit ()) = Exit'
-annotateJump _ (Goto (l, ())) = Goto' l
-annotateJump d (If e (l1, ()) (l2, ())) =
-  let (e', btType) = annotateExp d e
-  in If' btType e' l1 l2
+annotateJump = undefined -- TODO: fix
+-- annotateJump _ (Exit ()) = Exit'
+-- annotateJump _ (Goto (l, ())) = Goto' l
+-- annotateJump d (If e (l1, ()) (l2, ())) =
+--   let (e', btType) = annotateExp d e
+--   in If' btType e' l1 l2
 
 -- Annotate patterns with precision
 annotatePats :: Division -> Division -> Pattern -> Pattern -> (Pattern', Pattern', Level)

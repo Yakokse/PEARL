@@ -48,23 +48,25 @@ initStats = Stats 0 0 0
 -- Interpret a program with a given (verifiable wellformed) input
 -- output: program output and statistics
 runProgram :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
-runProgram (decl, prog) inpstore =
-  do  entry <- raise $ getEntry prog
-      store <- raise $ createStore decl inpstore
-      let res = evalBlocks prog (output decl) store entry Nothing
-      S.runStateT res initStats
+runProgram = undefined-- TODO: Implement when implementing interpreter
+-- runProgram (decl, prog) inpstore =
+--   do  entry <- raise $ getEntry prog
+--       store <- raise $ createStore decl inpstore
+--       let res = evalBlocks prog (output decl) store entry Nothing
+--       S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
 -- output: program output and statistics
 runProgram' :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
-runProgram' (decl, prog) store =
-  do  entry <- raise $ getEntry prog
-      let res = evalBlocks prog (output decl) runStore entry Nothing
-      S.runStateT res initStats
-  where
-    nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
-    runStore = combine nilStore store
+runProgram' = undefined --TODO: fix when adding PE support for procedures
+-- runProgram' (decl, prog) store =
+--   do  entry <- raise $ getEntry prog
+--       let res = evalBlocks prog (output decl) runStore entry Nothing
+--       S.runStateT res initStats
+--   where
+--     nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
+--     runStore = combine nilStore store
 
 -- Create a proper store given an input store
 -- verifies that input store is wellformed
@@ -111,7 +113,8 @@ evalFrom s (Fi e (l1, ()) (l2, ())) (Just (l', ())) =
      let l = if truthy v then l1 else l2
      if l == l' then return ()
      else lift' $ Left "Assertion failed in Fi"
-evalFrom _ (Entry ()) Nothing = return ()
+-- TODO: fix
+-- evalFrom _ (Entry ()) Nothing = return ()
 evalFrom _ _ _ = lift' $ Left "Unexpected jump to entry, or wrong start"
 
 -- interpret a jump statement
@@ -122,7 +125,8 @@ evalJump s (If e (l1, ()) (l2, ())) = incJump >>
   do v <- lift' $ evalExpr s e
      return . Just $
       if truthy v then l1 else l2
-evalJump _ (Exit ()) = return Nothing
+-- TODO: fix
+-- evalJump _ (Exit ()) = return Nothing
 
 -- interpret multiple steps
 evalSteps :: Store -> [Step] -> SLEM Store

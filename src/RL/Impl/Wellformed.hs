@@ -8,28 +8,18 @@ import RL.Values
 import RL.Variables
 
 import qualified Data.Set as S
+import RL.AST (Procedure)
 
 wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
-wellformedProg (decl, p) =
-  do _ <- wellformedDecl decl
-     _ <- getEntryBlock p
-     _ <- getExitBlock p
-     let vars = allVars decl
-     mapM_ (wellformedBlock p vars) p
+wellformedProg p =
+  do
+    entryProcedure <- getEntryProcedure p
+    _ <- getEntryBlock (pbody entryProcedure)
+    _ <- getExitBlock (pbody entryProcedure)
+    mapM_ (welformedProcedures p) p
 
-wellformedDecl :: VariableDecl -> EM ()
-wellformedDecl decl =
-  let intraVar = not (repeatedVars inp || repeatedVars out || repeatedVars tmp)
-      interVar = notTemp inp && notTemp out
-  in if intraVar && interVar
-    then return ()
-    else Left "Malformed declaration"
-  where
-    inp = input decl
-    out = output decl
-    tmp = temp decl
-    repeatedVars vs = length vs /= S.size (S.fromList vs)
-    notTemp = all (`notElem` tmp)
+welformedProcedures :: (Eq a, Show a, Eq b, Show b) => [Procedure a b] -> Procedure a b -> EM ()
+welformedProcedures = undefined -- TODO: implement
 
 wellformedBlock :: (Eq a, Show a, Eq b, Show b) => [Block a b] -> [Name] -> Block a b -> EM ()
 wellformedBlock p ns b =
@@ -55,13 +45,13 @@ wellformedJump :: [Name] -> Jump a b -> EM ()
 wellformedJump _ (Goto _) = return ()
 wellformedJump ns (If e _ _) =
   wellformedExp ns e
-wellformedJump _ (Exit _) = return ()
+wellformedJump ns (Exit p _) = wellformedPat ns p
 
 wellformedFrom :: [Name] -> ComeFrom a b -> EM ()
 wellformedFrom _  (From _) = return ()
 wellformedFrom ns (Fi e _ _) =
   wellformedExp ns e
-wellformedFrom _  (Entry _) = return ()
+wellformedFrom ns  (Entry p _) = wellformedPat ns p
 
 wellformedStep :: [Name] -> Step -> EM ()
 wellformedStep _ Skip = return ()

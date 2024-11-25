@@ -22,49 +22,52 @@ type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
 specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> SpecStore -> a -> LEM (Program a (Maybe SpecStore))
-specialize decl prog s entry =
-  do
-     b <- raise $ getEntry' prog
-     let pending = [((b,s), (entry, emptyMap))]
-     res <- specProg entry decl prog pending [] []
-     decl' <- raise $ specDecl decl prog -- specDecl decl
-     return (decl', reverse res) -- Reverse for nicer ordering of blocks
+specialize = undefined --TODO: fix when adding PE support for procedures
+-- specialize decl prog s entry =
+--   do
+--      b <- raise $ getEntry' prog
+--      let pending = [((b,s), (entry, emptyMap))]
+--      res <- specProg entry decl prog pending [] []
+--      decl' <- raise $ specDecl decl prog -- specDecl decl
+--      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
 specDecl :: VariableDecl -> Program' a -> EM VariableDecl
-specDecl decl p =
-  do inBlock <- getEntryBlock' p
-     outBlock <- getExitBlock' p
-     let inDiv = initDiv inBlock
-     let outDiv = initDiv outBlock
-     let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
-     let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
-     let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ allVars decl
-     let tmp = filter (\n -> any (isDynInB n) p) potentialTemp
-     return VariableDecl { input = inp, output = out, temp = tmp }
-  where
-    isDynInB n b = isType n BTDynamic (initDiv b)
+specDecl = undefined --TODO: fix when adding PE support for procedures
+-- specDecl decl p =
+--   do inBlock <- getEntryBlock' p
+--      outBlock <- getExitBlock' p
+--      let inDiv = initDiv inBlock
+--      let outDiv = initDiv outBlock
+--      let inp = filter (\n -> isType n BTDynamic inDiv) $ input decl
+--      let out = filter (\n -> isType n BTDynamic outDiv) $ output decl
+--      let potentialTemp = filter (\n -> n `notElem` (inp ++ out)) $ allVars decl
+--      let tmp = filter (\n -> any (isDynInB n) p) potentialTemp
+--      return VariableDecl { input = inp, output = out, temp = tmp }
+--   where
+--     isDynInB n b = isType n BTDynamic (initDiv b)
 
 specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]
-specProg _ _ _ [] _ res =
-  do logM "Specialization done."; return res
-specProg entry decl prog (p:ps) seen res
-  | p `elem` seen =
-    do logM $ "REPEAT POINT: " ++ prettyAnn show (fst p)
-       specProg entry decl prog ps seen res
-  | otherwise =
-    do logM $ prettyAnn show (fst p)
-       let (current@(l, s), origin) = p
-       b <- raise $ getBlockErr' prog l
-       case specBlock entry decl s b origin of
-        Left e -> logM ("ERROR: " ++ e ) >>
-                  logM ("IN POINT: " ++ prettyAnn show (fst p)) >>
-                    specProg entry decl prog ps seen res
-        Right (b', p') -> do
-          let pnew = map (\x -> (x, current)) p'
-          let seen' = p : seen
-          res' <- merge b' res
-          specProg entry decl prog (pnew ++ ps) seen' res'
+specProg = undefined --TODO: fix when adding PE support for procedures
+-- specProg _ _ _ [] _ res =
+--   do logM "Specialization done."; return res
+-- specProg entry decl prog (p:ps) seen res
+--   | p `elem` seen =
+--     do logM $ "REPEAT POINT: " ++ prettyAnn show (fst p)
+--        specProg entry decl prog ps seen res
+--   | otherwise =
+--     do logM $ prettyAnn show (fst p)
+--        let (current@(l, s), origin) = p
+--        b <- raise $ getBlockErr' prog l
+--        case specBlock entry decl s b origin of
+--         Left e -> logM ("ERROR: " ++ e ) >>
+--                   logM ("IN POINT: " ++ prettyAnn show (fst p)) >>
+--                     specProg entry decl prog ps seen res
+--         Right (b', p') -> do
+--           let pnew = map (\x -> (x, current)) p'
+--           let seen' = p : seen
+--           res' <- merge b' res
+--           specProg entry decl prog (pnew ++ ps) seen' res'
 
 merge :: (Eq a, Show a) => Block a (Maybe SpecStore) -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]
@@ -95,23 +98,24 @@ specBlock entry decl s b origin =
 
 specFrom :: Eq a => a -> SpecStore -> ComeFrom' a -> (a, SpecStore)
                  -> EM (ComeFrom a (Maybe SpecStore))
-specFrom _ _ (From' l) origin
-  | l `isFrom` origin = return (From (l, Just . snd $ origin))
-  | otherwise         = Left "Invalid jump to an unconditional from."
-specFrom x s Entry' (l, _)
-  | l == x    = return $ Entry $ Just s
-  | otherwise = Left "Invalid jump to entry block."
-specFrom _ s (Fi' BTStatic e l1 l2) origin =
-  do v <- getValue e s
-     let l = if truthy v then l1 else l2
-     if l `isFrom` origin
-      then return . From $ annotate l origin
-      else Left "Jump not from expected block."
-specFrom _ s (Fi' BTDynamic e l1 l2) origin
-  | l1 `isFrom` origin || l2 `isFrom` origin =
-    do e' <- getExpr e s
-       return $ Fi e' (annotate l1 origin) (annotate l2 origin)
-  | otherwise = Left "Jump not from either of the expected blocks."
+specFrom = undefined --TODO: fix when adding PE support for procedures
+-- specFrom _ _ (From' l) origin
+--   | l `isFrom` origin = return (From (l, Just . snd $ origin))
+--   | otherwise         = Left "Invalid jump to an unconditional from."
+-- specFrom x s Entry' (l, _)
+--   | l == x    = return $ Entry $ Just s
+--   | otherwise = Left "Invalid jump to entry block."
+-- specFrom _ s (Fi' BTStatic e l1 l2) origin =
+--   do v <- getValue e s
+--      let l = if truthy v then l1 else l2
+--      if l `isFrom` origin
+--       then return . From $ annotate l origin
+--       else Left "Jump not from expected block."
+-- specFrom _ s (Fi' BTDynamic e l1 l2) origin
+--   | l1 `isFrom` origin || l2 `isFrom` origin =
+--     do e' <- getExpr e s
+--        return $ Fi e' (annotate l1 origin) (annotate l2 origin)
+--   | otherwise = Left "Jump not from either of the expected blocks."
 
 isFrom :: Eq a => a -> (a, SpecStore) -> Bool
 isFrom l (l', _) = l == l' -- "l = label(l')" in judgements
@@ -122,25 +126,26 @@ annotate l (l', s) | l == l'   = (l, Just s)
 
 specJump :: SpecStore -> VariableDecl -> Jump' a
             -> EM (Jump a (Maybe SpecStore), [Point a])
-specJump s decl Exit' =
-  do let checkable = staticNonOutput decl s
-     vs <- mapM (`find` s) checkable
-     let pairs = zip checkable vs
-     let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
-     case offendingVars of
-      [] -> return (Exit (Just s), [])
-      ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
-specJump s _ (Goto' l) =
-   return (Goto (l, Just s), [(l, s)])
-specJump s _ (If' BTDynamic e l1 l2) =
-  do e' <- getExpr e s;
-     return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)])
-specJump s _ (If' BTStatic e l1 l2) =
-  do v <- getValue e s
-     return $
-      if truthy v
-        then (Goto (l1, Just s), [(l1, s)])
-        else (Goto (l2, Just s), [(l2, s)])
+specJump = undefined --TODO: fix when adding PE support for procedures
+-- specJump s decl Exit' =
+--   do let checkable = staticNonOutput decl s
+--      vs <- mapM (`find` s) checkable
+--      let pairs = zip checkable vs
+--      let offendingVars = filter (\(_,v) -> v /= Static Nil) pairs
+--      case offendingVars of
+--       [] -> return (Exit (Just s), [])
+--       ((n,_):_) -> Left $ "Non-nil non-output variable \"" ++ n ++ "\" at exit"
+-- specJump s _ (Goto' l) =
+--    return (Goto (l, Just s), [(l, s)])
+-- specJump s _ (If' BTDynamic e l1 l2) =
+--   do e' <- getExpr e s;
+--      return (If e' (l1, Just s) (l2, Just s), [(l1, s), (l2, s)])
+-- specJump s _ (If' BTStatic e l1 l2) =
+--   do v <- getValue e s
+--      return $
+--       if truthy v
+--         then (Goto (l1, Just s), [(l1, s)])
+--         else (Goto (l2, Just s), [(l2, s)])
 
 specSteps :: SpecStore -> [Step'] -> EM (SpecStore, [Step])
 specSteps s [] = return (s, [])

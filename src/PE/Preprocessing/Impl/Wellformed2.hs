@@ -8,13 +8,14 @@ import PE.SpecValues
 import PE.Preprocessing.Division
 
 wellformedProg' :: Ord a => PWDivision a -> Program' a -> EM ()
-wellformedProg' pwd = mapM_ wellformedBlock'
-  where
-    wellformedBlock' b = do
-      let (d1, d2) = get (name' b) pwd
-      wellformedFrom' d1 $ from' b
-      mapM_ (wellformedStep' d1 d2) $ body' b
-      wellformedJump' d2 $ jump' b
+wellformedProg' = undefined --TODO: fix when adding PE support for procedures
+-- wellformedProg' pwd = mapM_ wellformedBlock'
+--   where
+--     wellformedBlock' b = do
+--       let (d1, d2) = get (name' b) pwd
+--       wellformedFrom' d1 $ from' b
+--       mapM_ (wellformedStep' d1 d2) $ body' b
+--       wellformedJump' d2 $ jump' b
 
 wellformedFrom' :: Division -> ComeFrom' a -> EM ()
 wellformedFrom' _ Entry'         = return ()

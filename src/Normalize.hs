@@ -6,12 +6,10 @@ import RL.Program
 import Data.List (sort, union, elemIndex)
 
 normalizeProgram :: Eq a => Program a () -> Program String ()
-normalizeProgram (decl, prog) = (normDecl decl, normBlocks prog)
+normalizeProgram prog = normProcs prog
 
--- Sort the variables because why not, it should not matter
-normDecl :: VariableDecl -> VariableDecl
-normDecl VariableDecl{input = inp, output = out, temp = tmp} =
-  VariableDecl (sort inp) (sort out) (sort tmp)
+normProcs :: Eq a => [Procedure a ()] -> [Procedure String ()]
+normProcs = undefined -- TODO fix when extending PE with support for procedures.
 
 -- Make the label order and names uniform
 normBlocks :: Eq a => [Block a ()] -> [Block String ()]

@@ -18,27 +18,29 @@ type AStore = Map Name AValue
 type State a b = Map (a,b) (Maybe AStore)
 
 inferProg :: (Ord a, Ord b) => Program a b -> State a b -> State a b
-inferProg (decl, prog) preState =
-  let postState = fromList $ map (\b -> (name b, Nothing)) prog
-      entryLabel = getEntryName prog
-      finalState = fixPoint postState [entryLabel]
-  in finalState
-  where
-    fixPoint postState [] = postState
-    fixPoint postState (l:ls) =
-      let b = getBlockUnsafe prog l
-          (newState, pending) =
-            inferBlock preState postState (decl, prog) b
-          ls' = List.union ls pending
-      in fixPoint newState ls'
+inferProg = undefined --TODO: fix when adding PE support for procedures
+-- inferProg (decl, prog) preState =
+--   let postState = fromList $ map (\b -> (name b, Nothing)) prog
+--       entryLabel = getEntryName prog
+--       finalState = fixPoint postState [entryLabel]
+--   in finalState
+--   where
+--     fixPoint postState [] = postState
+--     fixPoint postState (l:ls) =
+--       let b = getBlockUnsafe prog l
+--           (newState, pending) =
+--             inferBlock preState postState (decl, prog) b
+--           ls' = List.union ls pending
+--       in fixPoint newState ls'
 
 inferProgWithoutAsserts :: (Ord a, Ord b) => Program a b -> State a b -> State a b
-inferProgWithoutAsserts (decl, prog) = inferProg (decl, prog')
-  where
-    notAssert (Assert _) = False
-    notAssert _          = True
-    removeAssertion b = b{body = filter notAssert $ body b}
-    prog' = map removeAssertion prog
+inferProgWithoutAsserts = undefined --TODO: fix when adding PE support for procedures
+-- inferProgWithoutAsserts (decl, prog) = inferProg (decl, prog')
+--   where
+--     notAssert (Assert _) = False
+--     notAssert _          = True
+--     removeAssertion b = b{body = filter notAssert $ body b}
+--     prog' = map removeAssertion prog
 
 -- Update state and return new pending points
 inferBlock :: (Ord a, Ord b) => State a b -> State a b
@@ -60,28 +62,29 @@ inferBlock preState postState prog
 inferFrom :: (Ord a, Ord b) => State a b -> Program a b
                             -> (a, b) -> ComeFrom a b
                             -> Maybe AStore
-inferFrom _ (decl, _) _ (Entry _) = inferDecl decl
+inferFrom = undefined --TODO: fix when adding PE support for procedures
+-- inferFrom _ (decl, _) _ (Entry _) = inferDecl decl
 
-inferFrom state (_, prog) l (From l1) =
-  let origS = get l1 state
-      j = jump $ getBlockUnsafe prog l1
-  in inferJump origS l j
-inferFrom state (_, prog) l (Fi e l1 l2) =
-  let inferJump' orig e' =
-          let origS = get orig state
-              j = jump $ getBlockUnsafe prog orig
-              origS' = inferJump origS l j
-          in inferAssertion' origS' e'
-      inferred1 = inferJump' l1 e
-      inferred2 = inferJump' l2 (UOp Not e)
-  in inferred1 `lubStore` inferred2
+-- inferFrom state (_, prog) l (From l1) =
+--   let origS = get l1 state
+--       j = jump $ getBlockUnsafe prog l1
+--   in inferJump origS l j
+-- inferFrom state (_, prog) l (Fi e l1 l2) =
+--   let inferJump' orig e' =
+--           let origS = get orig state
+--               j = jump $ getBlockUnsafe prog orig
+--               origS' = inferJump origS l j
+--           in inferAssertion' origS' e'
+--       inferred1 = inferJump' l1 e
+--       inferred2 = inferJump' l2 (UOp Not e)
+--   in inferred1 `lubStore` inferred2
 
 inferJump :: (Ord a, Ord b) => Maybe AStore -> (a,b) -> Jump a b -> Maybe AStore
 inferJump store _ (Goto _) = store
 inferJump store dest (If e l1 _)
   | l1 == dest = inferAssertion' store e
   | otherwise  = inferAssertion' store (UOp Not e)
-inferJump _ _ (Exit _) = undefined
+inferJump _ _ (Exit _ _) = undefined --TODO: consider exit pattern
 
 -- glb of store lattice
 glbStore :: Maybe AStore -> Maybe AStore -> Maybe AStore
