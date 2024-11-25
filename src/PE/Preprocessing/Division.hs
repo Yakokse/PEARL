@@ -47,6 +47,6 @@ makeDiv store decl =
 startingDiv :: (Ord a) => NormProgram a -> PWDivision a
                               -> Division
 startingDiv p pwd =
-   undefined --TODO: fix when adding PE support for processes
+   undefined --TODO: fix when adding PE support for procedures
   -- let n = nname $ getNEntryBlock p
   -- in fst $ get n pwd

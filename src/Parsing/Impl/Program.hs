@@ -19,7 +19,7 @@ pProg :: Parser (Program Label ())
 pProg = many1 pProcedure
 
 pProcedure :: Parser (Procedure Label ())
-pProcedure = undefined --TODO: fix when adding parsing for processes
+pProcedure = undefined --TODO: fix when adding parsing for procedures
 
 -- parse a block
 pBlock :: Parser (Block Label ())
