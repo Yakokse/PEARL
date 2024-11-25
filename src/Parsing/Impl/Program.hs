@@ -24,10 +24,6 @@ pProcedure = Procedure <$>
             (word "proc" *> pProcedureName)
             <*> many1 pBlock
 
--- parse a procedure name
-pProcedureName :: Parser ProcedureName
-pProcedureName = pName
-
 -- parse a block
 pBlock :: Parser (Block Label ())
 pBlock = Block <$> (pLabelName <* symbol ":")
@@ -77,7 +73,8 @@ pPattern = choice
   [ QVar <$> pName
   , QConst <$> pConstant
   , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
-  --TODO: extend with call and uncall
+  , QCall <$> pProcedureName <*> pPattern
+  , QUncall <$> pProcedureName <*> pPattern
   ] <?> "Expecting pattern"
 
 pExpr :: Parser Expr
@@ -102,3 +99,7 @@ pExpr = buildExpressionParser table term <?> "expression"
 -- parse a label for the abstracted labels in AST
 pLabelName :: Parser (Label, ())
 pLabelName = (,) <$> pName <*> return ()
+
+-- parse a procedure name
+pProcedureName :: Parser ProcedureName
+pProcedureName = pName
