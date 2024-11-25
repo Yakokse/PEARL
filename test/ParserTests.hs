@@ -31,7 +31,7 @@ tests = testGroup "All Parsing Tests"
   , declTests
   , progTests
   ]
-
+-- TODO: fix and extend tests
 progTests :: TestTree
 progTests = testGroup "Program Tests"
   [ testProg "Smallest" (emptyDeclStr ++ block1Str)

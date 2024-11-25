@@ -18,8 +18,15 @@ parseProg = parseStr pProg
 pProg :: Parser (Program Label ())
 pProg = many1 pProcedure
 
+-- parse a procedure
 pProcedure :: Parser (Procedure Label ())
-pProcedure = undefined --TODO: fix when adding parsing for procedures
+pProcedure = Procedure <$> 
+            (word "proc" *> pProcedureName)
+            <*> many1 pBlock
+
+-- parse a procedure name
+pProcedureName :: Parser ProcedureName
+pProcedureName = pName
 
 -- parse a block
 pBlock :: Parser (Block Label ())
@@ -32,8 +39,7 @@ pBlock = Block <$> (pLabelName <* symbol ":")
 pFrom :: Parser (ComeFrom Label ())
 pFrom = choice
   [ 
-    -- TODO: fix
-    -- Entry () <$ word "entry"
+  Entry <$>  (word "entry" *> pPattern) <*> return (),
   Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
   , From <$> (word "from" *> pLabelName)
   ] <?> "Expecting a from"
@@ -42,8 +48,7 @@ pFrom = choice
 pJump :: Parser (Jump Label ())
 pJump = choice
   [ 
-    --TODO: fix
-    --Exit () <$ word "exit"
+  Exit <$> (word "exit" *> pPattern) <*> return (),
   If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
   , Goto <$> (word "goto" *> pLabelName)
   ] <?> "Expecting a jump"
@@ -72,6 +77,7 @@ pPattern = choice
   [ QVar <$> pName
   , QConst <$> pConstant
   , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
+  --TODO: extend with call and uncall
   ] <?> "Expecting pattern"
 
 pExpr :: Parser Expr
