@@ -22,7 +22,7 @@ invertBlock Block {name = l, from = f, body = b, jump = j} = Block
 
 -- invert a come-from
 invertFrom :: ComeFrom a b -> Jump a b
-invertFrom (Entry p s)          = Exit p s -- TODO: correct?
+invertFrom (Entry p s)          = Exit p s
 invertFrom (From l)         = Goto l
 invertFrom (Fi e l1 l2) = If e l1 l2
 
