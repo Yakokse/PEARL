@@ -48,7 +48,7 @@ annotateStep _ _ Skip = Skip' BTStatic
 
 -- Annotate a come-from
 annotateFrom :: Division -> ComeFrom a () -> ComeFrom' a
-annotateFrom = undefined -- TODO: fix
+annotateFrom  = undefined --TODO: fix when adding PE support for processes
 -- annotateFrom _ (Entry ()) = Entry'
 -- annotateFrom _ (From (l, ())) = From' l
 -- annotateFrom d (Fi e (l1, ()) (l2, ())) =
