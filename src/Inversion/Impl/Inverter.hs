@@ -28,7 +28,7 @@ invertFrom (Fi e l1 l2) = If e l1 l2
 
 -- invert a jump
 invertJump :: Jump a b -> ComeFrom a b
-invertJump (Exit p s)           = Entry p s --TODO: correct?
+invertJump (Exit p s)           = Entry p s
 invertJump (Goto l)         = From l
 invertJump (If e l1 l2) = Fi e l1 l2
 
