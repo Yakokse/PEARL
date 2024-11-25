@@ -73,7 +73,7 @@ prettyFrom f (Fi e (l1, ()) (l2, ())) =
   [ "fi " ++ prettyExpr e
   , "\tfrom " ++ f l1
   , "\telse " ++ f l2]
-prettyFrom _ (Entry p ()) = ["entry( " ++ prettyPat p ++ ")"]
+prettyFrom _ (Entry p ()) = ["entry " ++ prettyPat p]
 
 prettyJump :: Print a -> Jump a () -> [String]
 prettyJump f (Goto (l, ()))= ["goto " ++ f l]
@@ -81,7 +81,7 @@ prettyJump f (If e (l1, ()) (l2, ())) =
   [ "if " ++ prettyExpr e
   , "\tgoto " ++ f l1
   , "\telse " ++ f l2]
-prettyJump _ (Exit p ()) = ["exit( " ++ prettyPat p ++ " )"]
+prettyJump _ (Exit p ()) = ["exit " ++ prettyPat p]
 
 prettyStep :: Step -> String
 prettyStep (Update n rop e) = n ++ " " ++ prettyROp rop ++ "= " ++ prettyExpr e
