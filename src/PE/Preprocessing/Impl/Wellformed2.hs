@@ -8,7 +8,7 @@ import PE.SpecValues
 import PE.Preprocessing.Division
 
 wellformedProg' :: Ord a => PWDivision a -> Program' a -> EM ()
-wellformedProg' = undefined --TODO: fix when adding PE support for processes
+wellformedProg' = undefined --TODO: fix when adding PE support for procedures
 -- wellformedProg' pwd = mapM_ wellformedBlock'
 --   where
 --     wellformedBlock' b = do

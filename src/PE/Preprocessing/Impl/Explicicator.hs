@@ -13,7 +13,7 @@ import Data.Maybe (catMaybes)
 
 -- add explicators for a given RL2 program
 explicate :: Ord a => PWDivision a -> Program' a -> (a -> Int -> a) -> Program' (Explicated a)
-explicate = undefined --TODO: fix when adding PE support for processes
+explicate = undefined --TODO: fix when adding PE support for procedures
 -- explicate pwd p f =
 --   let (renames', blocks') = unzip $ map (explicateBlock pwd p f) p
 --       (renames, blocks) = (concat renames', concat blocks')
@@ -22,7 +22,7 @@ explicate = undefined --TODO: fix when adding PE support for processes
 -- fix come-froms for blocks where an explicator was inserted before it
 fixComeFroms :: Ord a => [(Explicated a, (Explicated a, Explicated a))] -> [Block' (Explicated a)]
                      -> Program' (Explicated a)
-fixComeFroms = undefined --TODO: fix when adding PE support for processes
+fixComeFroms = undefined --TODO: fix when adding PE support for procedures
 -- fixComeFroms [] bs = bs
 -- fixComeFroms ((l, (target, replace)) : ls) bs =
 --   let bs' = map (\b -> if name' b == l then fixBlock b else b) bs
@@ -78,7 +78,7 @@ toBeExplicated pwd d j =
 -- integer used to distinguish between branches
 createExplicator :: Eq a => Program' a -> (a -> Int -> a) -> a -> (a, [Name]) -> Int
                          -> (a, Maybe (Block' (Explicated a)))
-createExplicator = undefined --TODO: fix when adding PE support for processes
+createExplicator = undefined --TODO: fix when adding PE support for procedures
 -- createExplicator _ _ _ (dest, []) _ = (dest, Nothing)
 -- createExplicator p f src (dest, ns) idx = (dest, return (Block'
 --   { name' = Explicator (f src idx) ns

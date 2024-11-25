@@ -2,9 +2,9 @@ module RL.AST where
 
 import RL.Values
 
-type Program label store = [Process label store]
+type Program label store = [Procedure label store]
 
---TODO: remove when implementing support for PE with processes
+--TODO: remove when implementing support for PE with procedures
 data VariableDecl = VariableDecl
   { input  :: [Name]
   , output :: [Name]
@@ -12,8 +12,8 @@ data VariableDecl = VariableDecl
   } deriving (Eq, Show, Read)
 
 
-data Process label store = Process 
-  { pname :: ProcessName
+data Procedure label store = Procedure 
+  { pname :: ProcedureName
   , pbody :: [Block label store]
   }
   deriving (Eq, Show, Read)
@@ -56,8 +56,8 @@ data Pattern =
     QConst Value
   | QVar Name
   | QPair Pattern Pattern
-  | QCall ProcessName Pattern
-  | QUncall ProcessName Pattern
+  | QCall ProcedureName Pattern
+  | QUncall ProcedureName Pattern
   deriving (Eq, Show, Read)
 
 data BinOp =
@@ -84,9 +84,9 @@ data UnOp =
   | Not
   deriving (Eq, Show, Read)
 
-type NormProgram label = [NormProcess label]
-data NormProcess label = NormProcess 
-  { npname :: ProcessName
+type NormProgram label = [NormProcedure label]
+data NormProcedure label = NormProcedure 
+  { npname :: ProcedureName
   , npbody :: [NormBlock label]
   }
   deriving (Eq, Show, Read)

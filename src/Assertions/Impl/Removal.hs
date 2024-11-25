@@ -46,7 +46,7 @@ removeAssertionsBi prog =
 
 postToPre :: (Ord a, Ord b) => Program a b -> State a b
                             -> State a b
-postToPre = undefined --TODO: fix when adding PE support for processes
+postToPre = undefined --TODO: fix when adding PE support for procedures
 -- postToPre prog state =
 --   let preStore b = inferFrom state prog (name b) (from b)
 --       preStores = map (\b -> (name b, preStore b)) $ snd prog
@@ -54,7 +54,7 @@ postToPre = undefined --TODO: fix when adding PE support for processes
 
 removeAssertionsProg :: (Ord a, Ord b) => State a b -> Program a b
                                        -> Program a b
-removeAssertionsProg = undefined --TODO: fix when adding PE support for processes
+removeAssertionsProg = undefined --TODO: fix when adding PE support for procedures
 -- removeAssertionsProg preState (decl, pblocks) =
 --   let cleanBlock b =
 --         let initStore = get (name b) preState
@@ -126,7 +126,7 @@ reduceExpr s (Op op e1 e2) =
      return (e, v)
 
 initPreState :: (Ord a, Ord b) => Program a b -> State a b
-initPreState = undefined --TODO: fix when adding PE support for processes
+initPreState = undefined --TODO: fix when adding PE support for procedures
 -- initPreState (decl, prog) =
 --   let anyStore = fromList $ map (\n -> (n, Any)) $ allVars decl
 --       preState = fromList $ map (\b -> (name b, Just anyStore)) prog

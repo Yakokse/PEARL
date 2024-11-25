@@ -8,7 +8,7 @@ invertProg  = map invertProc
 
 
 -- invert a proc
-invertProc :: Process a b -> Process a b
+invertProc :: Procedure a b -> Procedure a b
 invertProc = undefined --TODO: implement
 
 

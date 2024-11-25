@@ -16,10 +16,10 @@ parseProg = parseStr pProg
 
 -- parse a program
 pProg :: Parser (Program Label ())
-pProg = many1 pProcess
+pProg = many1 pProcedure
 
-pProcess :: Parser (Process Label ())
-pProcess = undefined
+pProcedure :: Parser (Procedure Label ())
+pProcedure = undefined
 -- parse a block
 pBlock :: Parser (Block Label ())
 pBlock = Block <$> (pLabelName <* symbol ":")

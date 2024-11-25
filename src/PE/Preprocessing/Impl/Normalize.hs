@@ -7,12 +7,12 @@ import RL.Program
 normalize :: Eq a => a -> a -> Program a () -> (a -> Int -> a) -> NormProgram a
 normalize entry exit  procs f = ( padProc entry exit $ concatMap (normalizeProc procs f) procs)
 
---normalize a process
-normalizeProc :: Eq a => [Process a ()] -> (a -> Int -> a) -> Process a () -> [NormProcess a]
-normalizeProc = undefined -- TODO: extend with support for processes
+--normalize a procedure
+normalizeProc :: Eq a => [Procedure a ()] -> (a -> Int -> a) -> Procedure a () -> [NormProcedure a]
+normalizeProc = undefined -- TODO: extend with support for procedures
 
 --padProc - dummy func to allow compilation until support for PE with procs is added.
-padProc :: Eq a => a -> a -> [NormProcess a] -> [NormProcess a]
+padProc :: Eq a => a -> a -> [NormProcedure a] -> [NormProcedure a]
 padProc = undefined
 
 -- add an extra nop block in the beginning of a program

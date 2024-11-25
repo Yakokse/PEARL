@@ -22,7 +22,7 @@ type Pending a = [(Point a, Point a)]
 type Seen a = Pending a
 
 specialize :: (Eq a, Show a) => VariableDecl -> Program' a -> SpecStore -> a -> LEM (Program a (Maybe SpecStore))
-specialize = undefined --TODO: fix when adding PE support for processes
+specialize = undefined --TODO: fix when adding PE support for procedures
 -- specialize decl prog s entry =
 --   do
 --      b <- raise $ getEntry' prog
@@ -32,7 +32,7 @@ specialize = undefined --TODO: fix when adding PE support for processes
 --      return (decl', reverse res) -- Reverse for nicer ordering of blocks
 
 specDecl :: VariableDecl -> Program' a -> EM VariableDecl
-specDecl = undefined --TODO: fix when adding PE support for processes
+specDecl = undefined --TODO: fix when adding PE support for procedures
 -- specDecl decl p =
 --   do inBlock <- getEntryBlock' p
 --      outBlock <- getExitBlock' p
@@ -48,7 +48,7 @@ specDecl = undefined --TODO: fix when adding PE support for processes
 
 specProg :: (Eq a, Show a) => a -> VariableDecl -> Program' a -> Pending a -> Seen a -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]
-specProg = undefined --TODO: fix when adding PE support for processes
+specProg = undefined --TODO: fix when adding PE support for procedures
 -- specProg _ _ _ [] _ res =
 --   do logM "Specialization done."; return res
 -- specProg entry decl prog (p:ps) seen res
@@ -98,7 +98,7 @@ specBlock entry decl s b origin =
 
 specFrom :: Eq a => a -> SpecStore -> ComeFrom' a -> (a, SpecStore)
                  -> EM (ComeFrom a (Maybe SpecStore))
-specFrom = undefined --TODO: fix when adding PE support for processes
+specFrom = undefined --TODO: fix when adding PE support for procedures
 -- specFrom _ _ (From' l) origin
 --   | l `isFrom` origin = return (From (l, Just . snd $ origin))
 --   | otherwise         = Left "Invalid jump to an unconditional from."
@@ -126,7 +126,7 @@ annotate l (l', s) | l == l'   = (l, Just s)
 
 specJump :: SpecStore -> VariableDecl -> Jump' a
             -> EM (Jump a (Maybe SpecStore), [Point a])
-specJump = undefined --TODO: fix when adding PE support for processes
+specJump = undefined --TODO: fix when adding PE support for procedures
 -- specJump s decl Exit' =
 --   do let checkable = staticNonOutput decl s
 --      vs <- mapM (`find` s) checkable

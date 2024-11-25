@@ -8,8 +8,8 @@ import Data.List (sort, union, elemIndex)
 normalizeProgram :: Eq a => Program a () -> Program String ()
 normalizeProgram prog = normProcs prog
 
-normProcs :: Eq a => [Process a ()] -> [Process String ()]
-normProcs = undefined -- TODO fix when extending PE with support for processes.
+normProcs :: Eq a => [Procedure a ()] -> [Procedure String ()]
+normProcs = undefined -- TODO fix when extending PE with support for procedures.
 
 -- Make the label order and names uniform
 normBlocks :: Eq a => [Block a ()] -> [Block String ()]

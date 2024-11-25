@@ -255,7 +255,7 @@ normMain NormalizeOptions { normInput = inputPath
      writeOutput True outputPath out
 
 optimMain :: OptimizeOptions -> IO ()
-optimMain  = undefined --TODO: fix when adding PE support for processes
+optimMain  = undefined --TODO: fix when adding PE support for procedures
 -- optimMain OptimizeOptions { optimInput = inputPath
 --                           , optimOutput = outputPath
 --                           , optimBidirectional = useBidir
@@ -275,7 +275,7 @@ optimMain  = undefined --TODO: fix when adding PE support for processes
 --     isAssertion _ = False
 
 intMain :: InterpretOptions -> IO ()
-intMain = undefined --TODO: fix when adding interpreter support for processes
+intMain = undefined --TODO: fix when adding interpreter support for procedures
 -- intMain InterpretOptions { intFile = filePath
 --                          , intInputFile = inputPath
 --                          , intVerbose = v} =
@@ -294,7 +294,7 @@ intMain = undefined --TODO: fix when adding interpreter support for processes
 --      putStrLn $ prettyStats stats
 
 specMain :: SpecOptions -> IO ()
-specMain  = undefined --TODO: fix when adding PE support for processes
+specMain  = undefined --TODO: fix when adding PE support for procedures
 -- specMain specOpts@SpecOptions { specInpFile = inputPath
 --                               , specOutFile = outputPath
 --                               , uniformBTA  = uniform
@@ -334,7 +334,7 @@ btaPW p d =
   in makeCongruentPW p initd
 
 specMain2 :: SpecOptions -> VariableDecl -> Program' (Explicated Label) -> SpecStore -> IO String
-specMain2 = undefined --TODO: fix when adding PE support for processes
+specMain2 = undefined --TODO: fix when adding PE support for procedures
 -- specMain2 specOpts decl prog2 store =
 --   let v = specVerbose specOpts
 --   in
@@ -358,7 +358,7 @@ specMain2 = undefined --TODO: fix when adding PE support for processes
 
 specPostProcess :: Bool -> VariableDecl -> Program (Explicated Label) (Maybe SpecStore)
                 -> IO (Program Label (), [(Name, SpecValue)])
-specPostProcess = undefined --TODO: fix when adding PE support for processes
+specPostProcess = undefined --TODO: fix when adding PE support for procedures
 -- specPostProcess v origdecl (decl, prog) =
   -- do let showLength p = trace v $ "Nr. of blocks: " ++ show (length p)
   --    showLength prog
@@ -402,7 +402,7 @@ printStaticOutput decl tpls =
     showSpecVal Dynamic = undefined
 
 benchMain :: BenchOptions -> IO ()
-benchMain = undefined --TODO: fix when adding PE support for processes
+benchMain = undefined --TODO: fix when adding PE support for procedures
 -- benchMain BenchOptions { benchFile     = inputPath
 --                        , benchSpecFile = specPath
 --                        , dynamicVars   = dyn

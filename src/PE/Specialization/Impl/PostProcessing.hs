@@ -128,7 +128,7 @@ mergeExplicators annotateExpl p =
 -- Merge all residual exits into a single one and
 -- generalize the static output variables that differ between exits
 mergeExits :: VariableDecl -> (a -> Int -> Int -> a) -> Program a SpecStore -> (Program a SpecStore, [(Name, SpecValue)])
-mergeExits = undefined --TODO: fix when adding PE support for processes
+mergeExits = undefined --TODO: fix when adding PE support for procedures
 -- mergeExits origdecl annotateExit (VariableDecl{input = inp, output = out, temp = tmp}, p) =
 --   let (exits, rest) = L.partition isExit p
 --       stores = map (toList . getExitStore) exits

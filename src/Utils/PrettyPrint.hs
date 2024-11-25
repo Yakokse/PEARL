@@ -49,10 +49,10 @@ prettyStore :: Store -> String
 prettyStore = concatMap (\(n, v) -> n ++ "=" ++ prettyVal v ++ " ") . toList
 
 prettyProg :: Print a -> Program a () -> String
-prettyProg f  p= intercalate "\n" (concatMap (prettyProcess f) p)
+prettyProg f  p= intercalate "\n" (concatMap (prettyProcedure f) p)
 
-prettyProcess :: Print a -> Process a () -> [String]
-prettyProcess = undefined -- TODO
+prettyProcedure :: Print a -> Procedure a () -> [String]
+prettyProcedure = undefined -- TODO
 
 prettyDecl :: VariableDecl -> String
 prettyDecl d =
@@ -136,10 +136,10 @@ prettyVal (Pair v1 v2) = "("++ prettyVal v1 ++ "." ++ prettyVal v2 ++ ")"
 prettyVal Nil = "nil"
 
 prettyProg' :: Print a -> Program' a -> String
-prettyProg' f p = intercalate "\n" (concatMap (prettyProcess' f) p)
+prettyProg' f p = intercalate "\n" (concatMap (prettyProcedure' f) p)
 
-prettyProcess' :: Print a -> Process' a -> [String]
-prettyProcess' = undefined --TODO: fix when adding PE support for processes
+prettyProcedure' :: Print a -> Procedure' a -> [String]
+prettyProcedure' = undefined --TODO: fix when adding PE support for procedures
 
 prettyBlock' :: Print a -> Block' a -> [String]
 prettyBlock' f b =

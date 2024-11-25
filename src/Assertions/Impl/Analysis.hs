@@ -18,7 +18,7 @@ type AStore = Map Name AValue
 type State a b = Map (a,b) (Maybe AStore)
 
 inferProg :: (Ord a, Ord b) => Program a b -> State a b -> State a b
-inferProg = undefined --TODO: fix when adding PE support for processes
+inferProg = undefined --TODO: fix when adding PE support for procedures
 -- inferProg (decl, prog) preState =
 --   let postState = fromList $ map (\b -> (name b, Nothing)) prog
 --       entryLabel = getEntryName prog
@@ -34,7 +34,7 @@ inferProg = undefined --TODO: fix when adding PE support for processes
 --       in fixPoint newState ls'
 
 inferProgWithoutAsserts :: (Ord a, Ord b) => Program a b -> State a b -> State a b
-inferProgWithoutAsserts = undefined --TODO: fix when adding PE support for processes
+inferProgWithoutAsserts = undefined --TODO: fix when adding PE support for procedures
 -- inferProgWithoutAsserts (decl, prog) = inferProg (decl, prog')
 --   where
 --     notAssert (Assert _) = False
@@ -62,7 +62,7 @@ inferBlock preState postState prog
 inferFrom :: (Ord a, Ord b) => State a b -> Program a b
                             -> (a, b) -> ComeFrom a b
                             -> Maybe AStore
-inferFrom = undefined --TODO: fix when adding PE support for processes
+inferFrom = undefined --TODO: fix when adding PE support for procedures
 -- inferFrom _ (decl, _) _ (Entry _) = inferDecl decl
 
 -- inferFrom state (_, prog) l (From l1) =

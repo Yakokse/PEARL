@@ -5,7 +5,7 @@ import qualified Data.Map.Strict as Map
 type IntType = Word
 type Name = String
 type Label = String
-type ProcessName = String
+type ProcedureName = String
 data Value =
     Atom String
   | Num  IntType

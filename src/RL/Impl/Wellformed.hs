@@ -8,17 +8,18 @@ import RL.Values
 import RL.Variables
 
 import qualified Data.Set as S
+import RL.AST (Procedure)
 
 wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
 wellformedProg p =
   do
-    entryProcess <- getEntryProcess p
-    _ <- getEntryBlock (pbody entryProcess)
-    _ <- getExitBlock (pbody entryProcess)
-    mapM_ (welformedProcesses p) p
+    entryProcedure <- getEntryProcedure p
+    _ <- getEntryBlock (pbody entryProcedure)
+    _ <- getExitBlock (pbody entryProcedure)
+    mapM_ (welformedProcedures p) p
 
-welformedProcesses :: (Eq a, Show a, Eq b, Show b) => [Process a b] -> Process a b -> EM ()
-welformedProcesses = undefined -- TODO: implement
+welformedProcedures :: (Eq a, Show a, Eq b, Show b) => [Procedure a b] -> Procedure a b -> EM ()
+welformedProcedures = undefined -- TODO: implement
 
 wellformedBlock :: (Eq a, Show a, Eq b, Show b) => [Block a b] -> [Name] -> Block a b -> EM ()
 wellformedBlock p ns b =

@@ -59,7 +59,7 @@ runProgram = undefined-- TODO: Implement when implementing interpreter
 -- Non-input values in a store are ignored
 -- output: program output and statistics
 runProgram' :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
-runProgram' = undefined --TODO: fix when adding PE support for processes
+runProgram' = undefined --TODO: fix when adding PE support for procedures
 -- runProgram' (decl, prog) store =
 --   do  entry <- raise $ getEntry prog
 --       let res = evalBlocks prog (output decl) runStore entry Nothing
