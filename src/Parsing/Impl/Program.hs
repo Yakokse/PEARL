@@ -34,18 +34,16 @@ pBlock = Block <$> (pLabelName <* symbol ":")
 -- parse a come-from
 pFrom :: Parser (ComeFrom Label ())
 pFrom = choice
-  [ 
-  Entry <$>  (word "entry" *> pPattern) <*> return (),
-  Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
+  [ Entry <$>  (word "entry" *> pPattern) <*> return ()
+  , Fi <$> (word "fi" *> pExpr) <*> (word "from" *> pLabelName) <*> (word "else" *> pLabelName)
   , From <$> (word "from" *> pLabelName)
   ] <?> "Expecting a from"
 
 -- parse a jump
 pJump :: Parser (Jump Label ())
 pJump = choice
-  [ 
-  Exit <$> (word "exit" *> pPattern) <*> return (),
-  If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
+  [ Exit <$> (word "exit" *> pPattern) <*> return ()
+  , If <$> (word "if" *> pExpr)  <*> (word "goto" *> pLabelName) <*> (word "else" *> pLabelName)
   , Goto <$> (word "goto" *> pLabelName)
   ] <?> "Expecting a jump"
 
@@ -73,8 +71,8 @@ pPattern = choice
   [ QVar <$> pName
   , QConst <$> pConstant
   , QPair <$> (symbol "(" *> pPattern) <*> (symbol "." *> pPattern <* symbol ")")
-  , QCall <$> pProcedureName <*> pPattern
-  , QUncall <$> pProcedureName <*> pPattern
+  , QCall <$> (word "call" *>  pProcedureName) <*> pPattern
+  , QUncall <$> (word "uncall" *>  pProcedureName) <*> pPattern
   ] <?> "Expecting pattern"
 
 pExpr :: Parser Expr

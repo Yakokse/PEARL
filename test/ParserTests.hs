@@ -77,7 +77,7 @@ procedureTests = testGroup "Procedure Tests"
     , testProcedure "Multiple blocks" proc2Str proc2
   ]
   where
-    block1Str = "l: entry a exit a"
+    block1Str = "l: entry a exit a "
     block1 = Block ("l", ()) (Entry (QVar "a") ()) [] (Exit (QVar "a") ())
     block2Str = "l1: from l2 skip skip goto l3 "
     block2 = Block ("l1", ())

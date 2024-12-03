@@ -36,7 +36,7 @@ pName =
   where
     pChar = choice [alphaNum, char '_', char '\'']
     restricted = ["from", "fi", "else", "goto", "if", "entry", "exit",
-                  "skip", "hd", "tl", "assert", "nil", "with", "proc"]
+                  "skip", "hd", "tl", "assert", "nil", "with", "proc", "call", "uncall"]
 
 -- parse a number
 pNum :: Parser Word
