@@ -16,31 +16,21 @@ tests = testGroup "All Inversion Tests"
   , jumpTests
   , fromTests
   , blockTests
-  , declTests
   ]
 
--- We are assuming that internal order is not changed.
-declTests :: TestTree
-declTests = testGroup "Variable Declaration Tests"
-  [ testInv "Declaration"
-     (VariableDecl ["a", "b"] ["b", "c"] ["d"])
-     (VariableDecl ["b", "c"] ["a", "b"] ["d"])
-  ]
-  where
-    testInv = testEq invertDecl
 
 blockTests :: TestTree
 blockTests = testGroup "Block Tests"
   [ testInv "Block"
-     (Block ("l", ()) (Entry ()) [Skip, Update "x" Add (Var "y")] (Goto ("l1", ())))
-     (Block ("l", ()) (From ("l1", ())) [Update "x" Sub (Var "y"), Skip] (Exit ()))
+     (Block ("l", ()) (Entry (QVar "a") ()) [Skip, Update "x" Add (Var "y")] (Goto ("l1", ())))
+     (Block ("l", ()) (From ("l1", ())) [Update "x" Sub (Var "y"), Skip] (Exit (QVar "a") ()))
   ]
   where
     testInv = testEq invertBlock
 
 fromTests :: TestTree
 fromTests = testGroup "Come-from Tests"
-  [ testInv "Exit" (Entry ()) (Exit ())
+  [ testInv "Exit" (Entry (QVar "a") ()) (Exit (QVar "a") ())
   , testInv "Goto" (From ("l", ())) (Goto ("l", ()))
   , testInv "If"
         (Fi (Var "e") ("l1", ()) ("l2", ()))
@@ -51,7 +41,7 @@ fromTests = testGroup "Come-from Tests"
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
-  [ testInv "Exit" (Exit ()) (Entry ())
+  [ testInv "Exit" (Exit (QVar "a") ()) (Entry (QVar "a") ())
   , testInv "Goto" (Goto ("l", ())) (From ("l", ()))
   , testInv "If"
         (If (Var "e") ("l1", ()) ("l2", ()))
