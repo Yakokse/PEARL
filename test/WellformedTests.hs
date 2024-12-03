@@ -60,7 +60,7 @@ blockTests = testGroup "Block Tests"
 
 fromTests :: TestTree
 fromTests = testGroup "From Tests"
-  [ testStep "Entry" (Entry (QVar "a")())
+  [ testStep "Entry" (Entry (QVar "x")())
   , testStep "From" (From ("l", ()))
   , testStep "Fi" (Fi (Var "x") ("l1", ()) ("l2", ()))
   , testStepN "N. Fi" (Fi (Var "a") ("l1", ()) ("l2", ()))
@@ -71,7 +71,7 @@ fromTests = testGroup "From Tests"
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
-  [ testStep "Exit" (Exit (QVar "a")())
+  [ testStep "Exit" (Exit (QVar "x")())
   , testStep "Goto" (Goto ("l", ()))
   , testStep "If" (If (Var "x") ("l1", ()) ("l2", ()))
   , testStepN "N. If" (If (Var "a") ("l1", ()) ("l2", ()))
