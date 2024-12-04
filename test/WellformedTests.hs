@@ -25,29 +25,8 @@ tests = testGroup "All Inversion Tests"
   , jumpTests
   , fromTests
   , blockTests
-  , declTests
   ]
 
-declTests :: TestTree
-declTests = testGroup "Variable Declaration Tests"
-  [ testDec "Empty" (v [] [] [])
-  , testDec "Only inp" (v ["x", "y"] [] [])
-  , testDec "Only out" (v [] ["x", "y"] [])
-  , testDec "Only tmp" (v [] [] ["x", "y"])
-  , testDec "In inp and out" (v ["x", "y"] ["x", "y"] [])
-  , testDec "No common" (v ["x"] ["y"] ["z"])
-  , testDec "Complex" (v ["x", "y"] ["y", "z"] ["w"])
-  , testDecN "Complex Wrong" (v ["x", "u", "y"] ["y", "z"] ["w", "u"])
-  , testDecN "In tmp and inp" (v ["x"] [] ["x"])
-  , testDecN "In tmp and out" (v [] ["x"] ["x"])
-  , testDecN "Repeated inp" (v ["x", "x"] [] [])
-  , testDecN "Repeated out" (v [] ["x", "x"] [])
-  , testDecN "Repeated tmp" (v [] [] ["x", "x"])
-  ]
-  where
-    v = VariableDecl
-    testDec = wellformed wellformedDecl
-    testDecN = malformed wellformedDecl
 
 blockTests :: TestTree
 blockTests = testGroup "Block Tests"
@@ -69,7 +48,7 @@ blockTests = testGroup "Block Tests"
       Block ("x", ()) (From ("c", ())) [] (Goto ("a", ()))
   ]
   where
-    terminal = Block ("t", ()) (Entry ()) [] (Exit ())
+    terminal = Block ("t", ()) (Entry (QVar "t")()) [] (Exit (QVar "t")())
     connective = Block ("c", ())
                        (Fi (Var "a") ("x", ()) ("y", ()))
                        []
@@ -81,7 +60,7 @@ blockTests = testGroup "Block Tests"
 
 fromTests :: TestTree
 fromTests = testGroup "From Tests"
-  [ testStep "Entry" (Entry ())
+  [ testStep "Entry" (Entry (QVar "x")())
   , testStep "From" (From ("l", ()))
   , testStep "Fi" (Fi (Var "x") ("l1", ()) ("l2", ()))
   , testStepN "N. Fi" (Fi (Var "a") ("l1", ()) ("l2", ()))
@@ -92,7 +71,7 @@ fromTests = testGroup "From Tests"
 
 jumpTests :: TestTree
 jumpTests = testGroup "Jump Tests"
-  [ testStep "Exit" (Exit ())
+  [ testStep "Exit" (Exit (QVar "x")())
   , testStep "Goto" (Goto ("l", ()))
   , testStep "If" (If (Var "x") ("l1", ()) ("l2", ()))
   , testStepN "N. If" (If (Var "a") ("l1", ()) ("l2", ()))

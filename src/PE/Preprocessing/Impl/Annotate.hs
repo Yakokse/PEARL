@@ -13,7 +13,7 @@ annotateProg :: Ord a => PWDivision a -> NormProgram a -> Program' a
 annotateProg d = map (annotateProcess d)
 
 -- Annotate a normalized process
-annotateProcess :: Ord a => PWDivision a -> NormProcess a -> Process' a
+annotateProcess :: Ord a => PWDivision a -> NormProcedure a -> Procedure' a
 annotateProcess = undefined --TODO: fix when adding PE support for procedures
 -- Annotate a normalized block
 annotateBlock :: Ord a => PWDivision a -> NormBlock a -> Block' a
