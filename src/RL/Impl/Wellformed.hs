@@ -7,13 +7,11 @@ import RL.Program
 import RL.Values
 import RL.Variables
 
-import qualified Data.Set as S
-import RL.AST (Procedure)
 
 wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
 wellformedProg p =
   do
-    entryProcedure <- getEntryProcedure p
+    entryProcedure <- getMainProcedure p
     _ <- getEntryBlock (pbody entryProcedure)
     _ <- getExitBlock (pbody entryProcedure)
     mapM_ (welformedProcedures p) p

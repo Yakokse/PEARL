@@ -69,3 +69,6 @@ anyWhere f = not . null . allWhere f
 
 mmap :: (n -> a -> b) -> Map n a -> Map n b
 mmap = Map.mapWithKey
+
+isEmpty :: Map n a -> Bool
+isEmpty = Map.null

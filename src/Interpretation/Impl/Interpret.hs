@@ -8,7 +8,6 @@ import Utils.PrettyPrint
 import RL.AST
 import RL.Operators
 import RL.Values
-import RL.Variables
 import RL.Program
 
 import qualified Control.Monad.State as S
@@ -47,13 +46,11 @@ initStats = Stats 0 0 0
 
 -- Interpret a program with a given (verifiable wellformed) input
 -- output: program output and statistics
-runProgram :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
-runProgram = undefined-- TODO: Implement when implementing interpreter
--- runProgram (decl, prog) inpstore =
---   do  entry <- raise $ getEntry prog
---       store <- raise $ createStore decl inpstore
---       let res = evalBlocks prog (output decl) store entry Nothing
---       S.runStateT res initStats
+runProgram :: (Eq a, Show a) => Program a () -> Value -> LEM (Value, Stats)
+runProgram prog inpValue =
+  do  main <- raise $ getMainProcedure prog
+      let res = evalProgram prog inpValue main
+      S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
@@ -68,30 +65,52 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 --     nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
 --     runStore = combine nilStore store
 
+-- Not needed, as we "simply" do a pattern match with the
 -- Create a proper store given an input store
 -- verifies that input store is wellformed
-createStore :: VariableDecl -> Store -> EM Store
-createStore decl store =
-  let anyTemp = any (\n -> n `elem` temp decl) (keys store)
-      anyOut = any (\n -> n `elem` output decl
-                       && n `notElem` output decl) (keys store)
-      allPresent = all (`elem` keys store) (input decl)
-  in if anyTemp || anyOut || not allPresent
-  then Left "Invalid input store"
-  else
-    let nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
-    in return $ combine store nilStore
+-- createStore :: Store -> EM Store
+-- createStore store =
+--   let anyTemp = any (\n -> n `elem` temp decl) (keys store)
+--       anyOut = any (\n -> n `elem` output decl
+--                        && n `notElem` output decl) (keys store)
+--       allPresent = all (`elem` keys store) (input decl)
+--   in if anyTemp || anyOut || not allPresent
+--   then Left "Invalid input store"
+--   else
+--     let nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
+--     in return $ combine store nilStore
+
 
 -- interpret program till exit
--- output: the output store
+-- output: the output value
+evalProgram :: (Eq a, Show a) =>
+  [Procedure a ()] -> Value -> Procedure a () -> SLEM Value
+evalProgram _prog value main = evalProcedure main emptyMap (QConst value)
+
+evalProcedure :: (Eq a, Show a) =>
+  Procedure a () -> Store -> Pattern -> SLEM Value
+evalProcedure procedure store callPattern =
+  do entryPattern <- S.lift . raise $ getEntryPattern procedure
+     procedureStore <- S.lift . raise $ matchPattern store callPattern entryPattern
+     exitPattern <- S.lift . raise $ getExitPattern procedure
+     entry <- S.lift . raise $ getEntry (pbody procedure)
+     outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
+     S.lift . raise $ createExitValue outputStore exitPattern
+
+createExitValue :: Store -> Pattern -> EM Value
+createExitValue outputStore exitPattern =
+  do (s,v) <- construct outputStore exitPattern
+     if isEmpty s then Left "Nonzero non-output value at procedure exit." else Right v --TODO: check if all entries are zero or nill instead?
+
+
 evalBlocks :: (Eq a, Show a) =>
-  [Block a ()] -> [Name] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks prog outputs store l origin =
-  do block <- S.lift . raise $ getBlockErr prog l
+  [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
+evalBlocks blocks store l origin =
+  do block <- S.lift . raise $ getBlockErr blocks l
      (label', store') <- evalBlock store block origin
      case label' of
-       Nothing -> return $ store' `onlyIn` outputs
-       Just l'  -> evalBlocks prog outputs store' (l', ()) (Just l)
+       Nothing -> return store'
+       Just l'  -> evalBlocks blocks store' (l', ()) (Just l)
 
 -- interpret a given block
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
@@ -141,13 +160,17 @@ evalStep s (Assert e) =
      if truthy v then return s
      else lift' $ Left  $ "failed assertion: " ++ show e
 evalStep s (Replacement q1 q2) =
-  do (s1, v) <- lift' $ construct s q2
-     lift' $ deconstruct s1 v q1
+     lift' $ matchPattern s q1 q2
 evalStep s (Update n op e) =
   do v1 <- lift' $ find n s
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
      return $ set n v3 s
+
+matchPattern :: Store -> Pattern -> Pattern -> EM Store
+matchPattern s q1 q2 =
+    do (s1, v) <- construct s q2
+       deconstruct s1 v q1
 
 -- construct an intermediate value and store for a replacement
 construct :: Store -> Pattern -> EM (Store, Value)
