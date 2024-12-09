@@ -65,22 +65,6 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 --     nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
 --     runStore = combine nilStore store
 
--- Not needed, as we "simply" do a pattern match with the
--- Create a proper store given an input store
--- verifies that input store is wellformed
--- createStore :: Store -> EM Store
--- createStore store =
---   let anyTemp = any (\n -> n `elem` temp decl) (keys store)
---       anyOut = any (\n -> n `elem` output decl
---                        && n `notElem` output decl) (keys store)
---       allPresent = all (`elem` keys store) (input decl)
---   in if anyTemp || anyOut || not allPresent
---   then Left "Invalid input store"
---   else
---     let nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
---     in return $ combine store nilStore
-
-
 -- interpret program till exit
 -- output: the output value
 evalProgram :: (Eq a, Show a) =>
@@ -100,7 +84,7 @@ evalProcedure procedure store callValue =
 createExitValue :: Store -> Pattern -> EM Value
 createExitValue outputStore exitPattern =
   do (s,v) <- construct outputStore exitPattern
-     if isEmpty s then Left "Nonzero non-output value at procedure exit." else Right v --TODO: check if all entries are zero or nill instead?
+     if isEmpty s || Utils.Maps.all (Nil==) s then Right v else Left "Non-Nil non-output value at procedure exit."
 
 
 evalBlocks :: (Eq a, Show a) =>
@@ -215,7 +199,7 @@ find :: Name -> Store -> EM Value
 find n s =
   case lookupM n s of
     Just v -> return v
-    _ -> return Nil-- Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+    _ -> return Nil -- Initialize new variables to Nil
 
 -- helper functions for statistics
 incAssert :: SLEM ()
