@@ -17,7 +17,7 @@ wellformedProg p =
     mapM_ (welformedProcedures p) p
 
 welformedProcedures :: (Eq a, Show a, Eq b, Show b) => [Procedure a b] -> Procedure a b -> EM ()
-welformedProcedures = undefined -- TODO: implement
+welformedProcedures _ _ = Right () -- TODO: implement
 
 wellformedBlock :: (Eq a, Show a, Eq b, Show b) => [Block a b] -> [Name] -> Block a b -> EM ()
 wellformedBlock p ns b =

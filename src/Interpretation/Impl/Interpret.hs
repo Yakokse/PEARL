@@ -85,13 +85,13 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 -- output: the output value
 evalProgram :: (Eq a, Show a) =>
   [Procedure a ()] -> Value -> Procedure a () -> SLEM Value
-evalProgram _prog value main = evalProcedure main emptyMap (QConst value)
+evalProgram _prog value main = evalProcedure main emptyMap value
 
 evalProcedure :: (Eq a, Show a) =>
-  Procedure a () -> Store -> Pattern -> SLEM Value
-evalProcedure procedure store callPattern =
+  Procedure a () -> Store -> Value -> SLEM Value
+evalProcedure procedure store callValue =
   do entryPattern <- S.lift . raise $ getEntryPattern procedure
-     procedureStore <- S.lift . raise $ matchPattern store callPattern entryPattern
+     procedureStore <- S.lift . raise $ deconstruct store callValue entryPattern
      exitPattern <- S.lift . raise $ getExitPattern procedure
      entry <- S.lift . raise $ getEntry (pbody procedure)
      outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
@@ -132,8 +132,7 @@ evalFrom s (Fi e (l1, ()) (l2, ())) (Just (l', ())) =
      let l = if truthy v then l1 else l2
      if l == l' then return ()
      else lift' $ Left "Assertion failed in Fi"
--- TODO: fix
--- evalFrom _ (Entry ()) Nothing = return ()
+evalFrom _ (Entry _p ()) Nothing = return ()
 evalFrom _ _ _ = lift' $ Left "Unexpected jump to entry, or wrong start"
 
 -- interpret a jump statement
@@ -144,8 +143,7 @@ evalJump s (If e (l1, ()) (l2, ())) = incJump >>
   do v <- lift' $ evalExpr s e
      return . Just $
       if truthy v then l1 else l2
--- TODO: fix
--- evalJump _ (Exit ()) = return Nothing
+evalJump _ (Exit _p ()) = return Nothing
 
 -- interpret multiple steps
 evalSteps :: Store -> [Step] -> SLEM Store
@@ -217,7 +215,7 @@ find :: Name -> Store -> EM Value
 find n s =
   case lookupM n s of
     Just v -> return v
-    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+    _ -> return Nil-- Left $ "Variable \"" ++ n ++ "\" not found during lookup"
 
 -- helper functions for statistics
 incAssert :: SLEM ()
