@@ -69,13 +69,13 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 -- output: the output value
 evalProgram :: (Eq a, Show a) =>
   [Procedure a ()] -> Value -> Procedure a () -> SLEM Value
-evalProgram _prog value main = evalProcedure main emptyMap value
+evalProgram _prog value main = evalProcedure main value
 
 evalProcedure :: (Eq a, Show a) =>
-  Procedure a () -> Store -> Value -> SLEM Value
-evalProcedure procedure store callValue =
+  Procedure a () -> Value -> SLEM Value
+evalProcedure procedure callValue =
   do entryPattern <- lift' $ getEntryPattern procedure
-     procedureStore <- lift' $ deconstruct store callValue entryPattern
+     procedureStore <- lift' $ deconstruct emptyStore callValue entryPattern
      exitPattern <- lift' $ getExitPattern procedure
      entry <- lift' $ getEntry (pbody procedure)
      outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
@@ -204,6 +204,9 @@ find n s =
   case lookupM n s of
     Just v -> v
     _ -> Nil -- Initialize new variables to Nil
+
+emptyStore :: Store
+emptyStore = emptyMap
 
 -- helper functions for statistics
 incAssert :: SLEM ()
