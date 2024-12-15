@@ -10,14 +10,12 @@ import RL.Variables
 
 wellformedProg :: (Eq a, Show a, Eq b, Show b) => Program a b -> EM ()
 wellformedProg p =
-  do
-    entryProcedure <- getMainProcedure p
-    _ <- getEntryBlock (pbody entryProcedure)
-    _ <- getExitBlock (pbody entryProcedure)
-    mapM_ (welformedProcedures p) p
+    mapM_ (wellformedProcedure p) p
 
-welformedProcedures :: (Eq a, Show a, Eq b, Show b) => [Procedure a b] -> Procedure a b -> EM ()
-welformedProcedures _ _ = Right () -- TODO: implement
+wellformedProcedure :: (Eq a, Show a, Eq b, Show b) => [Procedure a b] -> Procedure a b -> EM ()
+wellformedProcedure _ _ = Right () -- TODO: implement
+    -- _ <- getEntryBlock (pbody mainProcedure)
+    -- _ <- getExitBlock (pbody mainProcedure)
 
 wellformedBlock :: (Eq a, Show a, Eq b, Show b) => [Block a b] -> [Name] -> Block a b -> EM ()
 wellformedBlock p ns b =

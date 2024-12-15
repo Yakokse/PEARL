@@ -65,12 +65,8 @@ getExitName = name . head . filter isExit
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
 
-getMainProcedure :: [Procedure a b] -> EM (Procedure a b)
-getMainProcedure p =
-  case p of
-    [] -> Left "No procedures found"
-    (h:_) -> Right h
-
+getMainProcedure :: [Procedure a b] -> Procedure a b
+getMainProcedure = head
 
 getEntryPattern :: Procedure a b -> EM Pattern
 getEntryPattern procedure =

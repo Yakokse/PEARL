@@ -282,8 +282,7 @@ intMain InterpretOptions { intFile = filePath
      _ <- fromEM "performing wellformedness check of input prog"
               $ wellformedProg prog
      inputValue <- parseFile "division and specilization data" v parseSpec inputPath
-     (out, _) <- fromLEM "execution" $ runProgram prog inputValue
-     let (outVal, stats) = out
+     ((outVal, stats), _) <- fromLEM "execution" $ runProgram prog inputValue
      trace v "Output value: "
      putStrLn . prettyVal $ outVal
      trace v "Execution statistics: "

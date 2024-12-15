@@ -48,9 +48,9 @@ initStats = Stats 0 0 0
 -- output: program output and statistics
 runProgram :: (Eq a, Show a) => Program a () -> Value -> LEM (Value, Stats)
 runProgram prog inpValue =
-  do  main <- raise $ getMainProcedure prog
-      let res = evalProgram prog inpValue main
-      S.runStateT res initStats
+  let main = getMainProcedure prog
+      res = evalProgram prog inpValue main
+  in S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
