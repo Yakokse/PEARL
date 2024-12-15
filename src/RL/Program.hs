@@ -74,7 +74,7 @@ getEntryPattern procedure =
      let entryPattern = from entryBlock
      case entryPattern of
       Entry pattern _ -> Right pattern
-      _ -> Left "No entry pattern"
+      _ -> error "Missing entry pattern"
 
 getExitPattern :: Procedure a b -> EM Pattern
 getExitPattern procedure =
@@ -82,4 +82,4 @@ getExitPattern procedure =
      let exitPattern = jump exitBlock
      case exitPattern of
       Exit pattern _ -> Right pattern
-      _ -> Left "No exit pattern"
+      _ -> error "Missing exit pattern"
