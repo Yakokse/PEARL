@@ -52,6 +52,9 @@ withouts = foldl without
 keys :: Map n e -> [n]
 keys = Map.keys
 
+all :: (e -> Bool) -> Map n e -> Bool
+all f = isEmpty . Map.filter (not . f)
+
 lookupM :: Ord n => n -> Map n e -> Maybe e
 lookupM = Map.lookup
 
@@ -69,3 +72,6 @@ anyWhere f = not . null . allWhere f
 
 mmap :: (n -> a -> b) -> Map n a -> Map n b
 mmap = Map.mapWithKey
+
+isEmpty :: Map n a -> Bool
+isEmpty = Map.null

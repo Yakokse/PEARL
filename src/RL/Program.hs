@@ -65,8 +65,21 @@ getExitName = name . head . filter isExit
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
 
-getEntryProcedure :: [Procedure a b] -> EM (Procedure a b)
-getEntryProcedure p =
-  case p of
-    [] -> Left "No procedures found"
-    (h:rs) -> Right h
+getMainProcedure :: [Procedure a b] -> Procedure a b
+getMainProcedure = head
+
+getEntryPattern :: Procedure a b -> EM Pattern
+getEntryPattern procedure =
+  do entryBlock <- getEntryBlock . pbody $ procedure
+     let entryPattern = from entryBlock
+     case entryPattern of
+      Entry pattern _ -> Right pattern
+      _ -> error "Missing entry pattern"
+
+getExitPattern :: Procedure a b -> EM Pattern
+getExitPattern procedure =
+  do exitBlock <- getExitBlock . pbody $ procedure
+     let exitPattern = jump exitBlock
+     case exitPattern of
+      Exit pattern _ -> Right pattern
+      _ -> error "Missing exit pattern"

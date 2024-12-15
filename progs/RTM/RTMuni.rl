@@ -1,7 +1,5 @@
-(Start End Rules S_right) -> (Start End Rules S_right)
-with (Q Q1 Q2 S1 S2 S S_left RulesRev Rule Rules')
-
-init: entry
+proc RTMuni
+init: entry (Start.(End.(Rules.S_right)))
       S <- 'BLANK
       Q ^= Start
       Rules' ^= Rules
@@ -11,7 +9,7 @@ stop: fi Start = End from init else act4
       Rules' ^= Rules
       'BLANK <- S
       Q ^= End
-      exit
+      exit (Start.(End.(Rules.S_right)))
 
 act1: fi !RulesRev && Q = Start from init else act4
       ((Q1 . (S1 . (S2 . Q2))) . Rules') <- Rules'

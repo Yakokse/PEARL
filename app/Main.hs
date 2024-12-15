@@ -275,23 +275,18 @@ optimMain  = undefined --TODO: fix when adding PE support for procedures
 --     isAssertion _ = False
 
 intMain :: InterpretOptions -> IO ()
-intMain = undefined --TODO: fix when adding interpreter support for procedures
--- intMain InterpretOptions { intFile = filePath
---                          , intInputFile = inputPath
---                          , intVerbose = v} =
---   do prog <- parseFile "program" v parseProg filePath
---      _ <- fromEM "performing wellformedness check of input prog"
---               $ wellformedProg prog
---      initStore <- parseFile "division and specilization data" v parseSpec inputPath
---      (out, _) <- fromLEM "execution" $ runProgram prog initStore
---      let (outStore, stats) = out
---      trace v "Output store: "
---      let outvals = filter (\(n, _) -> n `elem` output (fst prog))
---                     $ toList outStore
---      let outstr = map (\(n, val) -> n ++ ": " ++ prettyVal val) outvals
---      putStrLn (unlines outstr)
---      trace v "Execution statistics: "
---      putStrLn $ prettyStats stats
+intMain InterpretOptions { intFile = filePath
+                         , intInputFile = inputPath
+                         , intVerbose = v} =
+  do prog <- parseFile "program" v parseProg filePath
+     _ <- fromEM "performing wellformedness check of input prog"
+              $ wellformedProg prog
+     inputValue <- parseFile "division and specilization data" v parseSpec inputPath
+     ((outVal, stats), _) <- fromLEM "execution" $ runProgram prog inputValue
+     trace v "Output value: "
+     putStrLn . prettyVal $ outVal
+     trace v "Execution statistics: "
+     putStrLn $ prettyStats stats
 
 specMain :: SpecOptions -> IO ()
 specMain  = undefined --TODO: fix when adding PE support for procedures

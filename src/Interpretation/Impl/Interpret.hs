@@ -8,7 +8,6 @@ import Utils.PrettyPrint
 import RL.AST
 import RL.Operators
 import RL.Values
-import RL.Variables
 import RL.Program
 
 import qualified Control.Monad.State as S
@@ -47,13 +46,11 @@ initStats = Stats 0 0 0
 
 -- Interpret a program with a given (verifiable wellformed) input
 -- output: program output and statistics
-runProgram :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
-runProgram = undefined-- TODO: Implement when implementing interpreter
--- runProgram (decl, prog) inpstore =
---   do  entry <- raise $ getEntry prog
---       store <- raise $ createStore decl inpstore
---       let res = evalBlocks prog (output decl) store entry Nothing
---       S.runStateT res initStats
+runProgram :: (Eq a, Show a) => Program a () -> Value -> LEM (Value, Stats)
+runProgram prog inpValue =
+  let main = getMainProcedure prog
+      res = evalProgram prog inpValue main
+  in S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
@@ -68,30 +65,36 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 --     nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
 --     runStore = combine nilStore store
 
--- Create a proper store given an input store
--- verifies that input store is wellformed
-createStore :: VariableDecl -> Store -> EM Store
-createStore decl store =
-  let anyTemp = any (\n -> n `elem` temp decl) (keys store)
-      anyOut = any (\n -> n `elem` output decl
-                       && n `notElem` output decl) (keys store)
-      allPresent = all (`elem` keys store) (input decl)
-  in if anyTemp || anyOut || not allPresent
-  then Left "Invalid input store"
-  else
-    let nilStore = fromList . map (\n -> (n, Nil)) $ nonInput decl
-    in return $ combine store nilStore
-
 -- interpret program till exit
--- output: the output store
+-- output: the output value
+evalProgram :: (Eq a, Show a) =>
+  [Procedure a ()] -> Value -> Procedure a () -> SLEM Value
+evalProgram _prog value main = evalProcedure main value
+
+evalProcedure :: (Eq a, Show a) =>
+  Procedure a () -> Value -> SLEM Value
+evalProcedure procedure callValue =
+  do entryPattern <- lift' $ getEntryPattern procedure
+     procedureStore <- lift' $ deconstruct emptyStore callValue entryPattern
+     exitPattern <- lift' $ getExitPattern procedure
+     entry <- lift' $ getEntry (pbody procedure)
+     outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
+     lift' $ createExitValue outputStore exitPattern
+
+createExitValue :: Store -> Pattern -> EM Value
+createExitValue outputStore exitPattern =
+  do (s,v) <- construct outputStore exitPattern
+     if Utils.Maps.all (Nil==) s then Right v else Left "Non-Nil non-output variable at procedure exit."
+
+
 evalBlocks :: (Eq a, Show a) =>
-  [Block a ()] -> [Name] -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks prog outputs store l origin =
-  do block <- S.lift . raise $ getBlockErr prog l
+  [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
+evalBlocks blocks store l origin =
+  do block <- lift' $ getBlockErr blocks l
      (label', store') <- evalBlock store block origin
      case label' of
-       Nothing -> return $ store' `onlyIn` outputs
-       Just l'  -> evalBlocks prog outputs store' (l', ()) (Just l)
+       Nothing -> return store'
+       Just l'  -> evalBlocks blocks store' (l', ()) (Just l)
 
 -- interpret a given block
 evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
@@ -113,8 +116,7 @@ evalFrom s (Fi e (l1, ()) (l2, ())) (Just (l', ())) =
      let l = if truthy v then l1 else l2
      if l == l' then return ()
      else lift' $ Left "Assertion failed in Fi"
--- TODO: fix
--- evalFrom _ (Entry ()) Nothing = return ()
+evalFrom _ (Entry _p ()) Nothing = return ()
 evalFrom _ _ _ = lift' $ Left "Unexpected jump to entry, or wrong start"
 
 -- interpret a jump statement
@@ -125,8 +127,7 @@ evalJump s (If e (l1, ()) (l2, ())) = incJump >>
   do v <- lift' $ evalExpr s e
      return . Just $
       if truthy v then l1 else l2
--- TODO: fix
--- evalJump _ (Exit ()) = return Nothing
+evalJump _ (Exit _p ()) = return Nothing
 
 -- interpret multiple steps
 evalSteps :: Store -> [Step] -> SLEM Store
@@ -141,25 +142,32 @@ evalStep s (Assert e) =
      if truthy v then return s
      else lift' $ Left  $ "failed assertion: " ++ show e
 evalStep s (Replacement q1 q2) =
-  do (s1, v) <- lift' $ construct s q2
-     lift' $ deconstruct s1 v q1
+     lift' $ matchPattern s q1 q2
 evalStep s (Update n op e) =
-  do v1 <- lift' $ find n s
+  let v1 = find n s
+  in do
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
      return $ set n v3 s
+
+matchPattern :: Store -> Pattern -> Pattern -> EM Store
+matchPattern s q1 q2 =
+    do (s1, v) <- construct s q2
+       deconstruct s1 v q1
 
 -- construct an intermediate value and store for a replacement
 construct :: Store -> Pattern -> EM (Store, Value)
 construct store (QConst v) = return (store,v)
 construct store (QVar n) =
-  do v <- find n store
-     let store' = set n Nil store
-     return (store', v)
+  let v = find n store
+      store' = set n Nil store
+  in return (store', v)
 construct store (QPair q1' q2') =
   do (store', v)   <- construct store q1'
      (store'', v') <- construct store' q2'
      return (store'', Pair v v')
+construct store (QCall name pattern) = undefined
+construct store (QUncall name pattern) = undefined
 
 -- deconstruct intermediate value into new store
 -- errors if cannot match
@@ -169,19 +177,20 @@ deconstruct store v (QConst v') =
     then return store
     else Left "Non-matching constants in replacement."
 deconstruct store v (QVar n) =
-  do v' <- find n store
-     if v' == Nil
-      then return $ set n v store
-      else Left "Non-nill variable in replacement."
+  let v' = find n store
+  in if v' == Nil
+     then return $ set n v store
+     else Left "Non-nill variable in replacement."
 deconstruct store (Pair v1 v2) (QPair q1' q2') =
   do store' <- deconstruct store v1 q1'
      deconstruct store' v2 q2'
 deconstruct _ _ (QPair _ _) = Left "Scalar value with cons pattern in replacement."
-
+deconstruct store v (QCall name pattern) = undefined
+deconstruct store v (QUncall name pattern) = undefined
 -- evaluate an expression
 evalExpr :: Store -> Expr -> EM Value
 evalExpr _ (Const v) = return v
-evalExpr s (Var n) = find n s
+evalExpr s (Var n) = return (find n s)
 evalExpr s (Op op e1 e2) =
   do v1 <- evalExpr s e1
      v2 <- evalExpr s e2
@@ -190,11 +199,14 @@ evalExpr s (UOp op e) =
   do v <- evalExpr s e
      calcU op v
 
-find :: Name -> Store -> EM Value
+find :: Name -> Store -> Value
 find n s =
   case lookupM n s of
-    Just v -> return v
-    _ -> Left $ "Variable \"" ++ n ++ "\" not found during lookup"
+    Just v -> v
+    _ -> Nil -- Initialize new variables to Nil
+
+emptyStore :: Store
+emptyStore = emptyMap
 
 -- helper functions for statistics
 incAssert :: SLEM ()
