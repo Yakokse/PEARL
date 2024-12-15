@@ -84,7 +84,7 @@ evalProcedure procedure callValue =
 createExitValue :: Store -> Pattern -> EM Value
 createExitValue outputStore exitPattern =
   do (s,v) <- construct outputStore exitPattern
-     if isEmpty s || Utils.Maps.all (Nil==) s then Right v else Left "Non-Nil non-output value at procedure exit."
+     if Utils.Maps.all (Nil==) s then Right v else Left "Non-Nil non-output variable at procedure exit."
 
 
 evalBlocks :: (Eq a, Show a) =>
