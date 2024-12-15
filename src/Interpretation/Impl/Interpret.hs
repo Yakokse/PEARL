@@ -74,12 +74,12 @@ evalProgram _prog value main = evalProcedure main emptyMap value
 evalProcedure :: (Eq a, Show a) =>
   Procedure a () -> Store -> Value -> SLEM Value
 evalProcedure procedure store callValue =
-  do entryPattern <- S.lift . raise $ getEntryPattern procedure
-     procedureStore <- S.lift . raise $ deconstruct store callValue entryPattern
-     exitPattern <- S.lift . raise $ getExitPattern procedure
-     entry <- S.lift . raise $ getEntry (pbody procedure)
+  do entryPattern <- lift' $ getEntryPattern procedure
+     procedureStore <- lift' $ deconstruct store callValue entryPattern
+     exitPattern <- lift' $ getExitPattern procedure
+     entry <- lift' $ getEntry (pbody procedure)
      outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
-     S.lift . raise $ createExitValue outputStore exitPattern
+     lift' $ createExitValue outputStore exitPattern
 
 createExitValue :: Store -> Pattern -> EM Value
 createExitValue outputStore exitPattern =
@@ -90,7 +90,7 @@ createExitValue outputStore exitPattern =
 evalBlocks :: (Eq a, Show a) =>
   [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
 evalBlocks blocks store l origin =
-  do block <- S.lift . raise $ getBlockErr blocks l
+  do block <- lift' $ getBlockErr blocks l
      (label', store') <- evalBlock store block origin
      case label' of
        Nothing -> return store'
