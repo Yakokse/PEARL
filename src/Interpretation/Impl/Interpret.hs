@@ -144,7 +144,8 @@ evalStep s (Assert e) =
 evalStep s (Replacement q1 q2) =
      lift' $ matchPattern s q1 q2
 evalStep s (Update n op e) =
-  do v1 <- lift' $ find n s
+  let v1 = find n s
+  in do
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
      return $ set n v3 s
@@ -158,13 +159,15 @@ matchPattern s q1 q2 =
 construct :: Store -> Pattern -> EM (Store, Value)
 construct store (QConst v) = return (store,v)
 construct store (QVar n) =
-  do v <- find n store
-     let store' = set n Nil store
-     return (store', v)
+  let v = find n store
+      store' = set n Nil store
+  in return (store', v)
 construct store (QPair q1' q2') =
   do (store', v)   <- construct store q1'
      (store'', v') <- construct store' q2'
      return (store'', Pair v v')
+construct store (QCall name pattern) = undefined
+construct store (QUncall name pattern) = undefined
 
 -- deconstruct intermediate value into new store
 -- errors if cannot match
@@ -174,19 +177,20 @@ deconstruct store v (QConst v') =
     then return store
     else Left "Non-matching constants in replacement."
 deconstruct store v (QVar n) =
-  do v' <- find n store
-     if v' == Nil
-      then return $ set n v store
-      else Left "Non-nill variable in replacement."
+  let v' = find n store
+  in if v' == Nil
+     then return $ set n v store
+     else Left "Non-nill variable in replacement."
 deconstruct store (Pair v1 v2) (QPair q1' q2') =
   do store' <- deconstruct store v1 q1'
      deconstruct store' v2 q2'
 deconstruct _ _ (QPair _ _) = Left "Scalar value with cons pattern in replacement."
-
+deconstruct store v (QCall name pattern) = undefined
+deconstruct store v (QUncall name pattern) = undefined
 -- evaluate an expression
 evalExpr :: Store -> Expr -> EM Value
 evalExpr _ (Const v) = return v
-evalExpr s (Var n) = find n s
+evalExpr s (Var n) = return (find n s)
 evalExpr s (Op op e1 e2) =
   do v1 <- evalExpr s e1
      v2 <- evalExpr s e2
@@ -195,11 +199,11 @@ evalExpr s (UOp op e) =
   do v <- evalExpr s e
      calcU op v
 
-find :: Name -> Store -> EM Value
+find :: Name -> Store -> Value
 find n s =
   case lookupM n s of
-    Just v -> return v
-    _ -> return Nil -- Initialize new variables to Nil
+    Just v -> v
+    _ -> Nil -- Initialize new variables to Nil
 
 -- helper functions for statistics
 incAssert :: SLEM ()
