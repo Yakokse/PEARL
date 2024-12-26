@@ -1,3 +1,3 @@
-module Inversion.Inverter (invertProg) where
+module Inversion.Inverter (invertProg, invertProc) where
 
 import Inversion.Impl.Inverter

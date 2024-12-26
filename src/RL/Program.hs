@@ -1,6 +1,7 @@
 module RL.Program where
 
 import RL.AST
+import RL.Values
 
 import Utils.Error
 
@@ -22,17 +23,16 @@ getNBlock p l = head $ filter (\b -> nname b == l) p
 getBlockUnsafe :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Block a b
 getBlockUnsafe p l = head $ filter (\b -> name b == l) p
 
-getBlockErr :: (Eq a, Eq b, Show a, Show b) =>
-               [Block a b] -> (a, b) -> EM (Block a b)
+getBlockErr :: (Showable a, Showable b) => Procedure a b -> (a, b) -> EM (Block a b)
 getBlockErr p l =
-  case filter (\b -> name b == l) p of
+  case filter (\b -> name b == l) $ pbody p of
     [b] -> return b
     []  -> Left $ "Block not found: " ++ show l
     _   -> Left $ "Multiple blocks found named: " ++ show l
 
-getEntryBlock :: [Block a b] -> EM (Block a b)
-getEntryBlock p =
-  case filter isEntry p of
+getEntryBlock :: Procedure a b -> EM (Block a b)
+getEntryBlock Procedure { pbody = bs } =
+  case filter isEntry bs of
     [] -> Left "No entry point found"
     [b] -> Right b
     _ -> Left "Multiple entry points found"
@@ -46,12 +46,12 @@ getEntryLabel = label . head . filter isEntry
 getEntryName :: [Block a b] -> (a, b)
 getEntryName = name . head . filter isEntry
 
-getEntry :: [Block a b] -> EM (a,b)
+getEntry :: Procedure a b -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
 
-getExitBlock :: [Block a b] -> EM (Block a b)
-getExitBlock p =
-  case filter isExit p of
+getExitBlock :: Procedure a b-> EM (Block a b)
+getExitBlock Procedure { pbody = bs } =
+  case filter isExit bs of
     [] -> Left "No exit point found"
     [b] -> Right b
     _ -> Left "Multiple exit points found"
@@ -65,12 +65,15 @@ getExitName = name . head . filter isExit
 getExitLabel :: [Block a b] -> a
 getExitLabel = label . head . filter isExit
 
-getMainProcedure :: [Procedure a b] -> Procedure a b
+getMainProcedure :: Program a b -> Procedure a b
 getMainProcedure = head
+
+getProcedureUnsafe :: Program a b -> ProcedureName -> Procedure a b
+getProcedureUnsafe prog n = head $ filter (\f -> n == pname f) prog
 
 getEntryPattern :: Procedure a b -> EM Pattern
 getEntryPattern procedure =
-  do entryBlock <- getEntryBlock . pbody $ procedure
+  do entryBlock <- getEntryBlock procedure
      let entryPattern = from entryBlock
      case entryPattern of
       Entry pattern _ -> Right pattern
@@ -78,7 +81,7 @@ getEntryPattern procedure =
 
 getExitPattern :: Procedure a b -> EM Pattern
 getExitPattern procedure =
-  do exitBlock <- getExitBlock . pbody $ procedure
+  do exitBlock <- getExitBlock procedure
      let exitPattern = jump exitBlock
      case exitPattern of
       Exit pattern _ -> Right pattern

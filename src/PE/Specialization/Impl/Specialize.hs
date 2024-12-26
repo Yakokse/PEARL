@@ -71,30 +71,30 @@ specProg = undefined --TODO: fix when adding PE support for procedures
 
 merge :: (Eq a, Show a) => Block a (Maybe SpecStore) -> [Block a (Maybe SpecStore)]
                             -> LEM [Block a (Maybe SpecStore)]
-merge block prog
-  | name block `notElem` map name prog = return $ block : prog
-  | otherwise =
-    do logM "MERGE"
-       b <- raise $ getBlockErr prog $ name block
-       b' <- raise $ mergeBlock b block
-       let rest = filter (\x -> name block /= name x) prog
-       return $ b' : rest
-  where
-    mergeBlock x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
-    mergeFi (Fi e (l1, s1) (l2, s2)) (Fi e' (l1', s1') (l2', s2'))
-      | e == e' && l1 == l1' && l2 == l2' =
-          return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2')
-      | otherwise = Left "Failed to merge blocks due to the Fi's being different"
-    mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
+merge block prog = undefined
+--   | name block `notElem` map name prog = return $ block : prog
+--   | otherwise =
+--     do logM "MERGE"
+--        b <- raise $ getBlockErr prog $ name block
+--        b' <- raise $ mergeBlock b block
+--        let rest = filter (\x -> name block /= name x) prog
+--        return $ b' : rest
+--   where
+--     mergeBlock x y = do j <- mergeFi (from x) (from y); return $ x { from = j }
+--     mergeFi (Fi e (l1, s1) (l2, s2)) (Fi e' (l1', s1') (l2', s2'))
+--       | e == e' && l1 == l1' && l2 == l2' =
+--           return $ Fi e (l1, s1 <|> s1') (l2, s2 <|> s2')
+--       | otherwise = Left "Failed to merge blocks due to the Fi's being different"
+--     mergeFi _ _ = Left "Failed to merge blocks due to one or more statement not being a Fi"
 
-specBlock :: Eq a => a -> VariableDecl -> SpecStore -> Block' a -> (a, SpecStore)
-                  -> EM (Block a (Maybe SpecStore), [Point a])
-specBlock entry decl s b origin =
-  do let l = (name' b, Just s)
-     f <- specFrom entry s (from' b) origin
-     (s', as) <- specSteps s $ body' b
-     (j, pending) <- specJump s' decl (jump' b)
-     return (Block { name = l, from = f, body = as, jump = j}, pending)
+-- specBlock :: Eq a => a -> VariableDecl -> SpecStore -> Block' a -> (a, SpecStore)
+--                   -> EM (Block a (Maybe SpecStore), [Point a])
+-- specBlock entry decl s b origin =
+--   do let l = (name' b, Just s)
+--      f <- specFrom entry s (from' b) origin
+--      (s', as) <- specSteps s $ body' b
+--      (j, pending) <- specJump s' decl (jump' b)
+--      return (Block { name = l, from = f, body = as, jump = j}, pending)
 
 specFrom :: Eq a => a -> SpecStore -> ComeFrom' a -> (a, SpecStore)
                  -> EM (ComeFrom a (Maybe SpecStore))

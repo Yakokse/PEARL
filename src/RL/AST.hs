@@ -1,8 +1,10 @@
+{-# LANGUAGE ConstraintKinds #-}
 module RL.AST where
 
 import RL.Values
 
 type Program label store = [Procedure label store]
+type Showable a = (Eq a, Show a)
 
 --TODO: remove when implementing support for PE with procedures
 data VariableDecl = VariableDecl
@@ -12,7 +14,7 @@ data VariableDecl = VariableDecl
   } deriving (Eq, Show, Read)
 
 
-data Procedure label store = Procedure 
+data Procedure label store = Procedure
   { pname :: ProcedureName
   , pbody :: [Block label store]
   }
@@ -85,7 +87,7 @@ data UnOp =
   deriving (Eq, Show, Read)
 
 type NormProgram label = [NormProcedure label]
-data NormProcedure label = NormProcedure 
+data NormProcedure label = NormProcedure
   { npname :: ProcedureName
   , npbody :: [NormBlock label]
   }

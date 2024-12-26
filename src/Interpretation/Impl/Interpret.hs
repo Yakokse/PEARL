@@ -9,10 +9,9 @@ import RL.AST
 import RL.Operators
 import RL.Values
 import RL.Program
+import Inversion.Inverter
 
 import qualified Control.Monad.State as S
-import qualified Data.Foldable
-import Inversion.Impl.Inverter
 
 type SLEM = S.StateT Stats LEM
 
@@ -48,16 +47,16 @@ initStats = Stats 0 0 0
 
 -- Interpret a program with a given (verifiable wellformed) input
 -- output: program output and statistics
-runProgram :: (Eq a, Show a) => Program a () -> Value -> LEM (Value, Stats)
+runProgram :: Showable a => Program a () -> Value -> LEM (Value, Stats)
 runProgram prog inpValue =
   let main = getMainProcedure prog
-      res = evalProgram prog inpValue main
+      res = evalProcedure prog main inpValue
   in S.runStateT res initStats
 
 -- Interpret a program with a (possibly mallformed) input
 -- Non-input values in a store are ignored
 -- output: program output and statistics
-runProgram' :: (Eq a, Show a) => Program a () -> Store -> LEM (Store, Stats)
+runProgram' :: Showable a => Program a () -> Store -> LEM (Store, Stats)
 runProgram' = undefined --TODO: fix when adding PE support for procedures
 -- runProgram' (decl, prog) store =
 --   do  entry <- raise $ getEntry prog
@@ -69,39 +68,33 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 
 -- interpret program till exit
 -- output: the output value
-evalProgram :: (Eq a, Show a) =>
-  Program a () -> Value -> Procedure a () -> SLEM Value
-evalProgram prog value main = evalProcedure prog main value
 
-evalProcedure :: (Eq a, Show a) =>
-  Program a () -> Procedure a () -> Value -> SLEM Value
+evalProcedure :: Showable a => Program a () -> Procedure a () -> Value -> SLEM Value
 evalProcedure prog procedure callValue =
   do entryPattern <- lift' $ getEntryPattern procedure
      procedureStore <- deconstruct prog emptyStore callValue entryPattern
      exitPattern <- lift' $ getExitPattern procedure
-     entry <- lift' $ getEntry (pbody procedure)
-     outputStore <- evalBlocks prog (pbody procedure) procedureStore entry Nothing
+     entry <- lift' $ getEntry procedure
+     outputStore <- evalBlocks prog procedure procedureStore entry Nothing
      createExitValue prog outputStore exitPattern
 
-createExitValue :: (Eq a, Show a) => Program a () -> Store -> Pattern -> SLEM Value
+createExitValue :: Showable a => Program a () -> Store -> Pattern -> SLEM Value
 createExitValue prog outputStore exitPattern =
   do (s,v) <- construct prog outputStore exitPattern
-     lift' $ if Utils.Maps.all (Nil==) s
+     lift' $ if Utils.Maps.all (Nil ==) s
              then Right v
              else Left "Non-Nil non-output variable at procedure exit."
 
-
-evalBlocks :: (Eq a, Show a) =>
-  Program a () -> [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks prog blocks store l origin =
-  do block <- lift' $ getBlockErr blocks l
+evalBlocks :: Showable a => Program a () -> Procedure a () -> Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
+evalBlocks prog f store l origin =
+  do block <- lift' $ getBlockErr f l
      (label', store') <- evalBlock prog store block origin
      case label' of
        Nothing -> return store'
-       Just l'  -> evalBlocks prog blocks store' (l', ()) (Just l)
+       Just l' -> evalBlocks prog f store' (l', ()) (Just l)
 
 -- interpret a given block
-evalBlock :: (Eq a, Show a) => Program a () -> Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
+evalBlock :: Showable a => Program a () -> Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
 evalBlock p s b l =
   do S.lift . logM $  show (label b) ++ prettyStore s -- TODO: improve
      evalFrom s (from b) l
@@ -111,7 +104,7 @@ evalBlock p s b l =
 
 -- interpret a come-from statement
 -- error if control-flow violates backwards determinism
-evalFrom :: Eq a => Store -> ComeFrom a ()-> Maybe (a, ()) -> SLEM ()
+evalFrom :: Showable a => Store -> ComeFrom a () -> Maybe (a, ()) -> SLEM ()
 evalFrom _ (From (l, ())) (Just (l', ())) =
   if l == l' then return ()
   else lift' $ Left "Unconditional from failed"
@@ -134,11 +127,11 @@ evalJump s (If e (l1, ()) (l2, ())) = incJump >>
 evalJump _ (Exit _p ()) = return Nothing
 
 -- interpret multiple steps
-evalSteps :: (Eq a, Show a) => Program a () -> Store -> [Step] -> SLEM Store
+evalSteps :: Showable a => Program a () -> Store -> [Step] -> SLEM Store
 evalSteps program = S.foldM (\store step -> incStep >> evalStep program store step)
 
 -- interpret a given step
-evalStep :: (Eq a, Show a) => Program a () -> Store -> Step -> SLEM Store
+evalStep :: Showable a => Program a () -> Store -> Step -> SLEM Store
 evalStep _ s Skip = return s
 evalStep _ s (Assert e) =
   do incAssert
@@ -153,29 +146,26 @@ evalStep _ s (Update n op e) =
      v3 <- lift' $ calcR op v1 v2
      return $ set n v3 s
 
-matchPattern :: (Eq a, Show a) => Program a () -> Store -> Pattern -> Pattern -> SLEM Store
+matchPattern :: Showable a => Program a () -> Store -> Pattern -> Pattern -> SLEM Store
 matchPattern prog s q1 q2 =
     do (s1, v) <- construct prog s q2
        deconstruct prog s1 v q1
 
 -- call a procedure
-call :: (Eq a, Show a) => Program a () -> ProcedureName -> Value -> SLEM Value
+call :: Showable a => Program a () -> ProcedureName -> Value -> SLEM Value
 call prog procName val =
-  let procedure = Data.Foldable.find (\p -> pname p == procName) prog
-  in case procedure of
-     (Just procedure') -> evalProcedure prog procedure' val
-     Nothing -> lift' $ Left ("Undefined procedure: " ++ procName)
+  let procedure = getProcedureUnsafe prog procName
+  in evalProcedure prog procedure val
 
 -- uncall a procedure (reverse evaluation)
-uncall :: (Eq a, Show a) => Program a () -> ProcedureName -> Value -> SLEM Value
+uncall :: Showable a => Program a () -> ProcedureName -> Value -> SLEM Value
 uncall prog procName val =
-  let procedure = Data.Foldable.find (\p -> pname p == procName) prog
-  in case procedure of
-     (Just procedure') -> evalProcedure prog (invertProc procedure') val
-     Nothing -> lift' $ Left ("Undefined procedure: " ++ procName)
+  let procedure = getProcedureUnsafe prog procName
+      invProc = invertProc procedure
+  in evalProcedure prog invProc val
 
 -- construct an intermediate value and store for a replacement
-construct :: (Eq a, Show a) => Program a () -> Store -> Pattern -> SLEM (Store, Value)
+construct :: Showable a => Program a () -> Store -> Pattern -> SLEM (Store, Value)
 construct _ store (QConst v) = return (store,v)
 construct _ store (QVar n) =
   let v = find n store
@@ -198,7 +188,7 @@ construct prog store (QUncall procName pattern) =
 
 -- deconstruct intermediate value into new store
 -- errors if cannot match
-deconstruct :: (Eq a, Show a) => Program a () -> Store -> Value -> Pattern -> SLEM Store
+deconstruct :: Showable a => Program a () -> Store -> Value -> Pattern -> SLEM Store
 deconstruct _ store v (QConst v') =
   if v == v'
     then return store
