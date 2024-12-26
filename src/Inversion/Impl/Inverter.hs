@@ -9,17 +9,19 @@ invertProg  = map invertProc
 
 -- invert a proc
 invertProc :: Procedure a b -> Procedure a b
-invertProc procedure =
-  let blocks = pbody procedure
-  in Procedure (pname procedure) (map invertBlock blocks)
+invertProc Procedure {pname = n, pbody = b} = Procedure
+  { pname = n
+  , pbody = map invertBlock b
+  }
 
 -- invert a block
 invertBlock :: Block a b -> Block a b
 invertBlock Block {name = l, from = f, body = b, jump = j} = Block
-  { name = l,
-    from = invertJump j,
-    body = reverse $ map invertStep b,
-    jump = invertFrom f}
+  { name = l
+  , from = invertJump j
+  , body = reverse $ map invertStep b
+  , jump = invertFrom f
+  }
 
 -- invert a come-from
 invertFrom :: ComeFrom a b -> Jump a b
@@ -39,6 +41,13 @@ invertStep Skip = Skip
 invertStep (Assert e) = Assert e
 invertStep (Replacement q1 q2) = Replacement q2 q1
 invertStep (Update n op e) = Update n (invertOp op) e
+
+invertPattern :: Pattern -> Pattern
+invertPattern (QConst c) = QConst c
+invertPattern (QVar n) = QVar n
+invertPattern (QPair q1 q2) = QPair (invertPattern q1) (invertPattern q2)
+invertPattern (QCall n p) = QUncall n p -- sub-pattern cannot contain calls
+invertPattern (QUncall n p) = QCall n p -- ditto
 
 -- invert a reversible operation
 invertOp :: RevOp -> RevOp
