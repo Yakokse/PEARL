@@ -1,9 +1,9 @@
 module RL.Program where
 
 import RL.AST
+import RL.Values
 
 import Utils.Error
-import RL.Values (ProcedureName)
 
 exitCount :: [Block a b] -> Int
 exitCount = length . filter isExit
@@ -23,8 +23,7 @@ getNBlock p l = head $ filter (\b -> nname b == l) p
 getBlockUnsafe :: (Eq a, Eq b) => [Block a b] -> (a, b) -> Block a b
 getBlockUnsafe p l = head $ filter (\b -> name b == l) p
 
-getBlockErr :: (Showable a, Showable b) =>
-               Procedure a b -> (a, b) -> EM (Block a b)
+getBlockErr :: (Showable a, Showable b) => Procedure a b -> (a, b) -> EM (Block a b)
 getBlockErr p l =
   case filter (\b -> name b == l) $ pbody p of
     [b] -> return b
@@ -32,7 +31,7 @@ getBlockErr p l =
     _   -> Left $ "Multiple blocks found named: " ++ show l
 
 getEntryBlock :: Procedure a b -> EM (Block a b)
-getEntryBlock Procedure{pbody = bs} =
+getEntryBlock Procedure { pbody = bs } =
   case filter isEntry bs of
     [] -> Left "No entry point found"
     [b] -> Right b
@@ -51,7 +50,7 @@ getEntry :: Procedure a b -> EM (a,b)
 getEntry p = name <$> getEntryBlock p
 
 getExitBlock :: Procedure a b-> EM (Block a b)
-getExitBlock Procedure{pbody = bs} =
+getExitBlock Procedure { pbody = bs } =
   case filter isExit bs of
     [] -> Left "No exit point found"
     [b] -> Right b

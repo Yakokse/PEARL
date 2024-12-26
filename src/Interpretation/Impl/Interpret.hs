@@ -104,7 +104,7 @@ evalBlock p s b l =
 
 -- interpret a come-from statement
 -- error if control-flow violates backwards determinism
-evalFrom :: Showable a => Store -> ComeFrom a ()-> Maybe (a, ()) -> SLEM ()
+evalFrom :: Showable a => Store -> ComeFrom a () -> Maybe (a, ()) -> SLEM ()
 evalFrom _ (From (l, ())) (Just (l', ())) =
   if l == l' then return ()
   else lift' $ Left "Unconditional from failed"

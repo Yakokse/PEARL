@@ -6,17 +6,16 @@ import RL.AST
 invertProg :: Program a b -> Program a b
 invertProg  = map invertProc
 
-
 -- invert a proc
 invertProc :: Procedure a b -> Procedure a b
-invertProc Procedure {pname = n, pbody = b} = Procedure
+invertProc Procedure { pname = n, pbody = b } = Procedure
   { pname = n
   , pbody = map invertBlock b
   }
 
 -- invert a block
 invertBlock :: Block a b -> Block a b
-invertBlock Block {name = l, from = f, body = b, jump = j} = Block
+invertBlock Block { name = l, from = f, body = b, jump = j } = Block
   { name = l
   , from = invertJump j
   , body = reverse $ map invertStep b
