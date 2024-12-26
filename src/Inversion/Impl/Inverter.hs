@@ -9,8 +9,9 @@ invertProg  = map invertProc
 
 -- invert a proc
 invertProc :: Procedure a b -> Procedure a b
-invertProc = undefined --TODO: implement
-
+invertProc procedure =
+  let blocks = pbody procedure
+  in Procedure (pname procedure) (map invertBlock blocks)
 
 -- invert a block
 invertBlock :: Block a b -> Block a b
@@ -22,14 +23,14 @@ invertBlock Block {name = l, from = f, body = b, jump = j} = Block
 
 -- invert a come-from
 invertFrom :: ComeFrom a b -> Jump a b
-invertFrom (Entry p s)          = Exit p s
-invertFrom (From l)         = Goto l
+invertFrom (Entry p s)  = Exit p s
+invertFrom (From l)     = Goto l
 invertFrom (Fi e l1 l2) = If e l1 l2
 
 -- invert a jump
 invertJump :: Jump a b -> ComeFrom a b
-invertJump (Exit p s)           = Entry p s
-invertJump (Goto l)         = From l
+invertJump (Exit p s)   = Entry p s
+invertJump (Goto l)     = From l
 invertJump (If e l1 l2) = Fi e l1 l2
 
 -- invert a step
