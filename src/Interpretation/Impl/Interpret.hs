@@ -11,6 +11,8 @@ import RL.Values
 import RL.Program
 
 import qualified Control.Monad.State as S
+import qualified Data.Foldable
+import Inversion.Impl.Inverter
 
 type SLEM = S.StateT Stats LEM
 
@@ -68,40 +70,42 @@ runProgram' = undefined --TODO: fix when adding PE support for procedures
 -- interpret program till exit
 -- output: the output value
 evalProgram :: (Eq a, Show a) =>
-  [Procedure a ()] -> Value -> Procedure a () -> SLEM Value
-evalProgram _prog value main = evalProcedure main value
+  Program a () -> Value -> Procedure a () -> SLEM Value
+evalProgram prog value main = evalProcedure prog main value
 
 evalProcedure :: (Eq a, Show a) =>
-  Procedure a () -> Value -> SLEM Value
-evalProcedure procedure callValue =
+  Program a () -> Procedure a () -> Value -> SLEM Value
+evalProcedure prog procedure callValue =
   do entryPattern <- lift' $ getEntryPattern procedure
-     procedureStore <- lift' $ deconstruct emptyStore callValue entryPattern
+     procedureStore <- deconstruct prog emptyStore callValue entryPattern
      exitPattern <- lift' $ getExitPattern procedure
      entry <- lift' $ getEntry (pbody procedure)
-     outputStore <- evalBlocks (pbody procedure) procedureStore entry Nothing
-     lift' $ createExitValue outputStore exitPattern
+     outputStore <- evalBlocks prog (pbody procedure) procedureStore entry Nothing
+     createExitValue prog outputStore exitPattern
 
-createExitValue :: Store -> Pattern -> EM Value
-createExitValue outputStore exitPattern =
-  do (s,v) <- construct outputStore exitPattern
-     if Utils.Maps.all (Nil==) s then Right v else Left "Non-Nil non-output variable at procedure exit."
+createExitValue :: (Eq a, Show a) => Program a () -> Store -> Pattern -> SLEM Value
+createExitValue prog outputStore exitPattern =
+  do (s,v) <- construct prog outputStore exitPattern
+     lift' $ if Utils.Maps.all (Nil==) s
+             then Right v
+             else Left "Non-Nil non-output variable at procedure exit."
 
 
 evalBlocks :: (Eq a, Show a) =>
-  [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
-evalBlocks blocks store l origin =
+  Program a () -> [Block a ()] ->  Store -> (a, ()) -> Maybe (a, ()) -> SLEM Store
+evalBlocks prog blocks store l origin =
   do block <- lift' $ getBlockErr blocks l
-     (label', store') <- evalBlock store block origin
+     (label', store') <- evalBlock prog store block origin
      case label' of
        Nothing -> return store'
-       Just l'  -> evalBlocks blocks store' (l', ()) (Just l)
+       Just l'  -> evalBlocks prog blocks store' (l', ()) (Just l)
 
 -- interpret a given block
-evalBlock :: (Eq a, Show a) => Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
-evalBlock s b l =
+evalBlock :: (Eq a, Show a) => Program a () -> Store -> Block a () -> Maybe (a, ()) -> SLEM (Maybe a, Store)
+evalBlock p s b l =
   do S.lift . logM $  show (label b) ++ prettyStore s -- TODO: improve
      evalFrom s (from b) l
-     s' <- evalSteps s (body b)
+     s' <- evalSteps p s (body b)
      l' <- evalJump s' (jump b)
      return (l', s')
 
@@ -130,63 +134,93 @@ evalJump s (If e (l1, ()) (l2, ())) = incJump >>
 evalJump _ (Exit _p ()) = return Nothing
 
 -- interpret multiple steps
-evalSteps :: Store -> [Step] -> SLEM Store
-evalSteps = S.foldM (\store step -> incStep >> evalStep store step)
+evalSteps :: (Eq a, Show a) => Program a () -> Store -> [Step] -> SLEM Store
+evalSteps program = S.foldM (\store step -> incStep >> evalStep program store step)
 
 -- interpret a given step
-evalStep :: Store -> Step -> SLEM Store
-evalStep s Skip = return s
-evalStep s (Assert e) =
+evalStep :: (Eq a, Show a) => Program a () -> Store -> Step -> SLEM Store
+evalStep _ s Skip = return s
+evalStep _ s (Assert e) =
   do incAssert
      v <- lift'$ evalExpr s e
      if truthy v then return s
      else lift' $ Left  $ "failed assertion: " ++ show e
-evalStep s (Replacement q1 q2) =
-     lift' $ matchPattern s q1 q2
-evalStep s (Update n op e) =
+evalStep p s (Replacement q1 q2) = matchPattern p s q1 q2
+evalStep _ s (Update n op e) =
   let v1 = find n s
   in do
      v2 <- lift' $ evalExpr (s `without` n) e
      v3 <- lift' $ calcR op v1 v2
      return $ set n v3 s
 
-matchPattern :: Store -> Pattern -> Pattern -> EM Store
-matchPattern s q1 q2 =
-    do (s1, v) <- construct s q2
-       deconstruct s1 v q1
+matchPattern :: (Eq a, Show a) => Program a () -> Store -> Pattern -> Pattern -> SLEM Store
+matchPattern prog s q1 q2 =
+    do (s1, v) <- construct prog s q2
+       deconstruct prog s1 v q1
+
+-- call a procedure
+call :: (Eq a, Show a) => Program a () -> ProcedureName -> Value -> SLEM Value
+call prog procName val =
+  let procedure = Data.Foldable.find (\p -> pname p == procName) prog
+  in case procedure of
+     (Just procedure') -> evalProcedure prog procedure' val
+     Nothing -> lift' $ Left ("Undefined procedure: " ++ procName)
+
+-- uncall a procedure (reverse evaluation)
+uncall :: (Eq a, Show a) => Program a () -> ProcedureName -> Value -> SLEM Value
+uncall prog procName val =
+  let procedure = Data.Foldable.find (\p -> pname p == procName) prog
+  in case procedure of
+     (Just procedure') -> evalProcedure prog (invertProc procedure') val
+     Nothing -> lift' $ Left ("Undefined procedure: " ++ procName)
 
 -- construct an intermediate value and store for a replacement
-construct :: Store -> Pattern -> EM (Store, Value)
-construct store (QConst v) = return (store,v)
-construct store (QVar n) =
+construct :: (Eq a, Show a) => Program a () -> Store -> Pattern -> SLEM (Store, Value)
+construct _ store (QConst v) = return (store,v)
+construct _ store (QVar n) =
   let v = find n store
       store' = set n Nil store
   in return (store', v)
-construct store (QPair q1' q2') =
-  do (store', v)   <- construct store q1'
-     (store'', v') <- construct store' q2'
+construct prog store (QPair q1' q2') =
+  do (store', v)   <- construct prog store q1'
+     (store'', v') <- construct prog store' q2'
      return (store'', Pair v v')
-construct store (QCall name pattern) = undefined
-construct store (QUncall name pattern) = undefined
+construct prog store (QCall procName pattern) =
+  do
+    (store',val) <- construct prog store pattern
+    out <- call prog procName val
+    lift' $ Right (store',out)
+construct prog store (QUncall procName pattern) =
+  do
+    (store',val) <- construct prog store pattern
+    out <- uncall prog procName val
+    lift' $ Right (store',out)
 
 -- deconstruct intermediate value into new store
 -- errors if cannot match
-deconstruct :: Store -> Value -> Pattern -> EM Store
-deconstruct store v (QConst v') =
+deconstruct :: (Eq a, Show a) => Program a () -> Store -> Value -> Pattern -> SLEM Store
+deconstruct _ store v (QConst v') =
   if v == v'
     then return store
-    else Left "Non-matching constants in replacement."
-deconstruct store v (QVar n) =
+    else lift' $ Left "Non-matching constants in replacement."
+deconstruct _ store v (QVar n) =
   let v' = find n store
   in if v' == Nil
      then return $ set n v store
-     else Left "Non-nill variable in replacement."
-deconstruct store (Pair v1 v2) (QPair q1' q2') =
-  do store' <- deconstruct store v1 q1'
-     deconstruct store' v2 q2'
-deconstruct _ _ (QPair _ _) = Left "Scalar value with cons pattern in replacement."
-deconstruct store v (QCall name pattern) = undefined
-deconstruct store v (QUncall name pattern) = undefined
+     else lift' $ Left "Non-nill variable in replacement."
+deconstruct prog store (Pair v1 v2) (QPair q1' q2') =
+  do store' <- deconstruct prog store v1 q1'
+     deconstruct prog store' v2 q2'
+deconstruct _ _ _ (QPair _ _) = lift' $ Left "Scalar value with cons pattern in replacement."
+deconstruct prog store v (QCall procName pattern) =
+  do
+    out <- uncall prog procName v
+    deconstruct prog store out pattern
+deconstruct prog store v (QUncall procName pattern) =
+  do
+    out <- call prog procName v
+    deconstruct prog store out pattern
+
 -- evaluate an expression
 evalExpr :: Store -> Expr -> EM Value
 evalExpr _ (Const v) = return v
