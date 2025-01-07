@@ -1,22 +1,3 @@
-proc InvoluteRules
-init: entry(Rules.Involution)
-    goto loop
-
-loop: fi !RulesInv from init else invertRule
-    if !Rules goto done else invertRule
-
-invertRule: from loop
-    (Rule.Rules) <- Rules
-    (Rule'.Involution) <- call invertRule (Rule.Involution)
-    RulesInv <- (Rule'.RulesInv)
-    goto loop
-done: from loop
-    exit(RulesInv.Involution)
-    //RulesInv contains inverted rules
-    //Rules is empty
-    //Involution is same as start of call
-
-
 proc invertRule
 init: entry (Rule.Involution)
       (Q1.(S1.(S2.Q2))) <- Rule

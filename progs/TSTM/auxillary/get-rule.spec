@@ -1,6 +1,17 @@
-'(2.(0.((1 . (SLASH . (RIGHT . 2))) . //next
+'(
+//From
+2.
+(
+//S
+0.
+(
+//State transitions
+((1 . (SLASH . (RIGHT . 2))) . //next
 ((2 . (1 .     (0     . 3))) . //toggle 1
-   nil))))
+   nil)).
+//Involution
+((1 . 4) . ((2 . 3) . ((3. 2). ((4.1).nil))))
+)))
 
 // Input pattern
 // (S . (From .(Rules.Involution)))

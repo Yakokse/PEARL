@@ -1,11 +1,4 @@
-// Input:
-// Current state 'From'
-// Currently read symbol 'S'
-// Set of rules 'Rules'
-// Output
-// (Reverse rules . (S . (From .Matching rule)))
-
-proc pickRule
+proc PickRule
 init: entry (From.(S.Rules))
       goto matchRule
 
@@ -29,14 +22,22 @@ setMatch: from pickTransition
 
 done: from matchRule
       if Q1' && Q2' && S1' && S2' goto foundRule else fin
-
 foundRule: from done
       Rule <- (Q1' . (S1' . (S2' . Q2')))
       goto fin
 
-noRuleFound: from done
-      goto fin
-
-
 fin: fi Rule from foundRule else done
-      exit (RulesRev.(From.(S.Rule)))
+      Rules <- call Reverse RulesRev
+      exit (Rule.(From.(S.Rules)))
+
+proc Reverse
+    init: entry L
+          goto loop
+    loop: fi L' from loop1 else init
+        if L goto loop1 else done
+    loop1: from loop
+        (head.L) <- L
+        L' <- (head.L')
+        goto loop
+    done: from loop
+          exit L'

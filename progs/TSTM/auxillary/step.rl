@@ -8,7 +8,7 @@ proc step
 act: entry (Rule . State)
       (Q.(S_left . (S . S_right))) <- State
       (Q1'. (S1'. (S2'.Q2'))) <- Rule
-      if S1' = 'SLASH' goto move else write
+      if S1' = 'SLASH goto move else write
 
 write: from act
       Q ^= Q1'
