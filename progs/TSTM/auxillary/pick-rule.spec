@@ -1,9 +1,9 @@
-'(2.(0.((1 . (SLASH . (RIGHT . 2))) . //next
+'((2.(1.(nil.nil))).((1 . (SLASH . (RIGHT . 2))) . //next
 ((2 . (1 .     (0     . 3))) . //toggle 1
-   nil))))
+   nil)))
 
 // Input pattern
-// (S . (From .(Rules.Involution)))
+// ((From . (S.('nil.'nil)) .(Rules.Involution)))
 //Simple involution
 //Two rules define the rest:
 //(1 . (SLASH . (RIGHT . 2))) . //next

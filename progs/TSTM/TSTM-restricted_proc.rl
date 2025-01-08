@@ -24,6 +24,7 @@ act: from loop
       PartialRule ^= ('nil.('nil.(S.Q)))
       goto loop
 
+// ---------------------------------------------------------------------------------
 proc getRule
 // Input:
 // partially specified 'Rule' to match
@@ -46,12 +47,8 @@ done: fi InRules = 'True from init else involute
       (Rule.Rules) <- uncall In (Rule.(Rules.InRules))
       exit (Rule . (PartialRule .(Rules.Involution)))
 
-// Input:
-// partially specified 'Rule'
-// Set of rules 'Rules'
-// Output
-// (matching rule. (From . (S .Rules)))
 
+// ---------------------------------------------------------------------------------
 proc pickRule
 init: entry ((From.(S.(S'.To))).Rules)
       goto matchRule
@@ -61,17 +58,16 @@ matchRule: fi !RulesRev from init else putInRev
 
 pickTransition: from matchRule
     ((Q1 . (S1 . (S2 . Q2))) . Rules) <- Rules
-    if (From = Q1 && (S1 = S || S1 = 'SLASH)) || (To = Q2 && (S2 = S' || S2 = 'RIGHT || S2 = 'LEFT)) goto setMatch else putInRev
+    if (From = Q1 && (S1 = S || S1 = 'SLASH)) || (To = Q2 && (S2 = S' || S2 = 'RIGHT || S2 = 'LEFT))
+    goto setMatch else putInRev
 
 putInRev: fi Q1 = Q1' && Q2 = Q2' && S1 = S1' && S2 = S2' from setMatch else pickTransition
       RulesRev <- ((Q1 . (S1 . (S2 . Q2))) . RulesRev)
       goto matchRule
 
 setMatch: from pickTransition
-      Rule <- (Q1 . (S1 . (S2 . Q2)))
-      Rule' ^= Rule
+      Rule' ^= (Q1 . (S1 . (S2 . Q2)))
       (Q1' . (S1' . (S2' . Q2')))<- Rule'
-      (Q1 . (S1 . (S2 . Q2))) <- Rule
       goto putInRev
 
 done: from matchRule
@@ -84,12 +80,8 @@ fin: fi Rule from foundRule else done
       Rules <- call Reverse RulesRev
       exit (Rule.((From.(S.(S'.To))).Rules))
 
+// ---------------------------------------------------------------------------------
 proc In
-// Input:
-// L list
-// A item
-// Output:
-// (A.(L.IsIn))
 init: entry (A.L)
       (A.(L.Count)) <- call Count (A.L)
       if ('0 < Count) goto isIn else isNotIn
@@ -103,12 +95,8 @@ done: fi IsIn = 'True from isIn else isNotIn
       (A.L) <- uncall Count (A.(L.Count))
       exit (A.(L.IsIn))
 
+// ---------------------------------------------------------------------------------
 proc Count
-// Input:
-// L list
-// A item
-// Output:
-// (A.(L.Count))
 init: entry (A.L)
       Count ^= '0
       goto loop
@@ -127,6 +115,7 @@ done: from loop
       L <- call Reverse L'
       exit (A.(L.Count))
 
+// ---------------------------------------------------------------------------------
 proc Reverse
     init: entry L
           goto loop
@@ -139,6 +128,7 @@ proc Reverse
     done: from loop
           exit L'
 
+// ---------------------------------------------------------------------------------
 proc InvoluteRules
 init: entry(Rules.Involution)
     goto loop
@@ -157,7 +147,7 @@ done: from loop
     //Rules is empty
     //Involution is same as start of call
 
-
+// ---------------------------------------------------------------------------------
 proc invertRule
 init: entry (Rule.Involution)
       (Q1.(S1.(S2.Q2))) <- Rule
@@ -195,7 +185,7 @@ invertWrite: from invertAction
 invertionDone: fi S1' = 'SLASH from invertMove1 else invertWrite
     goto done
 
-
+// ---------------------------------------------------------------------------------
 proc involuteState
 init: entry (Q.Involution)
       goto loop
@@ -220,12 +210,6 @@ done: from loop
 // ---------------------------------------------------------------------------------
 
 proc step
-// Input:
-// Rule to step with
-// current State
-// Output:
-// Rule stepped with
-// new State
 act: entry (Rule . State)
       (Q.(S_left . (S . S_right))) <- State
       (Q1'. (S1'. (S2'.Q2'))) <- Rule
