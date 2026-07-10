@@ -1,0 +1,5 @@
+// input
+lines = '[one, nil, one, nil]
+
+// output
+//lines = '[one, nil, nil, one]
